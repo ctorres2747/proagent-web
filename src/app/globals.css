@@ -1,0 +1,25 @@
+@import "tailwindcss";
+
+/* ProAgent design tokens (mirror src/design-system/tokens.ts) */
+:root {
+  --pa-navy: #0a3d62;
+  --pa-accent: #1e8e5a;
+  --pa-warning: #d97b2b;
+  --pa-danger: #c23b2b;
+  --pa-bg: #f6f7f9;
+  --pa-surface: #ffffff;
+  --pa-ink: #0f172a;
+  --pa-muted: #64748b;
+  --pa-border: #e2e8f0;
+}
+
+@theme inline {
+  --font-sans: var(--font-plus-jakarta), system-ui, sans-serif;
+}
+
+html,
+body {
+  background: var(--pa-bg);
+  color: var(--pa-ink);
+  font-family: var(--font-plus-jakarta), system-ui, sans-serif;
+}
