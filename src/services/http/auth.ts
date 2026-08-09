@@ -6,10 +6,10 @@ import type {
 } from "@/features/auth/types";
 import { apiFetch } from "./client";
 
-// TEMP bridge: use /api/mobile/auth/* until /api/web/auth/* exists.
-// When it does, only these paths + the mapper below change — not the UI.
-const LOGIN_PATH = "/api/mobile/auth/login";
-const ME_PATH = "/api/mobile/auth/me";
+// Dedicated web API (backend/web en agente-inmobiliario). Reemplazó al puente
+// temporal /api/mobile/auth/*. Cambiar de host = NEXT_PUBLIC_API_URL.
+const LOGIN_PATH = "/api/web/auth/login";
+const ME_PATH = "/api/web/auth/me";
 
 interface RawAgent {
   id: number | string;

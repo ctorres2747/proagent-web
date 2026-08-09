@@ -71,11 +71,13 @@ src/
     index.ts                # locator: USE_HTTP_API ? http : mocks
 ```
 
-### Migración a `/api/web/*`
+### API: `/api/web/*`
 
-Hoy los adapters HTTP usan el **puente temporal** `/api/mobile/*`. Cuando exista
-`/api/web/*` en `agente-inmobiliario` (`backend/web/`), **solo cambian los
-adapters en `src/services/http/*`** — las pantallas no se tocan.
+Los adapters HTTP consumen **`/api/web/*`** (módulo `backend/web/` en
+`agente-inmobiliario`): `auth/login`, `auth/me`, `properties` (+ `/{id}`), con
+reglas de inventario E-INV-01 por rol. Migrar de host = cambiar
+`NEXT_PUBLIC_API_URL`; las pantallas no dependen del transporte (solo
+`src/services/http/*`).
 
 ## Frontera de producto (público vs privado)
 

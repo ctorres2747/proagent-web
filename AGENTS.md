@@ -20,9 +20,9 @@ Parte de un workspace multi-repo:
 
 - **Stack fijo:** Next.js 15 App Router + TS estricto + Tailwind v4 + TanStack
   Query + tokens ProAgent. No cambiar de stack sin el Owner.
-- **No backend paralelo.** El backend es `agente-inmobiliario`. La API objetivo
-  es `/api/web/*` (módulo `backend/web/`). Puente temporal permitido:
-  `/api/mobile/*` hasta que exista `/api/web/*`.
+- **No backend paralelo.** El backend es `agente-inmobiliario`. El cliente
+  consume **`/api/web/*`** (módulo `backend/web/`; auth + properties con reglas
+  E-INV-01). El puente histórico `/api/mobile/*` quedó atrás.
 - **Cliente HTTP desacoplado:** cambiar de host = cambiar `NEXT_PUBLIC_API_URL`,
   nada más. Al migrar a `/api/web/*`, tocar **solo** `src/services/http/*`.
 - **NO** usar Expo Web como producto comercial. **NO** copiar
