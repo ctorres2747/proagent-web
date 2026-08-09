@@ -18,6 +18,9 @@ Parte de un workspace multi-repo:
 
 ## Reglas obligatorias
 
+- **Marca / diseño:** seguir [`BRAND.md`](BRAND.md) — guía de marca Proinversores
+  (color, tipografía, espaciado, componentes; tokens `--pa-*`). Es la fuente
+  única de diseño, idéntica en los 3 repos.
 - **Stack fijo:** Next.js 15 App Router + TS estricto + Tailwind v4 + TanStack
   Query + tokens ProAgent. No cambiar de stack sin el Owner.
 - **No backend paralelo.** El backend es `agente-inmobiliario`. La API objetivo
