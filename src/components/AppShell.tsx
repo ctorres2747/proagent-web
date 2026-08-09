@@ -35,7 +35,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
 
   return (
-    <div className="flex min-h-screen bg-[var(--pa-bg)] text-[var(--pa-ink)]">
+    <div className="flex min-h-screen bg-[image:var(--pa-bg-app)] text-[var(--pa-ink)]">
       {/* Sidebar */}
       <aside
         className={`sticky top-0 hidden h-screen shrink-0 flex-col border-r border-[var(--pa-border)] bg-[var(--pa-surface)] transition-[width] duration-150 md:flex ${
