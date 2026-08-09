@@ -15,7 +15,7 @@ export default function DashboardPage() {
   const completas = data?.filter((p) => p.completeness >= 100).length ?? 0;
 
   return (
-    <div>
+    <div className="px-6 py-8 md:px-10">
       <h1 className="text-2xl font-bold text-[var(--pa-navy)]">
         Hola, {session?.nombre ?? "agente"}
       </h1>
