@@ -64,19 +64,24 @@ apruebe una dirección final.
 éxito/disponible, naranja solo para pendiente/atención. **Nunca** usar estos
 tres como color decorativo o de fondo general.
 
-### Fondo alternativo — dashboards densos
+### Fondo general en degradado
 Degradado azulado muy sutil derivado del navy de marca (hue 240, igual que
-`#0A3D62`):
+`#0A3D62`); token `--pa-bg-app`:
 
 ```css
 radial-gradient(120% 100% at 0% 0%, oklch(97% 0.008 240) 0%, oklch(95% 0.014 240) 100%)
 ```
 
-No es un color de la paleta base: es una extensión para dar profundidad en
-interfaces densas tipo **dashboard/Kanban** (p. ej. el panel de captación
-interno), donde muchas tarjetas blancas necesitan más contraste con el fondo
-que el gris plano. **Reservar para ese tipo de pantallas**; las pantallas cara
-al cliente (app móvil, ProAgent Web) mantienen el fondo estándar `#F6F7F9`.
+Es una **extensión** de la paleta (no un color base) para dar profundidad al
+**fondo general** de la app, sobre todo donde hay muchas tarjetas blancas. Se
+aplica al **body + contenedor raíz** de:
+
+- **ProAgent Web** (fondo general de toda la app), y
+- las **interfaces internas densas** (dashboard/Kanban de `agente-inmobiliario`).
+
+Solo afecta al fondo: el resto de superficies (tarjetas, inputs, chips) siguen
+en blanco / `#F6F7F9` sólido. La **app móvil** mantiene el fondo plano
+`#F6F7F9` (pantalla compacta, una mano) salvo decisión futura.
 
 ---
 
