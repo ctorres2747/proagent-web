@@ -8,10 +8,11 @@ import type { ChannelStatus } from "@/design-system/channels";
 import { CHANNEL_ORDER } from "@/design-system/channels";
 import { apiFetch } from "./client";
 
-// TEMP bridge: use /api/mobile/properties* until /api/web/properties* exists.
-// When it does, only these paths + the mapper below change — not the UI.
-const LIST_PATH = "/api/mobile/properties";
-const detailPath = (id: string) => `/api/mobile/properties/${id}`;
+// Dedicated web API (backend/web en agente-inmobiliario). Reemplazó al puente
+// temporal /api/mobile/properties*. El DTO web ya viene en el shape que espera
+// el mapper de abajo (snake_case + channels), con reglas E-INV-01 por rol.
+const LIST_PATH = "/api/web/properties";
+const detailPath = (id: string) => `/api/web/properties/${id}`;
 
 interface RawProperty {
   id: number | string;
