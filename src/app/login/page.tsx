@@ -31,7 +31,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[var(--pa-bg)] px-6">
+    <div className="flex min-h-screen items-center justify-center bg-[image:var(--pa-bg-app)] px-6">
       <div className="w-full max-w-sm rounded-2xl bg-[var(--pa-surface)] p-8 shadow-sm">
         <div className="mb-6 text-center">
           <div className="text-2xl font-bold text-[var(--pa-navy)]">ProAgent</div>

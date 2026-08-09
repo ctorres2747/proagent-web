@@ -19,6 +19,14 @@
   --pa-warning-bg: #fceee0;
   --pa-danger-bg: #fbe7e4;
   --pa-info-bg: #e7eef4;
+  /* Fondo general de la app: degradado radial azulado muy sutil derivado del
+     navy de marca (#0A3D62, hue 240). Solo body + contenedor raíz; el resto de
+     superficies (tarjetas, inputs, chips) siguen usando --pa-bg sólido. */
+  --pa-bg-app: radial-gradient(
+    120% 100% at 0% 0%,
+    oklch(97% 0.008 240) 0%,
+    oklch(95% 0.014 240) 100%
+  );
 }
 
 @theme inline {
@@ -27,7 +35,7 @@
 
 html,
 body {
-  background: var(--pa-bg);
+  background: var(--pa-bg-app);
   color: var(--pa-ink);
   font-family: var(--font-plus-jakarta), system-ui, sans-serif;
 }
