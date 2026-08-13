@@ -42,6 +42,9 @@ export interface Property {
   condicion: Condition | null;
   features: string[];
   descripcion: string | null;
+  /** Teléfono de contacto del propietario (persistido en ficha). */
+  telefonoContacto: string | null;
+  nombreContacto: string | null;
   /** 0..100 completeness indicator (mirrors mobile). */
   completeness: number;
   portadaUrl: string | null;
@@ -53,4 +56,5 @@ export interface Property {
 export interface PropertiesService {
   list(token?: string): Promise<Property[]>;
   get(id: string, token?: string): Promise<Property>;
+  delete(id: string, token?: string): Promise<void>;
 }

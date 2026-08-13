@@ -40,6 +40,8 @@ const MOCK_PROPERTIES: Property[] = [
     features: ["Balcón", "Parqueadero visitantes", "Piscina"],
     descripcion:
       "Amplio apartamento con acabados de alta calidad, ubicado a pocas cuadras del Parque de Envigado. Cocina integral, balcón y conjunto cerrado con parqueadero.",
+    telefonoContacto: "3001112233",
+    nombreContacto: "Contacto demo",
     completeness: 92,
     portadaUrl: null,
     ownerAgenteId: "mock-admin",
@@ -75,6 +77,8 @@ const MOCK_PROPERTIES: Property[] = [
     condicion: "Usado",
     features: ["Patio", "Zona BBQ"],
     descripcion: "Casa familiar amplia en conjunto cerrado con zonas comunes.",
+    telefonoContacto: "3001112233",
+    nombreContacto: "Contacto demo",
     completeness: 64,
     portadaUrl: null,
     ownerAgenteId: "mock-admin",
@@ -105,6 +109,8 @@ const MOCK_PROPERTIES: Property[] = [
     condicion: "Usado",
     features: ["Ascensor", "Vigilancia 24h", "Balcón"],
     descripcion: "Apartamento luminoso a una cuadra del Segundo Parque de Laureles.",
+    telefonoContacto: "3001112233",
+    nombreContacto: "Contacto demo",
     completeness: 100,
     portadaUrl: null,
     ownerAgenteId: "mock-asesor",
@@ -140,6 +146,8 @@ const MOCK_PROPERTIES: Property[] = [
     condicion: "Usado",
     features: [],
     descripcion: null,
+    telefonoContacto: "3001112233",
+    nombreContacto: "Contacto demo",
     completeness: 40,
     portadaUrl: null,
     ownerAgenteId: "mock-asesor",
@@ -170,6 +178,8 @@ const MOCK_PROPERTIES: Property[] = [
     condicion: "Usado",
     features: ["Piscina", "Zona BBQ", "Vigilancia 24h"],
     descripcion: "Casa campestre con amplios jardines y zonas sociales.",
+    telefonoContacto: "3001112233",
+    nombreContacto: "Contacto demo",
     completeness: 85,
     portadaUrl: null,
     ownerAgenteId: "mock-admin",
@@ -206,6 +216,8 @@ const MOCK_PROPERTIES: Property[] = [
     condicion: "Usado",
     features: ["Ascensor", "Vigilancia 24h"],
     descripcion: "Oficina lista para estrenar en zona empresarial de El Poblado.",
+    telefonoContacto: "3001112233",
+    nombreContacto: "Contacto demo",
     completeness: 70,
     portadaUrl: null,
     ownerAgenteId: "mock-admin",
@@ -223,5 +235,11 @@ export const propertiesService: PropertiesService = {
     const found = MOCK_PROPERTIES.find((p) => p.id === id);
     if (!found) throw new Error(`Propiedad ${id} no encontrada`);
     return found;
+  },
+  async delete(id: string): Promise<void> {
+    await delay(200 + Math.random() * 200);
+    const idx = MOCK_PROPERTIES.findIndex((p) => p.id === id);
+    if (idx < 0) throw new Error(`Propiedad ${id} no encontrada`);
+    MOCK_PROPERTIES.splice(idx, 1);
   },
 };

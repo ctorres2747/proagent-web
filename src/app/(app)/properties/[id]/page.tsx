@@ -72,8 +72,28 @@ export default function PublishWizardPage() {
 
   return (
     <div className="px-6 py-8 md:px-10">
-      <div className="mb-1.5 text-[13px] font-semibold text-[var(--pa-faint)]">
-        {property.titulo} · {property.code}
+      <div className="mb-1.5 flex flex-wrap items-center justify-between gap-3">
+        <div className="text-[13px] font-semibold text-[var(--pa-faint)]">
+          {property.titulo} · {property.code}
+        </div>
+        <button
+          type="button"
+          onClick={async () => {
+            const ok = window.confirm(
+              `¿Eliminar «${property.titulo}»? Esta acción no se puede deshacer.`,
+            );
+            if (!ok) return;
+            try {
+              await propertiesService.delete(property.id, token ?? undefined);
+              router.push("/properties");
+            } catch {
+              window.alert("No se pudo eliminar la propiedad.");
+            }
+          }}
+          className="text-xs font-bold text-[var(--pa-danger)] hover:underline"
+        >
+          Eliminar propiedad
+        </button>
       </div>
 
       {/* Stepper */}
@@ -213,7 +233,10 @@ function ContentStep({
     { label: "Título y precio", done: Boolean(property.titulo && property.precio) },
     { label: "Ubicación", done: Boolean(property.municipio) },
     { label: "Fotos", done: property.completeness >= 100 },
-    { label: "Contacto", done: property.completeness >= 100 },
+    {
+      label: "Contacto",
+      done: Boolean(property.telefonoContacto?.trim()),
+    },
   ];
   return (
     <div className="grid grid-cols-1 items-start gap-7 lg:grid-cols-[1fr_300px]">
@@ -288,6 +311,13 @@ function ContentStep({
                 ))}
               </div>
             </div>
+          </div>
+        </Card>
+
+        <Card title="Contacto">
+          <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
+            <Field label="Nombre" value={property.nombreContacto} />
+            <Field label="Teléfono *" value={property.telefonoContacto} />
           </div>
         </Card>
 
