@@ -56,5 +56,64 @@ export interface Property {
 export interface PropertiesService {
   list(token?: string): Promise<Property[]>;
   get(id: string, token?: string): Promise<Property>;
+  create(
+    data: Partial<
+      Pick<
+        Property,
+        | "titulo"
+        | "descripcion"
+        | "tipo"
+        | "municipio"
+        | "barrio"
+        | "direccion"
+        | "codigoPostal"
+        | "precio"
+        | "alcobas"
+        | "banos"
+        | "parqueaderos"
+        | "estrato"
+        | "piso"
+        | "areaM2"
+        | "areaPrivada"
+        | "areaConstruida"
+        | "administracion"
+        | "anioConstruccion"
+        | "condicion"
+        | "telefonoContacto"
+        | "nombreContacto"
+      >
+    >,
+    token?: string,
+  ): Promise<Property>;
+  update(
+    id: string,
+    data: Partial<
+      Pick<
+        Property,
+        | "titulo"
+        | "descripcion"
+        | "tipo"
+        | "municipio"
+        | "barrio"
+        | "direccion"
+        | "codigoPostal"
+        | "precio"
+        | "alcobas"
+        | "banos"
+        | "parqueaderos"
+        | "estrato"
+        | "piso"
+        | "areaM2"
+        | "areaPrivada"
+        | "areaConstruida"
+        | "administracion"
+        | "anioConstruccion"
+        | "condicion"
+        | "telefonoContacto"
+        | "nombreContacto"
+      >
+    >,
+    token?: string,
+  ): Promise<Property>;
   delete(id: string, token?: string): Promise<void>;
 }

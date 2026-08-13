@@ -1,16 +1,22 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/features/auth/AuthProvider";
-import { propertiesService } from "@/services";
+import { propertiesService, publicationsService } from "@/services";
 import type { Property } from "@/services/interfaces/properties";
+import type {
+  ChannelResult,
+  ChannelResultStatus,
+  Publication,
+} from "@/services/interfaces/publications";
 import {
   CHANNEL_META,
   CHANNEL_ORDER,
   STATUS_META,
   type ChannelId,
+  type ChannelStatus,
 } from "@/design-system/channels";
 import { formatPrice } from "@/lib/format";
 
@@ -35,19 +41,252 @@ const label = "mb-1.5 text-xs font-bold text-[var(--pa-muted)]";
 const input =
   "w-full rounded-[10px] border border-[var(--pa-border)] bg-[var(--pa-bg)] px-3.5 py-2.5 text-[13px] font-semibold text-[var(--pa-ink)] outline-none focus:border-[var(--pa-navy)]";
 
+function mapResultStatus(status: ChannelResultStatus): ChannelStatus {
+  if (status === "published") return "published";
+  if (status === "failed") return "error";
+  if (status === "unavailable") return "none";
+  return "progress";
+}
+
+function formatPublishedAt(iso: string | null): string {
+  if (!iso) return "";
+  try {
+    return new Date(iso).toLocaleString("es-CO", {
+      dateStyle: "short",
+      timeStyle: "short",
+    });
+  } catch {
+    return iso;
+  }
+}
+
 export default function PublishWizardPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { token } = useAuth();
   const [step, setStep] = useState<StepId>("content");
+  const [publication, setPublication] = useState<Publication | null>(null);
+  const [draftBusy, setDraftBusy] = useState(false);
+  const [draftError, setDraftError] = useState<string | null>(null);
+  const [actionBusy, setActionBusy] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
 
-  const { data: property, isLoading, isError } = useQuery({
+  // Content form
+  const [titulo, setTitulo] = useState("");
+  const [descripcion, setDescripcion] = useState("");
+  const [telefonoContacto, setTelefonoContacto] = useState("");
+  const [nombreContacto, setNombreContacto] = useState("");
+  const [municipio, setMunicipio] = useState("");
+  const [barrio, setBarrio] = useState("");
+
+  // Customize form
+  const [sharedTitle, setSharedTitle] = useState("");
+  const [sharedBody, setSharedBody] = useState("");
+
+  // Channels
+  const [selectedChannels, setSelectedChannels] = useState<
+    Record<ChannelId, boolean>
+  >({
+    wasi: true,
+    facebook: true,
+    instagram: true,
+    whatsapp: false,
+    web: true,
+  });
+
+  const {
+    data: property,
+    isLoading,
+    isError,
+  } = useQuery({
     queryKey: ["property", params.id],
     queryFn: () => propertiesService.get(params.id, token ?? undefined),
     enabled: Boolean(params.id),
   });
 
-  if (isLoading) {
+  // Seed form from property when loaded
+  useEffect(() => {
+    if (!property) return;
+    setTitulo(property.titulo ?? "");
+    setDescripcion(property.descripcion ?? "");
+    setTelefonoContacto(property.telefonoContacto ?? "");
+    setNombreContacto(property.nombreContacto ?? "");
+    setMunicipio(property.municipio ?? "");
+    setBarrio(property.barrio ?? "");
+  }, [property]);
+
+  // Create draft when property id is available; deps omit full property
+  // object so query invalidation does not recreate the draft mid-wizard.
+  useEffect(() => {
+    if (!property) return;
+    const propId = property.id;
+    const seedTitle = property.titulo;
+    const seedBody = property.descripcion;
+    let cancelled = false;
+    setPublication(null);
+    setDraftBusy(true);
+    setDraftError(null);
+
+    publicationsService
+      .createDraft(propId, token ?? undefined)
+      .then((pub) => {
+        if (cancelled) return;
+        setPublication(pub);
+        setSharedTitle(pub.sharedTitle || seedTitle || "");
+        setSharedBody(pub.sharedBody || seedBody || "");
+        if (pub.selectedChannels.length === 0) {
+          setSelectedChannels({
+            wasi: true,
+            facebook: true,
+            instagram: true,
+            whatsapp: false,
+            web: true,
+          });
+        } else {
+          const toggles = Object.fromEntries(
+            CHANNEL_ORDER.map((id) => [
+              id,
+              pub.selectedChannels.includes(id),
+            ]),
+          ) as Record<ChannelId, boolean>;
+          setSelectedChannels(toggles);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setDraftError("No se pudo crear el borrador de publicación.");
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setDraftBusy(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+    // Solo re-crear borrador al cambiar de propiedad (no en cada refetch).
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- property?.id
+  }, [property?.id, token]);
+
+  const enabledChannels = useMemo(
+    () => CHANNEL_ORDER.filter((id) => selectedChannels[id]),
+    [selectedChannels],
+  );
+
+  const onContentContinue = async () => {
+    if (!property || !publication) return;
+    setActionBusy(true);
+    setActionError(null);
+    try {
+      await propertiesService.update(
+        property.id,
+        {
+          titulo,
+          descripcion,
+          telefonoContacto,
+          nombreContacto,
+          municipio,
+          barrio: barrio || null,
+        },
+        token ?? undefined,
+      );
+      const pub = await publicationsService.patch(
+        publication.id,
+        { sharedTitle: titulo, sharedBody: descripcion },
+        token ?? undefined,
+      );
+      setPublication(pub);
+      setSharedTitle(pub.sharedTitle || titulo);
+      setSharedBody(pub.sharedBody || descripcion);
+      await queryClient.invalidateQueries({
+        queryKey: ["property", params.id],
+      });
+      setStep("photos");
+    } catch {
+      setActionError("No se pudo guardar el contenido.");
+    } finally {
+      setActionBusy(false);
+    }
+  };
+
+  const onChannelsContinue = async () => {
+    if (!publication) return;
+    setActionBusy(true);
+    setActionError(null);
+    try {
+      const pub = await publicationsService.patch(
+        publication.id,
+        { selectedChannels: enabledChannels },
+        token ?? undefined,
+      );
+      setPublication(pub);
+      setStep("customize");
+    } catch {
+      setActionError("No se pudieron guardar los canales.");
+    } finally {
+      setActionBusy(false);
+    }
+  };
+
+  const onCustomizeContinue = async () => {
+    if (!publication) return;
+    setActionBusy(true);
+    setActionError(null);
+    try {
+      const pub = await publicationsService.patch(
+        publication.id,
+        { sharedTitle, sharedBody },
+        token ?? undefined,
+      );
+      setPublication(pub);
+      setStep("preview");
+    } catch {
+      setActionError("No se pudo guardar la personalización.");
+    } finally {
+      setActionBusy(false);
+    }
+  };
+
+  const onPublish = async () => {
+    if (!publication) return;
+    setActionBusy(true);
+    setActionError(null);
+    try {
+      const pub = await publicationsService.publish(
+        publication.id,
+        undefined,
+        token ?? undefined,
+      );
+      setPublication(pub);
+      setStep("results");
+    } catch {
+      setActionError("No se pudo publicar. Intenta de nuevo.");
+    } finally {
+      setActionBusy(false);
+    }
+  };
+
+  const onSaveDraft = async () => {
+    if (!publication) return;
+    setActionBusy(true);
+    setActionError(null);
+    try {
+      const pub = await publicationsService.patch(
+        publication.id,
+        { status: "draft" },
+        token ?? undefined,
+      );
+      setPublication(pub);
+      router.push("/properties");
+    } catch {
+      setActionError("No se pudo guardar el borrador.");
+    } finally {
+      setActionBusy(false);
+    }
+  };
+
+  if (isLoading || draftBusy) {
     return (
       <div className="px-6 py-10 text-sm text-[var(--pa-muted)] md:px-10">
         Cargando propiedad…
@@ -69,6 +308,32 @@ export default function PublishWizardPage() {
       </div>
     );
   }
+  if (draftError || !publication) {
+    return (
+      <div className="px-6 py-10 md:px-10">
+        <button
+          onClick={() => router.push("/properties")}
+          className="text-sm text-[var(--pa-muted)] hover:underline"
+        >
+          ← Propiedades
+        </button>
+        <p className="mt-4 text-sm text-[var(--pa-danger)]">
+          {draftError ?? "No se pudo crear el borrador de publicación."}
+        </p>
+      </div>
+    );
+  }
+
+  // Display property with local edits overlaid for preview
+  const displayProperty: Property = {
+    ...property,
+    titulo: sharedTitle || titulo || property.titulo,
+    descripcion: sharedBody || descripcion || property.descripcion,
+    telefonoContacto,
+    nombreContacto,
+    municipio: municipio || property.municipio,
+    barrio: barrio || property.barrio,
+  };
 
   return (
     <div className="px-6 py-8 md:px-10">
@@ -118,24 +383,66 @@ export default function PublishWizardPage() {
         ))}
       </div>
 
-      {step === "content" && (
-        <ContentStep property={property} onNext={() => setStep("photos")} />
+      {actionError && (
+        <p className="mb-4 text-sm text-[var(--pa-danger)]">{actionError}</p>
       )}
-      {step === "photos" && <PhotosStep onNext={() => setStep("channels")} />}
+
+      {step === "content" && (
+        <ContentStep
+          property={property}
+          titulo={titulo}
+          descripcion={descripcion}
+          telefonoContacto={telefonoContacto}
+          nombreContacto={nombreContacto}
+          municipio={municipio}
+          barrio={barrio}
+          onTitulo={setTitulo}
+          onDescripcion={setDescripcion}
+          onTelefono={setTelefonoContacto}
+          onNombre={setNombreContacto}
+          onMunicipio={setMunicipio}
+          onBarrio={setBarrio}
+          busy={actionBusy}
+          onNext={() => void onContentContinue()}
+        />
+      )}
+      {step === "photos" && (
+        <PhotosStep onNext={() => setStep("channels")} />
+      )}
       {step === "channels" && (
-        <ChannelsStep onNext={() => setStep("customize")} />
+        <ChannelsStep
+          toggles={selectedChannels}
+          onToggle={(id) =>
+            setSelectedChannels((t) => ({ ...t, [id]: !t[id] }))
+          }
+          busy={actionBusy}
+          onNext={() => void onChannelsContinue()}
+        />
       )}
       {step === "customize" && (
-        <CustomizeStep property={property} onNext={() => setStep("preview")} />
+        <CustomizeStep
+          sharedTitle={sharedTitle}
+          sharedBody={sharedBody}
+          onTitle={setSharedTitle}
+          onBody={setSharedBody}
+          busy={actionBusy}
+          onNext={() => void onCustomizeContinue()}
+        />
       )}
       {step === "preview" && (
         <PreviewStep
-          property={property}
-          onPublish={() => setStep("results")}
-          onDraft={() => router.push("/properties")}
+          property={displayProperty}
+          busy={actionBusy}
+          onPublish={() => void onPublish()}
+          onDraft={() => void onSaveDraft()}
         />
       )}
-      {step === "results" && <ResultsStep property={property} />}
+      {step === "results" && (
+        <ResultsStep
+          property={displayProperty}
+          channelResults={publication.channelResults}
+        />
+      )}
     </div>
   );
 }
@@ -173,7 +480,28 @@ function Chip({ active, children }: { active: boolean; children: React.ReactNode
   );
 }
 
-function Field({
+function ControlledField({
+  label: l,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  return (
+    <div>
+      <div className={label}>{l}</div>
+      <input
+        className={input}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+      />
+    </div>
+  );
+}
+
+function ReadOnlyField({
   label: l,
   value,
 }: {
@@ -183,7 +511,7 @@ function Field({
   return (
     <div>
       <div className={label}>{l}</div>
-      <input className={input} defaultValue={value ?? ""} />
+      <input className={input} defaultValue={value ?? ""} readOnly />
     </div>
   );
 }
@@ -192,16 +520,19 @@ function PrimaryBlock({
   children,
   onClick,
   className = "",
+  disabled = false,
 }: {
   children: React.ReactNode;
   onClick: () => void;
   className?: string;
+  disabled?: boolean;
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className={`rounded-xl bg-[var(--pa-navy)] px-6 py-3.5 text-center text-[13px] font-bold text-white transition-opacity hover:opacity-90 ${className}`}
+      disabled={disabled}
+      className={`rounded-xl bg-[var(--pa-navy)] px-6 py-3.5 text-center text-[13px] font-bold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50 ${className}`}
     >
       {children}
     </button>
@@ -224,18 +555,44 @@ const ALL_FEATURES = [
 
 function ContentStep({
   property,
+  titulo,
+  descripcion,
+  telefonoContacto,
+  nombreContacto,
+  municipio,
+  barrio,
+  onTitulo,
+  onDescripcion,
+  onTelefono,
+  onNombre,
+  onMunicipio,
+  onBarrio,
+  busy,
   onNext,
 }: {
   property: Property;
+  titulo: string;
+  descripcion: string;
+  telefonoContacto: string;
+  nombreContacto: string;
+  municipio: string;
+  barrio: string;
+  onTitulo: (v: string) => void;
+  onDescripcion: (v: string) => void;
+  onTelefono: (v: string) => void;
+  onNombre: (v: string) => void;
+  onMunicipio: (v: string) => void;
+  onBarrio: (v: string) => void;
+  busy: boolean;
   onNext: () => void;
 }) {
   const checklist = [
-    { label: "Título y precio", done: Boolean(property.titulo && property.precio) },
-    { label: "Ubicación", done: Boolean(property.municipio) },
+    { label: "Título y precio", done: Boolean(titulo && property.precio) },
+    { label: "Ubicación", done: Boolean(municipio) },
     { label: "Fotos", done: property.completeness >= 100 },
     {
       label: "Contacto",
-      done: Boolean(property.telefonoContacto?.trim()),
+      done: Boolean(telefonoContacto.trim()),
     },
   ];
   return (
@@ -243,12 +600,17 @@ function ContentStep({
       <div className="flex min-w-0 flex-col gap-6">
         <Card title="Básicos">
           <div className="grid gap-4">
-            <Field label="Título *" value={property.titulo} />
+            <ControlledField
+              label="Título *"
+              value={titulo}
+              onChange={onTitulo}
+            />
             <div>
               <div className={label}>Descripción</div>
               <textarea
                 className={`${input} min-h-[88px] font-normal leading-relaxed text-[#45525E]`}
-                defaultValue={property.descripcion ?? ""}
+                value={descripcion}
+                onChange={(e) => onDescripcion(e.target.value)}
               />
             </div>
             <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-3">
@@ -272,7 +634,7 @@ function ContentStep({
                   ))}
                 </div>
               </div>
-              <Field
+              <ReadOnlyField
                 label="Precio (COP) *"
                 value={formatPrice(property.precio, property.esArriendo)}
               />
@@ -282,25 +644,45 @@ function ContentStep({
 
         <Card title="Ubicación">
           <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
-            <Field label="Ciudad" value={property.municipio} />
-            <Field label="Barrio / zona" value={property.barrio} />
-            <Field label="Dirección" value={property.direccion} />
-            <Field label="Código postal" value={property.codigoPostal} />
+            <ControlledField
+              label="Ciudad"
+              value={municipio}
+              onChange={onMunicipio}
+            />
+            <ControlledField
+              label="Barrio / zona"
+              value={barrio}
+              onChange={onBarrio}
+            />
+            <ReadOnlyField label="Dirección" value={property.direccion} />
+            <ReadOnlyField
+              label="Código postal"
+              value={property.codigoPostal}
+            />
           </div>
         </Card>
 
         <Card title="Detalles">
           <div className="grid grid-cols-2 gap-3.5 sm:grid-cols-4">
-            <Field label="Alcobas" value={property.alcobas} />
-            <Field label="Baños" value={property.banos} />
-            <Field label="Parqueaderos" value={property.parqueaderos} />
-            <Field label="Estrato" value={property.estrato} />
-            <Field label="Piso" value={property.piso} />
-            <Field label="Área (m²)" value={property.areaM2} />
-            <Field label="Área privada" value={property.areaPrivada} />
-            <Field label="Área construida" value={property.areaConstruida} />
-            <Field label="Administración (COP)" value={property.administracion} />
-            <Field label="Año de construcción" value={property.anioConstruccion} />
+            <ReadOnlyField label="Alcobas" value={property.alcobas} />
+            <ReadOnlyField label="Baños" value={property.banos} />
+            <ReadOnlyField label="Parqueaderos" value={property.parqueaderos} />
+            <ReadOnlyField label="Estrato" value={property.estrato} />
+            <ReadOnlyField label="Piso" value={property.piso} />
+            <ReadOnlyField label="Área (m²)" value={property.areaM2} />
+            <ReadOnlyField label="Área privada" value={property.areaPrivada} />
+            <ReadOnlyField
+              label="Área construida"
+              value={property.areaConstruida}
+            />
+            <ReadOnlyField
+              label="Administración (COP)"
+              value={property.administracion}
+            />
+            <ReadOnlyField
+              label="Año de construcción"
+              value={property.anioConstruccion}
+            />
             <div className="col-span-2">
               <div className={label}>Estado</div>
               <div className="flex flex-wrap gap-1.5">
@@ -316,8 +698,16 @@ function ContentStep({
 
         <Card title="Contacto">
           <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
-            <Field label="Nombre" value={property.nombreContacto} />
-            <Field label="Teléfono *" value={property.telefonoContacto} />
+            <ControlledField
+              label="Nombre"
+              value={nombreContacto}
+              onChange={onNombre}
+            />
+            <ControlledField
+              label="Teléfono *"
+              value={telefonoContacto}
+              onChange={onTelefono}
+            />
           </div>
         </Card>
 
@@ -354,7 +744,9 @@ function ContentStep({
             ))}
           </ul>
         </Card>
-        <PrimaryBlock onClick={onNext}>Continuar a fotos</PrimaryBlock>
+        <PrimaryBlock onClick={onNext} disabled={busy}>
+          {busy ? "Guardando…" : "Continuar a fotos"}
+        </PrimaryBlock>
       </div>
     </div>
   );
@@ -403,14 +795,17 @@ function PhotosStep({ onNext }: { onNext: () => void }) {
   );
 }
 
-function ChannelsStep({ onNext }: { onNext: () => void }) {
-  const [toggles, setToggles] = useState<Record<ChannelId, boolean>>({
-    wasi: true,
-    facebook: true,
-    instagram: true,
-    whatsapp: false,
-    web: true,
-  });
+function ChannelsStep({
+  toggles,
+  onToggle,
+  busy,
+  onNext,
+}: {
+  toggles: Record<ChannelId, boolean>;
+  onToggle: (id: ChannelId) => void;
+  busy: boolean;
+  onNext: () => void;
+}) {
   const aiActions = ["Sugerir", "Mejorar", "Acortar", "Más profesional", "Más persuasivo"];
   return (
     <div className="max-w-[920px]">
@@ -445,7 +840,7 @@ function ChannelsStep({ onNext }: { onNext: () => void }) {
                 <button
                   type="button"
                   aria-label={`Alternar ${meta.name}`}
-                  onClick={() => setToggles((t) => ({ ...t, [id]: !t[id] }))}
+                  onClick={() => onToggle(id)}
                   className={`relative h-[22px] w-10 shrink-0 rounded-full transition-colors ${
                     on ? "bg-[var(--pa-navy)]" : "bg-[var(--pa-border)]"
                   }`}
@@ -499,8 +894,8 @@ function ChannelsStep({ onNext }: { onNext: () => void }) {
         </p>
       </div>
 
-      <PrimaryBlock onClick={onNext} className="w-[240px]">
-        Continuar a personalizar
+      <PrimaryBlock onClick={onNext} disabled={busy} className="w-[240px]">
+        {busy ? "Guardando…" : "Continuar a personalizar"}
       </PrimaryBlock>
     </div>
   );
@@ -514,10 +909,18 @@ const PLATFORM_LIMITS: Record<string, number> = {
 };
 
 function CustomizeStep({
-  property,
+  sharedTitle,
+  sharedBody,
+  onTitle,
+  onBody,
+  busy,
   onNext,
 }: {
-  property: Property;
+  sharedTitle: string;
+  sharedBody: string;
+  onTitle: (v: string) => void;
+  onBody: (v: string) => void;
+  busy: boolean;
   onNext: () => void;
 }) {
   const platforms: { id: ChannelId; label: string }[] = [
@@ -527,18 +930,6 @@ function CustomizeStep({
     { id: "whatsapp", label: "WhatsApp" },
   ];
   const [active, setActive] = useState<ChannelId>("wasi");
-
-  const body = useMemo(() => {
-    const base =
-      property.descripcion ??
-      `${property.tipo} en ${property.municipio}. ${formatPrice(property.precio, property.esArriendo)}.`;
-    if (active === "instagram")
-      return `${base} #${property.municipio.replace(/\s/g, "")} #Inmuebles #Proinversores`;
-    if (active === "whatsapp")
-      return `${formatPrice(property.precio, property.esArriendo)} · ${property.tipo} en ${property.municipio}.`;
-    return base;
-  }, [active, property]);
-
   const limit = PLATFORM_LIMITS[active] ?? 1000;
 
   return (
@@ -562,16 +953,21 @@ function CustomizeStep({
       <div className="grid grid-cols-1 gap-7 lg:grid-cols-[1fr_340px]">
         <Card>
           <div className={label}>Título</div>
-          <input className={`${input} mb-4`} defaultValue={property.titulo} />
+          <input
+            className={`${input} mb-4`}
+            value={sharedTitle}
+            onChange={(e) => onTitle(e.target.value)}
+          />
           <div className="mb-1.5 flex items-center justify-between">
             <div className={label}>Descripción</div>
             <span className="text-[11px] text-[var(--pa-faint)]">
-              {body.length}/{limit}
+              {sharedBody.length}/{limit}
             </span>
           </div>
           <textarea
             className={`${input} min-h-[140px] font-normal leading-relaxed text-[#45525E]`}
-            defaultValue={body}
+            value={sharedBody}
+            onChange={(e) => onBody(e.target.value)}
           />
         </Card>
         <div>
@@ -582,17 +978,17 @@ function CustomizeStep({
             <div className="aspect-[4/3] w-full bg-[repeating-linear-gradient(45deg,#E4E8EC,#E4E8EC_10px,#EDEFF2_10px,#EDEFF2_20px)]" />
             <div className="p-3.5">
               <div className="mb-1 text-[13px] font-bold text-[var(--pa-ink)]">
-                {property.titulo}
+                {sharedTitle}
               </div>
               <div className="line-clamp-4 text-xs leading-relaxed text-[#45525E]">
-                {body}
+                {sharedBody}
               </div>
             </div>
           </div>
         </div>
       </div>
-      <PrimaryBlock onClick={onNext} className="mt-6 w-[220px]">
-        Ir a vista previa
+      <PrimaryBlock onClick={onNext} disabled={busy} className="mt-6 w-[220px]">
+        {busy ? "Guardando…" : "Ir a vista previa"}
       </PrimaryBlock>
     </div>
   );
@@ -600,10 +996,12 @@ function CustomizeStep({
 
 function PreviewStep({
   property,
+  busy,
   onPublish,
   onDraft,
 }: {
   property: Property;
+  busy: boolean;
   onPublish: () => void;
   onDraft: () => void;
 }) {
@@ -651,18 +1049,22 @@ function PreviewStep({
         </Card>
         {!scheduling ? (
           <>
-            <PrimaryBlock onClick={onPublish}>Publicar ahora</PrimaryBlock>
+            <PrimaryBlock onClick={onPublish} disabled={busy}>
+              {busy ? "Publicando…" : "Publicar ahora"}
+            </PrimaryBlock>
             <button
               type="button"
               onClick={() => setScheduling(true)}
-              className="rounded-xl border border-[var(--pa-border)] px-6 py-3 text-center text-[13px] font-bold text-[var(--pa-ink)]"
+              disabled={busy}
+              className="rounded-xl border border-[var(--pa-border)] px-6 py-3 text-center text-[13px] font-bold text-[var(--pa-ink)] disabled:opacity-50"
             >
               Programar…
             </button>
             <button
               type="button"
               onClick={onDraft}
-              className="py-1.5 text-center text-[13px] font-bold text-[var(--pa-muted)]"
+              disabled={busy}
+              className="py-1.5 text-center text-[13px] font-bold text-[var(--pa-muted)] disabled:opacity-50"
             >
               Guardar como borrador
             </button>
@@ -677,8 +1079,8 @@ function PreviewStep({
               <div className={label}>Hora</div>
               <input className={input} type="time" defaultValue="17:00" />
             </div>
-            <PrimaryBlock onClick={onPublish}>
-              Confirmar programación
+            <PrimaryBlock onClick={onPublish} disabled={busy}>
+              {busy ? "Publicando…" : "Confirmar programación"}
             </PrimaryBlock>
           </div>
         )}
@@ -687,33 +1089,42 @@ function PreviewStep({
   );
 }
 
-function ResultsStep({ property }: { property: Property }) {
-  // Derived demo results: connected channels succeed, whatsapp disconnected,
-  // facebook shows a retryable error to exercise the error UI.
+function ResultsStep({
+  property,
+  channelResults,
+}: {
+  property: Property;
+  channelResults: ChannelResult[];
+}) {
   const results = CHANNEL_ORDER.map((id) => {
-    if (id === "whatsapp")
+    const found = channelResults.find((r) => r.channelId === id);
+    if (!found) {
       return {
         id,
-        status: "none" as const,
+        status: "none" as ChannelStatus,
         meta: "No se intentó publicar",
-        error: null,
+        error: null as string | null,
       };
-    if (id === "facebook")
-      return {
-        id,
-        status: "error" as const,
-        meta: "Hoy · 9:13 AM",
-        error: "La página de Facebook no tiene permisos de publicación.",
-      };
+    }
+    const uiStatus = mapResultStatus(found.status);
     return {
       id,
-      status: "published" as const,
-      meta: "Hoy · 9:12 AM",
-      error: null,
+      status: uiStatus,
+      meta: found.publishedAt
+        ? formatPublishedAt(found.publishedAt)
+        : found.status === "pending" || found.status === "publishing"
+          ? "En proceso…"
+          : found.status === "failed"
+            ? "Falló"
+            : STATUS_META[uiStatus].label,
+      error: found.errorMessage,
     };
   });
   const publishedCount = results.filter((r) => r.status === "published").length;
-  const pct = Math.round((publishedCount / results.length) * 100);
+  const pct =
+    results.length === 0
+      ? 0
+      : Math.round((publishedCount / results.length) * 100);
 
   return (
     <div className="max-w-[760px]">
@@ -754,7 +1165,9 @@ function ResultsStep({ property }: { property: Property }) {
           {r.error && (
             <button
               type="button"
-              className="whitespace-nowrap rounded-lg border border-[var(--pa-border)] px-3.5 py-1.5 text-[11px] font-bold text-[var(--pa-ink)]"
+              disabled
+              title="Reintento disponible en Part B"
+              className="whitespace-nowrap rounded-lg border border-[var(--pa-border)] px-3.5 py-1.5 text-[11px] font-bold text-[var(--pa-ink)] opacity-50"
             >
               Reintentar
             </button>

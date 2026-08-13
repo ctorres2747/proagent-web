@@ -39,8 +39,8 @@ export default function DashboardPage() {
       <div className="mt-8 rounded-2xl border border-[var(--pa-border)] bg-[var(--pa-surface)] p-6">
         <h2 className="font-semibold">Próximos pasos</h2>
         <p className="mt-1 text-sm text-[var(--pa-muted)]">
-          Revisa tus propiedades y prepara publicaciones multicanal. La
-          publicación de escritorio llega en E-WEB-01.
+          Revisa tus propiedades y prepara publicaciones multicanal. Abre una
+          propiedad para publicar.
         </p>
       </div>
     </div>
