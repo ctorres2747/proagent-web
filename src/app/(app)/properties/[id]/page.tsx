@@ -407,7 +407,16 @@ export default function PublishWizardPage() {
         />
       )}
       {step === "photos" && (
-        <PhotosStep onNext={() => setStep("channels")} />
+        <PhotosStep
+          property={property}
+          token={token ?? undefined}
+          onPropertyUpdated={() =>
+            void queryClient.invalidateQueries({
+              queryKey: ["property", params.id],
+            })
+          }
+          onNext={() => setStep("channels")}
+        />
       )}
       {step === "channels" && (
         <ChannelsStep
@@ -415,6 +424,12 @@ export default function PublishWizardPage() {
           onToggle={(id) =>
             setSelectedChannels((t) => ({ ...t, [id]: !t[id] }))
           }
+          publicationId={publication.id}
+          token={token ?? undefined}
+          onAiApplied={(title, body) => {
+            setSharedTitle(title);
+            setSharedBody(body);
+          }}
           busy={actionBusy}
           onNext={() => void onChannelsContinue()}
         />
@@ -423,6 +438,7 @@ export default function PublishWizardPage() {
         <CustomizeStep
           sharedTitle={sharedTitle}
           sharedBody={sharedBody}
+          portadaUrl={property.portadaUrl}
           onTitle={setSharedTitle}
           onBody={setSharedBody}
           busy={actionBusy}
@@ -440,7 +456,21 @@ export default function PublishWizardPage() {
       {step === "results" && (
         <ResultsStep
           property={displayProperty}
+          publicationId={publication.id}
           channelResults={publication.channelResults}
+          token={token ?? undefined}
+          onResultUpdated={(result) => {
+            setPublication((prev) => {
+              if (!prev) return prev;
+              const others = prev.channelResults.filter(
+                (r) => r.channelId !== result.channelId,
+              );
+              return {
+                ...prev,
+                channelResults: [...others, result],
+              };
+            });
+          }}
         />
       )}
     </div>
@@ -752,27 +782,83 @@ function ContentStep({
   );
 }
 
-function PhotosStep({ onNext }: { onNext: () => void }) {
-  const photos = [
-    "sala principal",
-    "cocina integral",
-    "alcoba 1",
-    "alcoba 2",
-    "baño",
-    "balcón",
-  ];
+function PhotosStep({
+  property,
+  token,
+  onPropertyUpdated,
+  onNext,
+}: {
+  property: Property;
+  token?: string;
+  onPropertyUpdated: () => void;
+  onNext: () => void;
+}) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const fotos = property.fotos ?? [];
+
+  const run = async (fn: () => Promise<void>) => {
+    setBusy(true);
+    setError(null);
+    try {
+      await fn();
+      onPropertyUpdated();
+    } catch {
+      setError("No se pudo actualizar las fotos.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const onUpload = (files: FileList | null) => {
+    if (!files?.length) return;
+    void run(async () => {
+      await propertiesService.uploadPhotos(
+        property.id,
+        Array.from(files),
+        token,
+      );
+    });
+  };
+
+  const onDelete = (photoId: string) => {
+    void run(async () => {
+      await propertiesService.deletePhoto(property.id, photoId, token);
+    });
+  };
+
+  const move = (index: number, dir: -1 | 1) => {
+    const next = index + dir;
+    if (next < 0 || next >= fotos.length) return;
+    const ids = fotos.map((f) => f.id);
+    const tmp = ids[index];
+    ids[index] = ids[next];
+    ids[next] = tmp;
+    void run(async () => {
+      await propertiesService.reorderPhotos(property.id, ids, token);
+    });
+  };
+
   return (
     <div className="max-w-[920px]">
       <div className="mb-4 text-[13px] text-[var(--pa-muted)]">
-        La primera foto es la portada. Arrastra para reordenar.
+        La primera foto es la portada. Usa las flechas para reordenar.
       </div>
+      {error && (
+        <p className="mb-3 text-sm text-[var(--pa-danger)]">{error}</p>
+      )}
       <div className="mb-5 grid grid-cols-[repeat(auto-fill,minmax(160px,1fr))] gap-3.5">
-        {photos.map((p, i) => (
+        {fotos.map((p, i) => (
           <div
-            key={p}
-            className="relative flex aspect-[4/3] items-center justify-center rounded-xl bg-[repeating-linear-gradient(45deg,#E4E8EC,#E4E8EC_8px,#EDEFF2_8px,#EDEFF2_16px)]"
+            key={p.id}
+            className="relative overflow-hidden rounded-xl bg-[var(--pa-bg-alt)]"
           >
-            <span className="font-mono text-[10px] text-[#8B98A5]">{p}</span>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={p.url}
+              alt=""
+              className="aspect-[4/3] w-full object-cover"
+            />
             {i === 0 && (
               <span className="absolute left-2 top-2 rounded-md bg-[var(--pa-navy)] px-2 py-0.5 text-[10px] font-bold text-white">
                 ★ Portada
@@ -781,32 +867,117 @@ function PhotosStep({ onNext }: { onNext: () => void }) {
             <span className="absolute bottom-2 right-2 flex h-[22px] w-[22px] items-center justify-center rounded-md bg-[rgba(22,33,43,0.6)] text-[11px] font-bold text-white">
               {i + 1}
             </span>
+            <div className="absolute left-2 bottom-2 flex gap-1">
+              <button
+                type="button"
+                disabled={busy || i === 0}
+                onClick={() => move(i, -1)}
+                className="rounded bg-[rgba(22,33,43,0.7)] px-1.5 py-0.5 text-[10px] font-bold text-white disabled:opacity-40"
+              >
+                ←
+              </button>
+              <button
+                type="button"
+                disabled={busy || i === fotos.length - 1}
+                onClick={() => move(i, 1)}
+                className="rounded bg-[rgba(22,33,43,0.7)] px-1.5 py-0.5 text-[10px] font-bold text-white disabled:opacity-40"
+              >
+                →
+              </button>
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => onDelete(p.id)}
+                className="rounded bg-[rgba(194,59,43,0.9)] px-1.5 py-0.5 text-[10px] font-bold text-white disabled:opacity-40"
+              >
+                ✕
+              </button>
+            </div>
           </div>
         ))}
-        <div className="flex aspect-[4/3] cursor-pointer flex-col items-center justify-center gap-1.5 rounded-xl border-[1.5px] border-dashed border-[#C9D1D8] p-2.5 text-center text-xs text-[var(--pa-faint)]">
+        <label className="flex aspect-[4/3] cursor-pointer flex-col items-center justify-center gap-1.5 rounded-xl border-[1.5px] border-dashed border-[#C9D1D8] p-2.5 text-center text-xs text-[var(--pa-faint)]">
           <span className="text-[22px]">+</span>
-          Arrastra o haz clic para subir
-        </div>
+          {busy ? "Subiendo…" : "Haz clic para subir"}
+          <input
+            type="file"
+            accept="image/*"
+            multiple
+            className="hidden"
+            disabled={busy}
+            onChange={(e) => {
+              onUpload(e.target.files);
+              e.target.value = "";
+            }}
+          />
+        </label>
       </div>
-      <PrimaryBlock onClick={onNext} className="w-[220px]">
+      <PrimaryBlock onClick={onNext} disabled={busy} className="w-[220px]">
         Continuar a canales
       </PrimaryBlock>
     </div>
   );
 }
 
+const AI_ACTIONS: {
+  label: string;
+  action: "generate" | "improve" | "shorten" | "professional" | "persuasive";
+}[] = [
+  { label: "Sugerir", action: "generate" },
+  { label: "Mejorar", action: "improve" },
+  { label: "Acortar", action: "shorten" },
+  { label: "Más profesional", action: "professional" },
+  { label: "Más persuasivo", action: "persuasive" },
+];
+
 function ChannelsStep({
   toggles,
   onToggle,
+  publicationId,
+  token,
+  onAiApplied,
   busy,
   onNext,
 }: {
   toggles: Record<ChannelId, boolean>;
   onToggle: (id: ChannelId) => void;
+  publicationId: string;
+  token?: string;
+  onAiApplied: (title: string, body: string) => void;
   busy: boolean;
   onNext: () => void;
 }) {
-  const aiActions = ["Sugerir", "Mejorar", "Acortar", "Más profesional", "Más persuasivo"];
+  const [aiBusy, setAiBusy] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
+  const [lastAction, setLastAction] = useState<string>("generate");
+
+  const runAi = async (
+    action: (typeof AI_ACTIONS)[number]["action"],
+  ) => {
+    setAiBusy(true);
+    setAiError(null);
+    setLastAction(action);
+    try {
+      const suggestion = await publicationsService.aiSuggest(
+        publicationId,
+        action,
+        token,
+      );
+      onAiApplied(suggestion.title, suggestion.body);
+      await publicationsService.patch(
+        publicationId,
+        {
+          sharedTitle: suggestion.title,
+          sharedBody: suggestion.body,
+        },
+        token,
+      );
+    } catch {
+      setAiError("No se pudo generar la sugerencia de IA.");
+    } finally {
+      setAiBusy(false);
+    }
+  };
+
   return (
     <div className="max-w-[920px]">
       <div className="mb-1 text-xl font-extrabold text-[var(--pa-ink)]">
@@ -874,18 +1045,23 @@ function ChannelsStep({
             Contenido con IA
           </span>
         </div>
+        {aiError && (
+          <p className="mb-2 text-xs text-[var(--pa-danger)]">{aiError}</p>
+        )}
         <div className="flex flex-wrap gap-2">
-          {aiActions.map((a, i) => (
+          {AI_ACTIONS.map((a) => (
             <button
-              key={a}
+              key={a.action}
               type="button"
-              className={`rounded-full px-4 py-2 text-xs font-semibold ${
-                i === 0
+              disabled={aiBusy || busy}
+              onClick={() => void runAi(a.action)}
+              className={`rounded-full px-4 py-2 text-xs font-semibold disabled:opacity-50 ${
+                lastAction === a.action
                   ? "bg-[var(--pa-navy)] text-white"
                   : "border border-[var(--pa-border)] text-[#45525E]"
               }`}
             >
-              {a}
+              {aiBusy && lastAction === a.action ? "Generando…" : a.label}
             </button>
           ))}
         </div>
@@ -894,7 +1070,7 @@ function ChannelsStep({
         </p>
       </div>
 
-      <PrimaryBlock onClick={onNext} disabled={busy} className="w-[240px]">
+      <PrimaryBlock onClick={onNext} disabled={busy || aiBusy} className="w-[240px]">
         {busy ? "Guardando…" : "Continuar a personalizar"}
       </PrimaryBlock>
     </div>
@@ -911,6 +1087,7 @@ const PLATFORM_LIMITS: Record<string, number> = {
 function CustomizeStep({
   sharedTitle,
   sharedBody,
+  portadaUrl,
   onTitle,
   onBody,
   busy,
@@ -918,6 +1095,7 @@ function CustomizeStep({
 }: {
   sharedTitle: string;
   sharedBody: string;
+  portadaUrl: string | null;
   onTitle: (v: string) => void;
   onBody: (v: string) => void;
   busy: boolean;
@@ -975,7 +1153,16 @@ function CustomizeStep({
             Vista previa
           </div>
           <div className="overflow-hidden rounded-2xl border border-[var(--pa-border)] bg-[var(--pa-surface)]">
-            <div className="aspect-[4/3] w-full bg-[repeating-linear-gradient(45deg,#E4E8EC,#E4E8EC_10px,#EDEFF2_10px,#EDEFF2_20px)]" />
+            {portadaUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={portadaUrl}
+                alt=""
+                className="aspect-[4/3] w-full object-cover"
+              />
+            ) : (
+              <div className="aspect-[4/3] w-full bg-[repeating-linear-gradient(45deg,#E4E8EC,#E4E8EC_10px,#EDEFF2_10px,#EDEFF2_20px)]" />
+            )}
             <div className="p-3.5">
               <div className="mb-1 text-[13px] font-bold text-[var(--pa-ink)]">
                 {sharedTitle}
@@ -1016,7 +1203,16 @@ function PreviewStep({
   return (
     <div className="grid max-w-[1100px] grid-cols-1 gap-7 lg:grid-cols-[1fr_340px]">
       <div className="overflow-hidden rounded-2xl border border-[var(--pa-border)] bg-[var(--pa-surface)]">
-        <div className="h-[280px] w-full bg-[repeating-linear-gradient(45deg,#E4E8EC,#E4E8EC_12px,#EDEFF2_12px,#EDEFF2_24px)]" />
+        {property.portadaUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={property.portadaUrl}
+            alt=""
+            className="h-[280px] w-full object-cover"
+          />
+        ) : (
+          <div className="h-[280px] w-full bg-[repeating-linear-gradient(45deg,#E4E8EC,#E4E8EC_12px,#EDEFF2_12px,#EDEFF2_24px)]" />
+        )}
         <div className="p-[22px]">
           <div className="mb-1.5 text-[19px] font-extrabold text-[var(--pa-ink)]">
             {property.titulo}
@@ -1091,11 +1287,20 @@ function PreviewStep({
 
 function ResultsStep({
   property,
+  publicationId,
   channelResults,
+  token,
+  onResultUpdated,
 }: {
   property: Property;
+  publicationId: string;
   channelResults: ChannelResult[];
+  token?: string;
+  onResultUpdated: (result: ChannelResult) => void;
 }) {
+  const [retrying, setRetrying] = useState<ChannelId | null>(null);
+  const [retryError, setRetryError] = useState<string | null>(null);
+
   const results = CHANNEL_ORDER.map((id) => {
     const found = channelResults.find((r) => r.channelId === id);
     if (!found) {
@@ -1104,6 +1309,7 @@ function ResultsStep({
         status: "none" as ChannelStatus,
         meta: "No se intentó publicar",
         error: null as string | null,
+        canRetry: false,
       };
     }
     const uiStatus = mapResultStatus(found.status);
@@ -1118,6 +1324,7 @@ function ResultsStep({
             ? "Falló"
             : STATUS_META[uiStatus].label,
       error: found.errorMessage,
+      canRetry: found.status === "failed",
     };
   });
   const publishedCount = results.filter((r) => r.status === "published").length;
@@ -1125,6 +1332,23 @@ function ResultsStep({
     results.length === 0
       ? 0
       : Math.round((publishedCount / results.length) * 100);
+
+  const onRetry = async (channelId: ChannelId) => {
+    setRetrying(channelId);
+    setRetryError(null);
+    try {
+      const result = await publicationsService.retryChannel(
+        publicationId,
+        channelId,
+        token,
+      );
+      onResultUpdated(result);
+    } catch {
+      setRetryError("No se pudo reintentar el canal.");
+    } finally {
+      setRetrying(null);
+    }
+  };
 
   return (
     <div className="max-w-[760px]">
@@ -1140,6 +1364,9 @@ function ResultsStep({
           />
         </div>
       </div>
+      {retryError && (
+        <p className="mb-3 text-sm text-[var(--pa-danger)]">{retryError}</p>
+      )}
       {results.map((r) => (
         <div
           key={r.id}
@@ -1162,14 +1389,14 @@ function ResultsStep({
           >
             {STATUS_META[r.status].label}
           </span>
-          {r.error && (
+          {r.canRetry && (
             <button
               type="button"
-              disabled
-              title="Reintento disponible en Part B"
-              className="whitespace-nowrap rounded-lg border border-[var(--pa-border)] px-3.5 py-1.5 text-[11px] font-bold text-[var(--pa-ink)] opacity-50"
+              disabled={retrying !== null}
+              onClick={() => void onRetry(r.id)}
+              className="whitespace-nowrap rounded-lg border border-[var(--pa-border)] px-3.5 py-1.5 text-[11px] font-bold text-[var(--pa-ink)] disabled:opacity-50"
             >
-              Reintentar
+              {retrying === r.id ? "Reintentando…" : "Reintentar"}
             </button>
           )}
         </div>

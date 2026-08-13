@@ -8,6 +8,13 @@ export interface PropertyChannel {
   status: ChannelStatus;
 }
 
+export interface PropertyPhoto {
+  id: string;
+  url: string;
+  orden: number;
+  isCover: boolean;
+}
+
 /**
  * Property DTO for the web UI. Sourced from the shared `fichas` table via the
  * backend. Same data as the internal captación Kanban — different surface.
@@ -48,6 +55,7 @@ export interface Property {
   /** 0..100 completeness indicator (mirrors mobile). */
   completeness: number;
   portadaUrl: string | null;
+  fotos: PropertyPhoto[];
   /** Owning agent id (ownership: an agent sees only their own). */
   ownerAgenteId: string | null;
   channels: PropertyChannel[];
@@ -116,4 +124,11 @@ export interface PropertiesService {
     token?: string,
   ): Promise<Property>;
   delete(id: string, token?: string): Promise<void>;
+  uploadPhotos(id: string, files: File[], token?: string): Promise<Property>;
+  reorderPhotos(
+    id: string,
+    photoIds: string[],
+    token?: string,
+  ): Promise<Property>;
+  deletePhoto(id: string, photoId: string, token?: string): Promise<Property>;
 }

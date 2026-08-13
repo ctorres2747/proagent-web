@@ -10,9 +10,23 @@ export class ApiError extends Error {
 }
 
 interface RequestOptions {
-  method?: "GET" | "POST" | "PATCH" | "DELETE";
+  method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
   token?: string;
   body?: unknown;
+}
+
+async function parseError(res: Response): Promise<never> {
+  if (res.status === 401) {
+    throw new ApiError(401, "No autorizado");
+  }
+  let detail = res.statusText;
+  try {
+    const data = (await res.json()) as { detail?: string };
+    if (data?.detail) detail = data.detail;
+  } catch {
+    // non-JSON error body — keep statusText
+  }
+  throw new ApiError(res.status, detail);
 }
 
 /**
@@ -34,20 +48,27 @@ export async function apiFetch<T>(
     body: body !== undefined ? JSON.stringify(body) : undefined,
   });
 
-  if (res.status === 401) {
-    throw new ApiError(401, "No autorizado");
-  }
-  if (!res.ok) {
-    let detail = res.statusText;
-    try {
-      const data = (await res.json()) as { detail?: string };
-      if (data?.detail) detail = data.detail;
-    } catch {
-      // non-JSON error body — keep statusText
-    }
-    throw new ApiError(res.status, detail);
-  }
+  if (!res.ok) await parseError(res);
+  if (res.status === 204) return undefined as T;
+  return (await res.json()) as T;
+}
 
+/** Multipart upload (no Content-Type — browser sets boundary). */
+export async function apiUploadForm<T>(
+  path: string,
+  form: FormData,
+  token?: string,
+): Promise<T> {
+  const headers: Record<string, string> = { Accept: "application/json" };
+  if (token) headers["Authorization"] = `Bearer ${token}`;
+
+  const res = await fetch(`${API_URL}${path}`, {
+    method: "POST",
+    headers,
+    body: form,
+  });
+
+  if (!res.ok) await parseError(res);
   if (res.status === 204) return undefined as T;
   return (await res.json()) as T;
 }
