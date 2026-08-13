@@ -3,16 +3,24 @@ import type {
   PropertiesService,
   Property,
   PropertyChannel,
+  PropertyPhoto,
 } from "@/services/interfaces/properties";
 import type { ChannelStatus } from "@/design-system/channels";
 import { CHANNEL_ORDER } from "@/design-system/channels";
-import { apiFetch } from "./client";
+import { apiFetch, apiUploadForm } from "./client";
 
 // Dedicated web API (backend/web en agente-inmobiliario). Reemplazó al puente
 // temporal /api/mobile/properties*. El DTO web ya viene en el shape que espera
 // el mapper de abajo (snake_case + channels), con reglas E-INV-01 por rol.
 const LIST_PATH = "/api/web/properties";
 const detailPath = (id: string) => `/api/web/properties/${id}`;
+
+interface RawPhoto {
+  id: string | number;
+  url?: string | null;
+  orden?: number | null;
+  is_cover?: boolean | null;
+}
 
 interface RawProperty {
   id: number | string;
@@ -46,6 +54,7 @@ interface RawProperty {
   nombre_contacto?: string | null;
   completeness?: number | null;
   portada_url?: string | null;
+  fotos?: RawPhoto[] | null;
   owner_agente_id?: number | string | null;
   channels?: { id: string; status: string }[] | null;
 }
@@ -69,8 +78,19 @@ function mapChannels(raw: RawProperty["channels"]): PropertyChannel[] {
   return CHANNEL_ORDER.map((id) => ({ id, status: byId.get(id) ?? "none" }));
 }
 
+function mapPhotos(raw: RawProperty["fotos"]): PropertyPhoto[] {
+  return (raw ?? []).map((f, index) => ({
+    id: String(f.id),
+    url: f.url ?? "",
+    orden: typeof f.orden === "number" ? f.orden : index,
+    isCover: Boolean(f.is_cover ?? index === 0),
+  }));
+}
+
 function mapProperty(raw: RawProperty): Property {
-  const intent: Intent = (raw.intent ?? raw.intencion) === "Arriendo" ? "Arriendo" : "Venta";
+  const intent: Intent =
+    (raw.intent ?? raw.intencion) === "Arriendo" ? "Arriendo" : "Venta";
+  const fotos = mapPhotos(raw.fotos);
   return {
     id: String(raw.id),
     code: raw.code ?? String(raw.id),
@@ -109,7 +129,8 @@ function mapProperty(raw: RawProperty): Property {
       ? raw.nombre_contacto.trim()
       : null,
     completeness: typeof raw.completeness === "number" ? raw.completeness : 0,
-    portadaUrl: raw.portada_url ?? null,
+    portadaUrl: raw.portada_url ?? fotos[0]?.url ?? null,
+    fotos,
     ownerAgenteId:
       raw.owner_agente_id !== null && raw.owner_agente_id !== undefined
         ? String(raw.owner_agente_id)
@@ -177,5 +198,32 @@ export const propertiesService: PropertiesService = {
   },
   async delete(id: string, token?: string): Promise<void> {
     await apiFetch<{ ok: boolean }>(detailPath(id), { method: "DELETE", token });
+  },
+  async uploadPhotos(id, files, token?: string): Promise<Property> {
+    const form = new FormData();
+    for (const file of files) {
+      form.append("files", file, file.name);
+    }
+    const raw = await apiUploadForm<RawProperty>(
+      `${detailPath(id)}/photos`,
+      form,
+      token,
+    );
+    return mapProperty(raw);
+  },
+  async reorderPhotos(id, photoIds, token?: string): Promise<Property> {
+    const raw = await apiFetch<RawProperty>(`${detailPath(id)}/photos/order`, {
+      method: "PUT",
+      token,
+      body: { photo_ids: photoIds },
+    });
+    return mapProperty(raw);
+  },
+  async deletePhoto(id, photoId, token?: string): Promise<Property> {
+    const raw = await apiFetch<RawProperty>(
+      `${detailPath(id)}/photos/${photoId}`,
+      { method: "DELETE", token },
+    );
+    return mapProperty(raw);
   },
 };

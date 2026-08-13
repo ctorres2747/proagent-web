@@ -112,4 +112,56 @@ export const publicationsService: PublicationsService = {
     if (!pub) throw new Error(`Publicación ${id} no encontrada`);
     return [...pub.channelResults];
   },
+
+  async retryChannel(id, channelId) {
+    await delay(350 + Math.random() * 400);
+    const current = store.get(id);
+    if (!current) throw new Error(`Publicación ${id} no encontrada`);
+    const fail = Math.random() < 0.35;
+    const result = {
+      channelId,
+      status: fail ? ("failed" as const) : ("published" as const),
+      publishedAt: fail ? null : now(),
+      externalRef: fail ? null : `mock-retry-${channelId}`,
+      errorMessage: fail
+        ? "Reintento falló (simulado). Vuelve a intentar."
+        : null,
+      recommendedAction: fail ? "Reintentar" : null,
+    };
+    const others = current.channelResults.filter((r) => r.channelId !== channelId);
+    const next = {
+      ...current,
+      channelResults: [...others, result],
+      updatedAt: now(),
+    };
+    store.set(id, next);
+    return result;
+  },
+
+  async aiSuggest(_id, action) {
+    await delay(300);
+    const variants: Record<string, { title: string; body: string }> = {
+      generate: {
+        title: "Apartamento en excelente ubicación",
+        body: "Propiedad lista para habitar. Agenda tu visita con Proinversores.",
+      },
+      improve: {
+        title: "Oportunidad única — inmueble en zona de alta valorización",
+        body: "Diseño funcional y buena ubicación. Contáctanos para más detalles.",
+      },
+      shorten: {
+        title: "Propiedad en el Valle de Aburrá",
+        body: "Agenda visita con Proinversores.",
+      },
+      professional: {
+        title: "Inmueble en excelente estado",
+        body: "Presentamos una propiedad con características competitivas de mercado.",
+      },
+      persuasive: {
+        title: "No dejes pasar esta oportunidad",
+        body: "Pocos interesados pueden verla esta semana. Escribe ahora.",
+      },
+    };
+    return variants[action] ?? variants.generate;
+  },
 };

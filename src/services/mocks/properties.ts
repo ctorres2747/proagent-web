@@ -44,6 +44,7 @@ const MOCK_PROPERTIES: Property[] = [
     nombreContacto: "Contacto demo",
     completeness: 92,
     portadaUrl: null,
+    fotos: [],
     ownerAgenteId: "mock-admin",
     channels: channels({
       wasi: "published",
@@ -81,6 +82,7 @@ const MOCK_PROPERTIES: Property[] = [
     nombreContacto: "Contacto demo",
     completeness: 64,
     portadaUrl: null,
+    fotos: [],
     ownerAgenteId: "mock-admin",
     channels: channels({ wasi: "progress" }),
   },
@@ -113,6 +115,7 @@ const MOCK_PROPERTIES: Property[] = [
     nombreContacto: "Contacto demo",
     completeness: 100,
     portadaUrl: null,
+    fotos: [],
     ownerAgenteId: "mock-asesor",
     channels: channels({
       wasi: "published",
@@ -150,6 +153,7 @@ const MOCK_PROPERTIES: Property[] = [
     nombreContacto: "Contacto demo",
     completeness: 40,
     portadaUrl: null,
+    fotos: [],
     ownerAgenteId: "mock-asesor",
     channels: channels({}),
   },
@@ -182,6 +186,7 @@ const MOCK_PROPERTIES: Property[] = [
     nombreContacto: "Contacto demo",
     completeness: 85,
     portadaUrl: null,
+    fotos: [],
     ownerAgenteId: "mock-admin",
     channels: channels({
       wasi: "published",
@@ -220,6 +225,7 @@ const MOCK_PROPERTIES: Property[] = [
     nombreContacto: "Contacto demo",
     completeness: 70,
     portadaUrl: null,
+    fotos: [],
     ownerAgenteId: "mock-admin",
     channels: channels({ wasi: "published", web: "progress" }),
   },
@@ -268,6 +274,7 @@ export const propertiesService: PropertiesService = {
       nombreContacto: data.nombreContacto ?? null,
       completeness: 40,
       portadaUrl: null,
+      fotos: [],
       ownerAgenteId: "mock-admin",
       channels: channels({}),
     };
@@ -287,5 +294,57 @@ export const propertiesService: PropertiesService = {
     const idx = MOCK_PROPERTIES.findIndex((p) => p.id === id);
     if (idx < 0) throw new Error(`Propiedad ${id} no encontrada`);
     MOCK_PROPERTIES.splice(idx, 1);
+  },
+  async uploadPhotos(id, files) {
+    await delay(250);
+    const idx = MOCK_PROPERTIES.findIndex((p) => p.id === id);
+    if (idx < 0) throw new Error(`Propiedad ${id} no encontrada`);
+    const prop = MOCK_PROPERTIES[idx];
+    const start = prop.fotos.length;
+    const added = files.map((file, i) => ({
+      id: `mock-photo-${Date.now()}-${i}`,
+      url: URL.createObjectURL(file),
+      orden: start + i,
+      isCover: start + i === 0,
+    }));
+    const fotos = [...prop.fotos, ...added].map((f, i) => ({
+      ...f,
+      orden: i,
+      isCover: i === 0,
+    }));
+    const next = {
+      ...prop,
+      fotos,
+      portadaUrl: fotos[0]?.url ?? null,
+      completeness: Math.min(100, prop.completeness + 5),
+    };
+    MOCK_PROPERTIES[idx] = next;
+    return next;
+  },
+  async reorderPhotos(id, photoIds) {
+    await delay(150);
+    const idx = MOCK_PROPERTIES.findIndex((p) => p.id === id);
+    if (idx < 0) throw new Error(`Propiedad ${id} no encontrada`);
+    const prop = MOCK_PROPERTIES[idx];
+    const byId = new Map(prop.fotos.map((f) => [f.id, f]));
+    const fotos = photoIds
+      .map((pid) => byId.get(pid))
+      .filter(Boolean)
+      .map((f, i) => ({ ...f!, orden: i, isCover: i === 0 }));
+    const next = { ...prop, fotos, portadaUrl: fotos[0]?.url ?? null };
+    MOCK_PROPERTIES[idx] = next;
+    return next;
+  },
+  async deletePhoto(id, photoId) {
+    await delay(150);
+    const idx = MOCK_PROPERTIES.findIndex((p) => p.id === id);
+    if (idx < 0) throw new Error(`Propiedad ${id} no encontrada`);
+    const prop = MOCK_PROPERTIES[idx];
+    const fotos = prop.fotos
+      .filter((f) => f.id !== photoId)
+      .map((f, i) => ({ ...f, orden: i, isCover: i === 0 }));
+    const next = { ...prop, fotos, portadaUrl: fotos[0]?.url ?? null };
+    MOCK_PROPERTIES[idx] = next;
+    return next;
   },
 };

@@ -69,4 +69,19 @@ export interface PublicationsService {
     token?: string,
   ): Promise<Publication>;
   results(id: string, token?: string): Promise<ChannelResult[]>;
+  retryChannel(
+    id: string,
+    channelId: ChannelId,
+    token?: string,
+  ): Promise<ChannelResult>;
+  aiSuggest(
+    id: string,
+    action:
+      | "generate"
+      | "improve"
+      | "shorten"
+      | "professional"
+      | "persuasive",
+    token?: string,
+  ): Promise<{ title: string; body: string }>;
 }

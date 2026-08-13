@@ -10,6 +10,15 @@ import type {
 const LIST_PATH = "/api/web/publications";
 const detailPath = (id: string) => `/api/web/publications/${id}`;
 
+interface RawChannelResult {
+  channelId: string;
+  status: string;
+  publishedAt?: string | null;
+  externalRef?: string | null;
+  errorMessage?: string | null;
+  recommendedAction?: string | null;
+}
+
 interface RawPublication {
   id: string | number;
   propertyId: string;
@@ -25,16 +34,20 @@ interface RawPublication {
   status: string;
   scheduledFor?: string | null;
   timezone?: string | null;
-  channelResults?: {
-    channelId: string;
-    status: string;
-    publishedAt?: string | null;
-    externalRef?: string | null;
-    errorMessage?: string | null;
-    recommendedAction?: string | null;
-  }[];
+  channelResults?: RawChannelResult[];
   createdAt: string;
   updatedAt: string;
+}
+
+function mapResult(raw: RawChannelResult): ChannelResult {
+  return {
+    channelId: raw.channelId as ChannelId,
+    status: raw.status as ChannelResult["status"],
+    publishedAt: raw.publishedAt ?? null,
+    externalRef: raw.externalRef ?? null,
+    errorMessage: raw.errorMessage ?? null,
+    recommendedAction: raw.recommendedAction ?? null,
+  };
 }
 
 function mapPub(raw: RawPublication): Publication {
@@ -53,14 +66,7 @@ function mapPub(raw: RawPublication): Publication {
     status: raw.status as PublicationStatus,
     scheduledFor: raw.scheduledFor ?? null,
     timezone: raw.timezone ?? null,
-    channelResults: (raw.channelResults ?? []).map((r) => ({
-      channelId: r.channelId as ChannelId,
-      status: r.status as ChannelResult["status"],
-      publishedAt: r.publishedAt ?? null,
-      externalRef: r.externalRef ?? null,
-      errorMessage: r.errorMessage ?? null,
-      recommendedAction: r.recommendedAction ?? null,
-    })),
+    channelResults: (raw.channelResults ?? []).map(mapResult),
     createdAt: raw.createdAt,
     updatedAt: raw.updatedAt,
   };
@@ -121,9 +127,25 @@ export const publicationsService: PublicationsService = {
   },
 
   async results(id, token) {
-    const raw = await apiFetch<ChannelResult[]>(`${detailPath(id)}/results`, {
+    const raw = await apiFetch<RawChannelResult[]>(`${detailPath(id)}/results`, {
       token,
     });
-    return Array.isArray(raw) ? raw : [];
+    return Array.isArray(raw) ? raw.map(mapResult) : [];
+  },
+
+  async retryChannel(id, channelId, token) {
+    const raw = await apiFetch<RawChannelResult>(
+      `${detailPath(id)}/channels/${channelId}/retry`,
+      { method: "POST", token },
+    );
+    return mapResult(raw);
+  },
+
+  async aiSuggest(id, action, token) {
+    return apiFetch<{ title: string; body: string }>(`${detailPath(id)}/ai`, {
+      method: "POST",
+      token,
+      body: { action },
+    });
   },
 };
