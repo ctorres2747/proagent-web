@@ -42,6 +42,8 @@ interface RawProperty {
   condicion?: string | null;
   features?: string[] | null;
   descripcion?: string | null;
+  telefono_contacto?: string | null;
+  nombre_contacto?: string | null;
   completeness?: number | null;
   portada_url?: string | null;
   owner_agente_id?: number | string | null;
@@ -100,6 +102,12 @@ function mapProperty(raw: RawProperty): Property {
         : null,
     features: Array.isArray(raw.features) ? raw.features : [],
     descripcion: raw.descripcion ?? null,
+    telefonoContacto: raw.telefono_contacto?.trim()
+      ? raw.telefono_contacto.trim()
+      : null,
+    nombreContacto: raw.nombre_contacto?.trim()
+      ? raw.nombre_contacto.trim()
+      : null,
     completeness: typeof raw.completeness === "number" ? raw.completeness : 0,
     portadaUrl: raw.portada_url ?? null,
     ownerAgenteId:
@@ -118,5 +126,8 @@ export const propertiesService: PropertiesService = {
   async get(id: string, token?: string): Promise<Property> {
     const raw = await apiFetch<RawProperty>(detailPath(id), { token });
     return mapProperty(raw);
+  },
+  async delete(id: string, token?: string): Promise<void> {
+    await apiFetch<{ ok: boolean }>(detailPath(id), { method: "DELETE", token });
   },
 };

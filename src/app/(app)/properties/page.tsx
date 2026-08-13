@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/features/auth/AuthProvider";
 import { propertiesService } from "@/services";
 import type { Property } from "@/services/interfaces/properties";
@@ -15,14 +15,33 @@ const FILTERS = ["Tipo", "Ciudad", "Estado", "Precio"];
 export default function PropertiesPage() {
   const { token } = useAuth();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [view, setView] = useState<"table" | "cards">("table");
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ["properties"],
     queryFn: () => propertiesService.list(token ?? undefined),
   });
 
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => propertiesService.delete(id, token ?? undefined),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["properties"] });
+    },
+    onSettled: () => setDeletingId(null),
+  });
+
   const open = (p: Property) => router.push(`/properties/${p.id}`);
+
+  const onDelete = (p: Property) => {
+    const ok = window.confirm(
+      `¿Eliminar «${p.titulo}»? Esta acción no se puede deshacer.`,
+    );
+    if (!ok) return;
+    setDeletingId(p.id);
+    deleteMutation.mutate(p.id);
+  };
 
   return (
     <div className="px-6 py-8 md:px-10 md:py-8">
@@ -61,6 +80,12 @@ export default function PropertiesPage() {
         ))}
       </div>
 
+      {deleteMutation.isError && (
+        <p className="mb-4 text-sm text-[var(--pa-danger)]">
+          No se pudo eliminar la propiedad.
+        </p>
+      )}
+
       {isLoading && <SkeletonGrid />}
       {isError && (
         <p className="text-sm text-[var(--pa-danger)]">
@@ -73,13 +98,24 @@ export default function PropertiesPage() {
       {data && data.length > 0 && view === "cards" && (
         <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-5">
           {data.map((p) => (
-            <PropertyCard key={p.id} p={p} onClick={() => open(p)} />
+            <PropertyCard
+              key={p.id}
+              p={p}
+              onClick={() => open(p)}
+              onDelete={() => onDelete(p)}
+              deleting={deletingId === p.id}
+            />
           ))}
         </div>
       )}
 
       {data && data.length > 0 && view === "table" && (
-        <PropertyTable properties={data} onOpen={open} />
+        <PropertyTable
+          properties={data}
+          onOpen={open}
+          onDelete={onDelete}
+          deletingId={deletingId}
+        />
       )}
     </div>
   );
@@ -109,45 +145,65 @@ function SegBtn({
   );
 }
 
-function PropertyCard({ p, onClick }: { p: Property; onClick: () => void }) {
+function PropertyCard({
+  p,
+  onClick,
+  onDelete,
+  deleting,
+}: {
+  p: Property;
+  onClick: () => void;
+  onDelete: () => void;
+  deleting: boolean;
+}) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="flex flex-col rounded-2xl border border-[var(--pa-border)] bg-[var(--pa-surface)] p-3.5 text-left transition-shadow hover:shadow-sm"
-    >
-      <div className="relative mb-3.5 flex h-[150px] items-center justify-center rounded-xl bg-[repeating-linear-gradient(45deg,#E4E8EC,#E4E8EC_10px,#EDEFF2_10px,#EDEFF2_20px)]">
-        <span className="font-mono text-[11px] text-[#8B98A5]">foto portada</span>
-        <span className="absolute left-2.5 top-2.5 rounded-md bg-white/90 px-2.5 py-1 text-[11px] font-bold text-[var(--pa-ink)]">
-          {p.code}
-        </span>
-      </div>
-      <div className="mb-1 line-clamp-1 text-sm font-bold text-[var(--pa-ink)]">
-        {p.titulo}
-      </div>
-      <div className="mb-2.5 text-xs text-[var(--pa-muted)]">
-        {p.tipo} · {p.intent} · {p.municipio}
-      </div>
-      <div className="mb-3 text-[15px] font-extrabold text-[var(--pa-navy)]">
-        {formatPrice(p.precio, p.esArriendo)}
-      </div>
-      <div className="mb-3">
-        <CompletenessBar value={p.completeness} />
-      </div>
-      <ChannelChips channels={p.channels} />
-    </button>
+    <div className="flex flex-col rounded-2xl border border-[var(--pa-border)] bg-[var(--pa-surface)] p-3.5 text-left transition-shadow hover:shadow-sm">
+      <button type="button" onClick={onClick} className="text-left">
+        <div className="relative mb-3.5 flex h-[150px] items-center justify-center rounded-xl bg-[repeating-linear-gradient(45deg,#E4E8EC,#E4E8EC_10px,#EDEFF2_10px,#EDEFF2_20px)]">
+          <span className="font-mono text-[11px] text-[#8B98A5]">foto portada</span>
+          <span className="absolute left-2.5 top-2.5 rounded-md bg-white/90 px-2.5 py-1 text-[11px] font-bold text-[var(--pa-ink)]">
+            {p.code}
+          </span>
+        </div>
+        <div className="mb-1 line-clamp-1 text-sm font-bold text-[var(--pa-ink)]">
+          {p.titulo}
+        </div>
+        <div className="mb-2.5 text-xs text-[var(--pa-muted)]">
+          {p.tipo} · {p.intent} · {p.municipio}
+        </div>
+        <div className="mb-3 text-[15px] font-extrabold text-[var(--pa-navy)]">
+          {formatPrice(p.precio, p.esArriendo)}
+        </div>
+        <div className="mb-3">
+          <CompletenessBar value={p.completeness} />
+        </div>
+        <ChannelChips channels={p.channels} />
+      </button>
+      <button
+        type="button"
+        onClick={onDelete}
+        disabled={deleting}
+        className="mt-3 self-start text-xs font-bold text-[var(--pa-danger)] hover:underline disabled:opacity-50"
+      >
+        {deleting ? "Eliminando…" : "Eliminar"}
+      </button>
+    </div>
   );
 }
 
 function PropertyTable({
   properties,
   onOpen,
+  onDelete,
+  deletingId,
 }: {
   properties: Property[];
   onOpen: (p: Property) => void;
+  onDelete: (p: Property) => void;
+  deletingId: string | null;
 }) {
   const cols =
-    "grid-cols-[64px_2fr_1.2fr_1fr_1.2fr_1.1fr_1.6fr]";
+    "grid-cols-[64px_2fr_1.2fr_1fr_1.2fr_1.1fr_1.6fr_72px]";
   return (
     <div className="overflow-hidden rounded-2xl border border-[var(--pa-border)] bg-[var(--pa-surface)]">
       <div
@@ -160,36 +216,52 @@ function PropertyTable({
         <div>Ubicación</div>
         <div>Completitud</div>
         <div>Canales</div>
+        <div />
       </div>
       {properties.map((p) => (
-        <button
+        <div
           key={p.id}
-          type="button"
-          onClick={() => onOpen(p)}
-          className={`grid w-full ${cols} items-center gap-3 border-b border-[var(--pa-bg-alt)] px-5 py-3 text-left last:border-b-0 hover:bg-[var(--pa-bg)]`}
+          className={`grid w-full ${cols} items-center gap-3 border-b border-[var(--pa-bg-alt)] px-5 py-3 last:border-b-0 hover:bg-[var(--pa-bg)]`}
         >
-          <div className="h-11 w-11 rounded-lg bg-[repeating-linear-gradient(45deg,#E4E8EC,#E4E8EC_6px,#EDEFF2_6px,#EDEFF2_12px)]" />
-          <div className="min-w-0">
+          <button
+            type="button"
+            onClick={() => onOpen(p)}
+            className="h-11 w-11 rounded-lg bg-[repeating-linear-gradient(45deg,#E4E8EC,#E4E8EC_6px,#EDEFF2_6px,#EDEFF2_12px)]"
+            aria-label={`Abrir ${p.titulo}`}
+          />
+          <button type="button" onClick={() => onOpen(p)} className="min-w-0 text-left">
             <div className="line-clamp-1 text-[13px] font-bold text-[var(--pa-ink)]">
               {p.titulo}
             </div>
             <div className="text-[11px] text-[var(--pa-faint)]">{p.code}</div>
-          </div>
-          <div className="text-xs text-[var(--pa-muted)]">
+          </button>
+          <button type="button" onClick={() => onOpen(p)} className="text-left text-xs text-[var(--pa-muted)]">
             {p.tipo} · {p.intent}
-          </div>
-          <div className="text-[13px] font-bold text-[var(--pa-navy)]">
+          </button>
+          <button type="button" onClick={() => onOpen(p)} className="text-left text-[13px] font-bold text-[var(--pa-navy)]">
             {formatPrice(p.precio, p.esArriendo)}
-          </div>
-          <div className="text-xs text-[var(--pa-muted)]">{p.municipio}</div>
-          <div>
+          </button>
+          <button type="button" onClick={() => onOpen(p)} className="text-left text-xs text-[var(--pa-muted)]">
+            {p.municipio}
+          </button>
+          <button type="button" onClick={() => onOpen(p)} className="text-left">
             <CompletenessBar value={p.completeness} showLabel={false} />
             <span className="text-[11px] font-bold text-[var(--pa-muted)]">
               {p.completeness}%
             </span>
-          </div>
-          <ChannelChips channels={p.channels} />
-        </button>
+          </button>
+          <button type="button" onClick={() => onOpen(p)} className="text-left">
+            <ChannelChips channels={p.channels} />
+          </button>
+          <button
+            type="button"
+            onClick={() => onDelete(p)}
+            disabled={deletingId === p.id}
+            className="justify-self-end text-[11px] font-bold text-[var(--pa-danger)] hover:underline disabled:opacity-50"
+          >
+            {deletingId === p.id ? "…" : "Eliminar"}
+          </button>
+        </div>
       ))}
     </div>
   );
