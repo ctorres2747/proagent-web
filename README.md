@@ -81,7 +81,8 @@ reglas de inventario E-INV-01 por rol. Migrar de host = cambiar
 
 ## Frontera de producto (público vs privado)
 
-ProAgent Web es **producto comercial público**. **No** incluye ni incluirá:
+ProAgent Web es **producto comercial público** (junto con ProAgent Mobile).
+**No** incluye ni incluirá:
 
 - Scrapers de MercadoLibre / Facebook
 - Kanban interno de captación de leads
@@ -91,9 +92,18 @@ Comparte la **misma fuente de datos** (`fichas`) que el sistema interno, pero es
 **otra superficie de UI**. La lógica de captación vive únicamente en
 `agente-inmobiliario` y nunca se expone aquí.
 
+**Decisión 2026-08-13** (canónico:
+[`frontera-kanban-proagent.md`](https://github.com/ctorres2747/agente-inmobiliario/blob/develop/docs/frontera-kanban-proagent.md)):
+
+- Alta **manual** de propiedades → esta web (visible también en mobile).
+- Ficha creada en mobile → aparece en `/properties` aquí.
+- “Publicar” desde un lead en el Kanban crea ficha → debe listarse en esta
+  tabla; la publicación/republicación manual del inventario se hace aquí (y en
+  mobile). A futuro el botón del Kanban abrirá esta web.
+
 ### Ownership / roles (MVP)
 
 - Roles: **admin** y **asesor** (Coordinador después).
 - Un asesor ve solo lo suyo (`owner_agente_id`); un admin `@proinversores` ve las
   propiedades de los agentes del dominio. Las reglas de inventario admin son
-  **E-INV-01** (no bloquean este scaffold).
+  **E-INV-01**.
