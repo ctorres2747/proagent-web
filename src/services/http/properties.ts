@@ -118,6 +118,38 @@ function mapProperty(raw: RawProperty): Property {
   };
 }
 
+function toWriteBody(
+  data: Parameters<PropertiesService["create"]>[0],
+): Record<string, unknown> {
+  const body: Record<string, unknown> = {};
+  if (data.titulo !== undefined) body.titulo = data.titulo;
+  if (data.descripcion !== undefined) body.descripcion = data.descripcion;
+  if (data.tipo !== undefined) body.tipo = data.tipo;
+  if (data.municipio !== undefined) body.municipio = data.municipio;
+  if (data.barrio !== undefined) body.barrio = data.barrio;
+  if (data.direccion !== undefined) body.direccion = data.direccion;
+  if (data.codigoPostal !== undefined) body.codigo_postal = data.codigoPostal;
+  if (data.precio !== undefined) body.precio = data.precio;
+  if (data.alcobas !== undefined) body.alcobas = data.alcobas;
+  if (data.banos !== undefined) body.banos = data.banos;
+  if (data.parqueaderos !== undefined) body.parqueaderos = data.parqueaderos;
+  if (data.estrato !== undefined) body.estrato = data.estrato;
+  if (data.piso !== undefined) body.piso = data.piso;
+  if (data.areaM2 !== undefined) body.area_m2 = data.areaM2;
+  if (data.areaPrivada !== undefined) body.area_privada = data.areaPrivada;
+  if (data.areaConstruida !== undefined) body.area_construida = data.areaConstruida;
+  if (data.administracion !== undefined) body.administracion = data.administracion;
+  if (data.anioConstruccion !== undefined) {
+    body.anio_construccion = data.anioConstruccion;
+  }
+  if (data.condicion !== undefined) body.condicion = data.condicion;
+  if (data.telefonoContacto !== undefined) {
+    body.telefono_contacto = data.telefonoContacto;
+  }
+  if (data.nombreContacto !== undefined) body.nombre_contacto = data.nombreContacto;
+  return body;
+}
+
 export const propertiesService: PropertiesService = {
   async list(token?: string): Promise<Property[]> {
     const raw = await apiFetch<RawProperty[]>(LIST_PATH, { token });
@@ -125,6 +157,22 @@ export const propertiesService: PropertiesService = {
   },
   async get(id: string, token?: string): Promise<Property> {
     const raw = await apiFetch<RawProperty>(detailPath(id), { token });
+    return mapProperty(raw);
+  },
+  async create(data, token?: string): Promise<Property> {
+    const raw = await apiFetch<RawProperty>(LIST_PATH, {
+      method: "POST",
+      token,
+      body: toWriteBody(data),
+    });
+    return mapProperty(raw);
+  },
+  async update(id, data, token?: string): Promise<Property> {
+    const raw = await apiFetch<RawProperty>(detailPath(id), {
+      method: "PATCH",
+      token,
+      body: toWriteBody(data),
+    });
     return mapProperty(raw);
   },
   async delete(id: string, token?: string): Promise<void> {

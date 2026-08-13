@@ -1,0 +1,129 @@
+import type { ChannelId } from "@/design-system/channels";
+import { apiFetch } from "./client";
+import type {
+  ChannelResult,
+  Publication,
+  PublicationStatus,
+  PublicationsService,
+} from "@/services/interfaces/publications";
+
+const LIST_PATH = "/api/web/publications";
+const detailPath = (id: string) => `/api/web/publications/${id}`;
+
+interface RawPublication {
+  id: string | number;
+  propertyId: string;
+  sharedTitle?: string;
+  sharedBody?: string;
+  platformContent?: {
+    channelId: string;
+    title?: string;
+    body?: string;
+    isAiGenerated?: boolean;
+  }[];
+  selectedChannels?: string[];
+  status: string;
+  scheduledFor?: string | null;
+  timezone?: string | null;
+  channelResults?: {
+    channelId: string;
+    status: string;
+    publishedAt?: string | null;
+    externalRef?: string | null;
+    errorMessage?: string | null;
+    recommendedAction?: string | null;
+  }[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+function mapPub(raw: RawPublication): Publication {
+  return {
+    id: String(raw.id),
+    propertyId: String(raw.propertyId),
+    sharedTitle: raw.sharedTitle ?? "",
+    sharedBody: raw.sharedBody ?? "",
+    platformContent: (raw.platformContent ?? []).map((pc) => ({
+      channelId: pc.channelId as ChannelId,
+      title: pc.title ?? "",
+      body: pc.body ?? "",
+      isAiGenerated: Boolean(pc.isAiGenerated),
+    })),
+    selectedChannels: (raw.selectedChannels ?? []) as ChannelId[],
+    status: raw.status as PublicationStatus,
+    scheduledFor: raw.scheduledFor ?? null,
+    timezone: raw.timezone ?? null,
+    channelResults: (raw.channelResults ?? []).map((r) => ({
+      channelId: r.channelId as ChannelId,
+      status: r.status as ChannelResult["status"],
+      publishedAt: r.publishedAt ?? null,
+      externalRef: r.externalRef ?? null,
+      errorMessage: r.errorMessage ?? null,
+      recommendedAction: r.recommendedAction ?? null,
+    })),
+    createdAt: raw.createdAt,
+    updatedAt: raw.updatedAt,
+  };
+}
+
+export const publicationsService: PublicationsService = {
+  async createDraft(propertyId, token) {
+    const raw = await apiFetch<RawPublication>(LIST_PATH, {
+      method: "POST",
+      token,
+      body: { property_id: propertyId },
+    });
+    return mapPub(raw);
+  },
+
+  async get(id, token) {
+    const raw = await apiFetch<RawPublication>(detailPath(id), { token });
+    return mapPub(raw);
+  },
+
+  async patch(id, data, token) {
+    const body: Record<string, unknown> = {};
+    if (data.sharedTitle !== undefined) body.shared_title = data.sharedTitle;
+    if (data.sharedBody !== undefined) body.shared_body = data.sharedBody;
+    if (data.selectedChannels !== undefined) {
+      body.selected_channels = data.selectedChannels;
+    }
+    if (data.platformContent !== undefined) {
+      body.platform_content = {
+        channel_id: data.platformContent.channelId,
+        title: data.platformContent.title,
+        body: data.platformContent.body,
+        is_ai_generated: data.platformContent.isAiGenerated,
+      };
+    }
+    if (data.scheduledFor !== undefined) body.scheduled_for = data.scheduledFor;
+    if (data.timezone !== undefined) body.timezone = data.timezone;
+    if (data.status !== undefined) body.status = data.status;
+
+    const raw = await apiFetch<RawPublication>(detailPath(id), {
+      method: "PATCH",
+      token,
+      body,
+    });
+    return mapPub(raw);
+  },
+
+  async publish(id, opts, token) {
+    const raw = await apiFetch<RawPublication>(`${detailPath(id)}/publish`, {
+      method: "POST",
+      token,
+      body: {
+        scheduled_for: opts?.scheduledFor,
+        timezone: opts?.timezone,
+      },
+    });
+    return mapPub(raw);
+  },
+
+  async results(id, token) {
+    const raw = await apiFetch<ChannelResult[]>(`${detailPath(id)}/results`, {
+      token,
+    });
+    return Array.isArray(raw) ? raw : [];
+  },
+};

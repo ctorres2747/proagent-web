@@ -236,6 +236,52 @@ export const propertiesService: PropertiesService = {
     if (!found) throw new Error(`Propiedad ${id} no encontrada`);
     return found;
   },
+  async create(data): Promise<Property> {
+    await delay(250);
+    const id = `PI-${Math.floor(Math.random() * 9000) + 1000}`;
+    const created: Property = {
+      id,
+      code: id,
+      titulo: data.titulo ?? "(sin título)",
+      tipo: data.tipo ?? "Apartamento",
+      intent: "Venta",
+      municipio: data.municipio ?? "Medellín",
+      barrio: data.barrio ?? null,
+      direccion: data.direccion ?? null,
+      codigoPostal: data.codigoPostal ?? null,
+      precio: data.precio ?? null,
+      esArriendo: false,
+      alcobas: data.alcobas ?? null,
+      banos: data.banos ?? null,
+      parqueaderos: data.parqueaderos ?? null,
+      estrato: data.estrato ?? null,
+      piso: data.piso ?? null,
+      areaM2: data.areaM2 ?? null,
+      areaPrivada: data.areaPrivada ?? null,
+      areaConstruida: data.areaConstruida ?? null,
+      administracion: data.administracion ?? null,
+      anioConstruccion: data.anioConstruccion ?? null,
+      condicion: data.condicion ?? null,
+      features: [],
+      descripcion: data.descripcion ?? null,
+      telefonoContacto: data.telefonoContacto ?? null,
+      nombreContacto: data.nombreContacto ?? null,
+      completeness: 40,
+      portadaUrl: null,
+      ownerAgenteId: "mock-admin",
+      channels: channels({}),
+    };
+    MOCK_PROPERTIES.unshift(created);
+    return created;
+  },
+  async update(id, data): Promise<Property> {
+    await delay(200);
+    const idx = MOCK_PROPERTIES.findIndex((p) => p.id === id);
+    if (idx < 0) throw new Error(`Propiedad ${id} no encontrada`);
+    const merged = { ...MOCK_PROPERTIES[idx], ...data, id };
+    MOCK_PROPERTIES[idx] = merged;
+    return merged;
+  },
   async delete(id: string): Promise<void> {
     await delay(200 + Math.random() * 200);
     const idx = MOCK_PROPERTIES.findIndex((p) => p.id === id);

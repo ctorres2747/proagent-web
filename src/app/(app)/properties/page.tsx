@@ -32,6 +32,18 @@ export default function PropertiesPage() {
     onSettled: () => setDeletingId(null),
   });
 
+  const createMutation = useMutation({
+    mutationFn: () =>
+      propertiesService.create(
+        { titulo: "Nueva propiedad", municipio: "Medellín" },
+        token ?? undefined,
+      ),
+    onSuccess: (created) => {
+      void queryClient.invalidateQueries({ queryKey: ["properties"] });
+      router.push(`/properties/${created.id}`);
+    },
+  });
+
   const open = (p: Property) => router.push(`/properties/${p.id}`);
 
   const onDelete = (p: Property) => {
@@ -42,6 +54,8 @@ export default function PropertiesPage() {
     setDeletingId(p.id);
     deleteMutation.mutate(p.id);
   };
+
+  const onCreate = () => createMutation.mutate();
 
   return (
     <div className="px-6 py-8 md:px-10 md:py-8">
@@ -57,13 +71,23 @@ export default function PropertiesPage() {
               : `${data?.length ?? 0} inmuebles en tu inventario`}
           </p>
         </div>
-        <div className="flex rounded-[10px] bg-[var(--pa-bg-alt)] p-[3px]">
-          <SegBtn active={view === "cards"} onClick={() => setView("cards")}>
-            Tarjetas
-          </SegBtn>
-          <SegBtn active={view === "table"} onClick={() => setView("table")}>
-            Tabla
-          </SegBtn>
+        <div className="flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            onClick={onCreate}
+            disabled={createMutation.isPending}
+            className="rounded-[10px] bg-[var(--pa-navy)] px-4 py-2.5 text-[13px] font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+          >
+            {createMutation.isPending ? "Creando…" : "Nueva propiedad"}
+          </button>
+          <div className="flex rounded-[10px] bg-[var(--pa-bg-alt)] p-[3px]">
+            <SegBtn active={view === "cards"} onClick={() => setView("cards")}>
+              Tarjetas
+            </SegBtn>
+            <SegBtn active={view === "table"} onClick={() => setView("table")}>
+              Tabla
+            </SegBtn>
+          </div>
         </div>
       </div>
 
@@ -85,6 +109,11 @@ export default function PropertiesPage() {
           No se pudo eliminar la propiedad.
         </p>
       )}
+      {createMutation.isError && (
+        <p className="mb-4 text-sm text-[var(--pa-danger)]">
+          No se pudo crear la propiedad.
+        </p>
+      )}
 
       {isLoading && <SkeletonGrid />}
       {isError && (
@@ -93,7 +122,12 @@ export default function PropertiesPage() {
         </p>
       )}
 
-      {data && data.length === 0 && <EmptyState onCreate={() => router.push("/publications")} />}
+      {data && data.length === 0 && (
+        <EmptyState
+          onCreate={onCreate}
+          creating={createMutation.isPending}
+        />
+      )}
 
       {data && data.length > 0 && view === "cards" && (
         <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-5">
@@ -285,7 +319,13 @@ function SkeletonGrid() {
   );
 }
 
-function EmptyState({ onCreate }: { onCreate: () => void }) {
+function EmptyState({
+  onCreate,
+  creating,
+}: {
+  onCreate: () => void;
+  creating?: boolean;
+}) {
   return (
     <div className="flex flex-col items-center rounded-[20px] border border-dashed border-[#D7DCE1] bg-[var(--pa-surface)] px-10 py-20 text-center">
       <div className="mb-5 h-16 w-16 rounded-2xl bg-[var(--pa-bg-alt)]" />
@@ -298,9 +338,10 @@ function EmptyState({ onCreate }: { onCreate: () => void }) {
       <button
         type="button"
         onClick={onCreate}
-        className="rounded-[10px] bg-[var(--pa-navy)] px-5 py-3 text-[13px] font-bold text-white"
+        disabled={creating}
+        className="rounded-[10px] bg-[var(--pa-navy)] px-5 py-3 text-[13px] font-bold text-white disabled:opacity-50"
       >
-        Registrar el primero
+        {creating ? "Creando…" : "Registrar el primero"}
       </button>
     </div>
   );

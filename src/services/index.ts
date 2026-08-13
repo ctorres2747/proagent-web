@@ -10,19 +10,30 @@ import { USE_HTTP_API } from "@/config/env";
 
 import { authService as mockAuth } from "./mocks/auth";
 import { propertiesService as mockProperties } from "./mocks/properties";
+import { publicationsService as mockPublications } from "./mocks/publications";
 import { authService as httpAuth } from "./http/auth";
 import { propertiesService as httpProperties } from "./http/properties";
+import { publicationsService as httpPublications } from "./http/publications";
 
 import type { AuthService } from "./interfaces/auth";
 import type { PropertiesService } from "./interfaces/properties";
+import type { PublicationsService } from "./interfaces/publications";
 
 export const authService: AuthService = USE_HTTP_API ? httpAuth : mockAuth;
 export const propertiesService: PropertiesService = USE_HTTP_API
   ? httpProperties
   : mockProperties;
+export const publicationsService: PublicationsService = USE_HTTP_API
+  ? httpPublications
+  : mockPublications;
 
 export type { AuthService } from "./interfaces/auth";
 export type {
   PropertiesService,
   Property,
 } from "./interfaces/properties";
+export type {
+  PublicationsService,
+  Publication,
+  ChannelResult,
+} from "./interfaces/publications";
