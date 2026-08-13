@@ -5,16 +5,17 @@ Contexto para agentes de Cursor (Cloud/Desktop) que trabajen en `proagent-web`.
 ## Qué es este repo
 
 Producto **web comercial** de ProAgent (Proinversores) para agentes
-inmobiliarios. Cliente **desacoplado** del backend: el host se inyecta con
-`NEXT_PUBLIC_API_URL`. Ver `README.md` para arranque, rutas y arquitectura.
+inmobiliarios — ofrecido al público junto con la app móvil. Cliente
+**desacoplado** del backend: el host se inyecta con `NEXT_PUBLIC_API_URL`.
+Ver `README.md` para arranque, rutas y arquitectura.
 
 Parte de un workspace multi-repo:
 
 | Repo | Rol |
 |---|---|
-| `proagent-web` (este) | Web comercial (Next.js). PRs base → `main`. |
-| `proagent-mobile` | App móvil Expo (Android-first). PRs base → `main`. |
-| `agente-inmobiliario` | FastAPI + Kanban interno + scrapers + motores de publicación. API móvil/web en `develop`. |
+| `proagent-web` (este) | Web comercial (Next.js). Inventario + publicación. PRs → `main`. |
+| `proagent-mobile` | App móvil Expo (Android-first). Mismo inventario. PRs → `main`. |
+| `agente-inmobiliario` | FastAPI + Kanban **interno** de captación + scrapers + motores. API `/api/web` y `/api/mobile` en `develop`. |
 
 ## Reglas obligatorias
 
@@ -31,7 +32,11 @@ Parte de un workspace multi-repo:
 - **NO** usar Expo Web como producto comercial. **NO** copiar
   `AgenteInmobiliario.html`.
 
-## Frontera público / privado (decisión de producto cerrada)
+## Frontera Kanban ↔ ProAgent (decisión cerrada 2026-08-13)
+
+Canónico:
+[`docs/frontera-kanban-proagent.md`](https://github.com/ctorres2747/agente-inmobiliario/blob/develop/docs/frontera-kanban-proagent.md)
+en `agente-inmobiliario`.
 
 ProAgent Web **nunca** incluye:
 
@@ -39,8 +44,17 @@ ProAgent Web **nunca** incluye:
 - Kanban interno de captación de leads
 - Email diario / pipeline de captación
 
-Comparte la **misma tabla `fichas`** (misma fuente de datos), pero es **otra
-superficie de UI**. Toda esa lógica vive solo en `agente-inmobiliario`.
+| | Kanban (interno) | ProAgent Web (este repo) |
+|---|---|---|
+| Objeto | Leads | Fichas / propiedades (`fichas`) |
+| Alta manual | No (migra aquí) | Sí — fuente de altas manuales del inventario |
+| Tras “Publicar” en Kanban | Crea ficha | Esa ficha **debe** listarse en `/properties` |
+| Publicación manual del inventario | No | Sí (asistente / panel web; mobile también) |
+
+Mismo inventario que mobile: ficha creada en la app móvil aparece aquí y
+viceversa. Destino UX: el botón Publicar del Kanban abrirá este producto en
+el flujo de publicación de la ficha (sin romper el flujo actual del Kanban
+mientras tanto).
 
 ## Roles / ownership
 
@@ -60,5 +74,7 @@ superficie de UI**. Toda esa lógica vive solo en `agente-inmobiliario`.
 ## Estado
 
 - **E-PLAT-01 (fundaciones/scaffold):** implementado en este repo.
-- Siguiente cola natural: `backend/web/` + `/api/web/*`, **E-INV-01** (inventario
-  Kanban→ProAgent + reglas admin) y **E-WEB-01** (asistente de publicación).
+- Inventario `/api/web` + reglas E-INV-01: en curso / disponible según backend
+  `develop`.
+- Siguiente cola natural: **E-WEB-01** (asistente de publicación real) y, en
+  backend, handoff Kanban Publicar → URL de esta web.
