@@ -16,7 +16,7 @@ type HandoffState =
 function HandoffContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { loading: authLoading, session, establishSession } = useAuth();
+  const { loading: authLoading, establishSession } = useAuth();
   const [state, setState] = useState<HandoffState>({ status: "loading" });
   const startedRef = useRef(false);
 
@@ -49,11 +49,6 @@ function HandoffContent() {
         return;
       }
 
-      if (session) {
-        router.replace(safeNext);
-        return;
-      }
-
       try {
         const response = await authService.exchangeHandoff(code);
         establishSession(response);
@@ -75,7 +70,6 @@ function HandoffContent() {
     loginHref,
     router,
     safeNext,
-    session,
   ]);
 
   if (state.status === "error") {
