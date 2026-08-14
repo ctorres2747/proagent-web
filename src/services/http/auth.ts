@@ -10,6 +10,7 @@ import { apiFetch } from "./client";
 // temporal /api/mobile/auth/*. Cambiar de host = NEXT_PUBLIC_API_URL.
 const LOGIN_PATH = "/api/web/auth/login";
 const ME_PATH = "/api/web/auth/me";
+const HANDOFF_EXCHANGE_PATH = "/api/web/auth/handoff/exchange";
 
 interface RawAgent {
   id: number | string;
@@ -57,5 +58,18 @@ export const authService: AuthService = {
   async me(token: string): Promise<AgentSession> {
     const raw = await apiFetch<RawAgent>(ME_PATH, { token });
     return mapAgent(raw);
+  },
+
+  async exchangeHandoff(code: string): Promise<LoginResponse> {
+    const raw = await apiFetch<RawLoginResponse>(HANDOFF_EXCHANGE_PATH, {
+      method: "POST",
+      body: { code },
+    });
+    return {
+      access_token: raw.access_token,
+      token_type: raw.token_type,
+      expires_in: raw.expires_in,
+      agent: mapAgent(raw.agent),
+    };
   },
 };

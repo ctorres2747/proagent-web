@@ -46,7 +46,8 @@ npm run typecheck  # tsc --noEmit
 
 ## Rutas
 
-- `/login` — login JWT (se omite en modo mocks)
+- `/login` — login JWT (se omite en modo mocks); admite `?next=` con path relativo allowlist
+- `/auth/handoff` — intercambio de code opaco del Kanban → sesión JWT + redirect
 - `/` — dashboard del agente
 - `/properties` — listado de propiedades (fichas)
 - `/properties/[id]` — detalle de propiedad

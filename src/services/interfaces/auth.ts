@@ -8,4 +8,6 @@ export interface AuthService {
   login(username: string, password: string): Promise<LoginResponse>;
   /** Hydrate the current session from a stored token. */
   me(token: string): Promise<AgentSession>;
+  /** Exchange a one-time Kanban handoff code for a JWT session. */
+  exchangeHandoff(code: string): Promise<LoginResponse>;
 }
