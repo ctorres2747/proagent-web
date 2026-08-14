@@ -35,5 +35,6 @@ export type {
 export type {
   PublicationsService,
   Publication,
+  PublicationFilter,
   ChannelResult,
 } from "./interfaces/publications";

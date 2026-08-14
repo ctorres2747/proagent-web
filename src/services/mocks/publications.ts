@@ -1,18 +1,102 @@
 import type { ChannelId } from "@/design-system/channels";
 import type {
   Publication,
+  PublicationFilter,
   PublicationsService,
 } from "@/services/interfaces/publications";
 
 const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-const store = new Map<string, Publication>();
+const now = () => new Date().toISOString();
 
-function now() {
-  return new Date().toISOString();
+const SEED_PUBLICATIONS: Publication[] = [
+  {
+    id: "pub-seed-draft",
+    propertyId: "1",
+    sharedTitle: "Apartamento en Envigado",
+    sharedBody: "Borrador pendiente de revisión.",
+    platformContent: [],
+    selectedChannels: ["wasi", "web"],
+    status: "draft",
+    scheduledFor: null,
+    timezone: null,
+    channelResults: [],
+    createdAt: now(),
+    updatedAt: now(),
+  },
+  {
+    id: "pub-seed-scheduled",
+    propertyId: "2",
+    sharedTitle: "Casa en Sabaneta",
+    sharedBody: "Programada para publicación automática.",
+    platformContent: [],
+    selectedChannels: ["wasi", "instagram", "web"],
+    status: "scheduled",
+    scheduledFor: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
+    timezone: "America/Bogota",
+    channelResults: [
+      { channelId: "wasi", status: "scheduled", publishedAt: null, externalRef: null, errorMessage: null, recommendedAction: null },
+      { channelId: "instagram", status: "scheduled", publishedAt: null, externalRef: null, errorMessage: null, recommendedAction: null },
+      { channelId: "web", status: "scheduled", publishedAt: null, externalRef: null, errorMessage: null, recommendedAction: null },
+    ],
+    createdAt: now(),
+    updatedAt: now(),
+  },
+  {
+    id: "pub-seed-published",
+    propertyId: "3",
+    sharedTitle: "Local en Laureles",
+    sharedBody: "Publicada en canales seleccionados.",
+    platformContent: [],
+    selectedChannels: ["wasi", "web"],
+    status: "published",
+    scheduledFor: null,
+    timezone: null,
+    channelResults: [
+      { channelId: "wasi", status: "published", publishedAt: now(), externalRef: "mock-wasi-1", errorMessage: null, recommendedAction: null },
+      { channelId: "web", status: "published", publishedAt: now(), externalRef: "mock-web-1", errorMessage: null, recommendedAction: null },
+    ],
+    createdAt: now(),
+    updatedAt: now(),
+  },
+  {
+    id: "pub-seed-error",
+    propertyId: "4",
+    sharedTitle: "Apartamento en Belén",
+    sharedBody: "Error en un canal.",
+    platformContent: [],
+    selectedChannels: ["wasi", "facebook"],
+    status: "partial",
+    scheduledFor: null,
+    timezone: null,
+    channelResults: [
+      { channelId: "wasi", status: "published", publishedAt: now(), externalRef: "mock-wasi-2", errorMessage: null, recommendedAction: null },
+      { channelId: "facebook", status: "failed", publishedAt: null, externalRef: null, errorMessage: "Error temporal de Marketplace", recommendedAction: "Reintentar" },
+    ],
+    createdAt: now(),
+    updatedAt: now(),
+  },
+];
+
+const store = new Map<string, Publication>(
+  SEED_PUBLICATIONS.map((p) => [p.id, { ...p }]),
+);
+
+function matchesFilter(pub: Publication, filter: PublicationFilter): boolean {
+  if (filter === "all") return true;
+  if (filter === "error") return pub.status === "failed" || pub.status === "partial";
+  if (filter === "published") return pub.status === "published" || pub.status === "partial";
+  return pub.status === filter;
 }
 
 export const publicationsService: PublicationsService = {
+  async list(filter) {
+    await delay(200);
+    return [...store.values()]
+      .filter((p) => matchesFilter(p, filter))
+      .map((p) => ({ ...p, channelResults: [...p.channelResults] }));
+  },
+
   async createDraft(propertyId) {
     await delay(200);
     const id = `pub-${Date.now()}`;
@@ -56,6 +140,10 @@ export const publicationsService: PublicationsService = {
       status: data.status ?? current.status,
       updatedAt: now(),
       platformContent: current.platformContent,
+      channelResults:
+        data.status === "draft" && data.scheduledFor === null
+          ? []
+          : current.channelResults,
     };
     if (data.platformContent) {
       const others = next.platformContent.filter(
@@ -78,6 +166,14 @@ export const publicationsService: PublicationsService = {
         scheduledFor: opts.scheduledFor,
         timezone: opts.timezone ?? "America/Bogota",
         updatedAt: now(),
+        channelResults: current.selectedChannels.map((channelId) => ({
+          channelId,
+          status: "scheduled" as const,
+          publishedAt: null,
+          externalRef: null,
+          errorMessage: null,
+          recommendedAction: null,
+        })),
       };
       store.set(id, next);
       return { ...next };

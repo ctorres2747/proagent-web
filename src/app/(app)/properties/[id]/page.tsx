@@ -19,6 +19,13 @@ import {
   type ChannelStatus,
 } from "@/design-system/channels";
 import { formatPrice } from "@/lib/format";
+import {
+  DEFAULT_TIMEZONE,
+  buildScheduleIso,
+  formatScheduledFor,
+  scheduleValidationError,
+  tomorrowDateString,
+} from "@/lib/schedule";
 
 type StepId =
   | "content"
@@ -248,7 +255,7 @@ export default function PublishWizardPage() {
     }
   };
 
-  const onPublish = async () => {
+  const onPublishNow = async () => {
     if (!publication) return;
     setActionBusy(true);
     setActionError(null);
@@ -262,6 +269,58 @@ export default function PublishWizardPage() {
       setStep("results");
     } catch {
       setActionError("No se pudo publicar. Intenta de nuevo.");
+    } finally {
+      setActionBusy(false);
+    }
+  };
+
+  const onSchedulePublish = async (date: string, time: string) => {
+    if (!publication) return;
+    const validation = scheduleValidationError(date, time);
+    if (validation) {
+      setActionError(validation);
+      return;
+    }
+    const scheduledFor = buildScheduleIso(date, time);
+    if (!scheduledFor) {
+      setActionError("Fecha u hora inválida.");
+      return;
+    }
+    setActionBusy(true);
+    setActionError(null);
+    try {
+      const pub = await publicationsService.publish(
+        publication.id,
+        { scheduledFor, timezone: DEFAULT_TIMEZONE },
+        token ?? undefined,
+      );
+      setPublication(pub);
+      setStep("results");
+    } catch {
+      setActionError("No se pudo programar la publicación. Intenta de nuevo.");
+    } finally {
+      setActionBusy(false);
+    }
+  };
+
+  const onCancelSchedule = async () => {
+    if (!publication) return;
+    const ok = window.confirm(
+      "¿Cancelar la programación? La publicación volverá a borrador.",
+    );
+    if (!ok) return;
+    setActionBusy(true);
+    setActionError(null);
+    try {
+      const pub = await publicationsService.patch(
+        publication.id,
+        { status: "draft", scheduledFor: null, timezone: null },
+        token ?? undefined,
+      );
+      setPublication(pub);
+      setStep("preview");
+    } catch {
+      setActionError("No se pudo cancelar la programación.");
     } finally {
       setActionBusy(false);
     }
@@ -445,20 +504,29 @@ export default function PublishWizardPage() {
           onNext={() => void onCustomizeContinue()}
         />
       )}
-      {step === "preview" && (
+      {step === "preview" && publication && (
         <PreviewStep
           property={displayProperty}
+          publication={publication}
           busy={actionBusy}
-          onPublish={() => void onPublish()}
+          actionError={actionError}
+          onPublishNow={() => void onPublishNow()}
+          onSchedule={(date, time) => void onSchedulePublish(date, time)}
           onDraft={() => void onSaveDraft()}
+          onCancelSchedule={() => void onCancelSchedule()}
         />
       )}
-      {step === "results" && (
+      {step === "results" && publication && (
         <ResultsStep
           property={displayProperty}
+          publication={publication}
           publicationId={publication.id}
           channelResults={publication.channelResults}
           token={token ?? undefined}
+          busy={actionBusy}
+          actionError={actionError}
+          onCancelSchedule={() => void onCancelSchedule()}
+          onReprogram={() => setStep("preview")}
           onResultUpdated={(result) => {
             setPublication((prev) => {
               if (!prev) return prev;
@@ -1183,16 +1251,27 @@ function CustomizeStep({
 
 function PreviewStep({
   property,
+  publication,
   busy,
-  onPublish,
+  actionError,
+  onPublishNow,
+  onSchedule,
   onDraft,
+  onCancelSchedule,
 }: {
   property: Property;
+  publication: Publication;
   busy: boolean;
-  onPublish: () => void;
+  actionError: string | null;
+  onPublishNow: () => void;
+  onSchedule: (date: string, time: string) => void;
   onDraft: () => void;
+  onCancelSchedule: () => void;
 }) {
   const [scheduling, setScheduling] = useState(false);
+  const [scheduleDate, setScheduleDate] = useState(tomorrowDateString());
+  const [scheduleTime, setScheduleTime] = useState("17:00");
+  const isScheduled = publication.status === "scheduled";
   const facts = [
     property.alcobas !== null ? `${property.alcobas} alcobas` : null,
     property.banos !== null ? `${property.banos} baños` : null,
@@ -1243,9 +1322,32 @@ function PreviewStep({
             <div>○ Contenido revisado</div>
           </div>
         </Card>
-        {!scheduling ? (
+        {actionError && (
+          <p className="text-sm text-[var(--pa-danger)]">{actionError}</p>
+        )}
+        {isScheduled ? (
+          <div className="flex flex-col gap-3 rounded-2xl border border-[var(--pa-warning)]/40 bg-[var(--pa-surface)] p-[18px]">
+            <div className="text-[13px] font-bold text-[var(--pa-ink)]">
+              Publicación programada
+            </div>
+            <div className="text-xs text-[var(--pa-muted)]">
+              {formatScheduledFor(publication.scheduledFor, publication.timezone)}
+            </div>
+            <PrimaryBlock onClick={() => setScheduling(true)} disabled={busy}>
+              Reprogramar
+            </PrimaryBlock>
+            <button
+              type="button"
+              onClick={onCancelSchedule}
+              disabled={busy}
+              className="rounded-xl border border-[var(--pa-danger)] px-6 py-3 text-center text-[13px] font-bold text-[var(--pa-danger)] disabled:opacity-50"
+            >
+              {busy ? "Cancelando…" : "Cancelar programación"}
+            </button>
+          </div>
+        ) : !scheduling ? (
           <>
-            <PrimaryBlock onClick={onPublish} disabled={busy}>
+            <PrimaryBlock onClick={onPublishNow} disabled={busy}>
               {busy ? "Publicando…" : "Publicar ahora"}
             </PrimaryBlock>
             <button
@@ -1269,15 +1371,36 @@ function PreviewStep({
           <div className="flex flex-col gap-3 rounded-2xl border border-[var(--pa-border)] bg-[var(--pa-surface)] p-[18px]">
             <div>
               <div className={label}>Fecha</div>
-              <input className={input} type="date" />
+              <input
+                className={input}
+                type="date"
+                value={scheduleDate}
+                onChange={(e) => setScheduleDate(e.target.value)}
+              />
             </div>
             <div>
               <div className={label}>Hora</div>
-              <input className={input} type="time" defaultValue="17:00" />
+              <input
+                className={input}
+                type="time"
+                value={scheduleTime}
+                onChange={(e) => setScheduleTime(e.target.value)}
+              />
             </div>
-            <PrimaryBlock onClick={onPublish} disabled={busy}>
-              {busy ? "Publicando…" : "Confirmar programación"}
+            <PrimaryBlock
+              onClick={() => onSchedule(scheduleDate, scheduleTime)}
+              disabled={busy}
+            >
+              {busy ? "Programando…" : "Confirmar programación"}
             </PrimaryBlock>
+            <button
+              type="button"
+              onClick={() => setScheduling(false)}
+              disabled={busy}
+              className="py-1.5 text-center text-[13px] font-bold text-[var(--pa-muted)]"
+            >
+              Volver
+            </button>
           </div>
         )}
       </div>
@@ -1287,15 +1410,25 @@ function PreviewStep({
 
 function ResultsStep({
   property,
+  publication,
   publicationId,
   channelResults,
   token,
+  busy,
+  actionError,
+  onCancelSchedule,
+  onReprogram,
   onResultUpdated,
 }: {
   property: Property;
+  publication: Publication;
   publicationId: string;
   channelResults: ChannelResult[];
   token?: string;
+  busy: boolean;
+  actionError: string | null;
+  onCancelSchedule: () => void;
+  onReprogram: () => void;
   onResultUpdated: (result: ChannelResult) => void;
 }) {
   const [retrying, setRetrying] = useState<ChannelId | null>(null);
@@ -1328,6 +1461,10 @@ function ResultsStep({
     };
   });
   const publishedCount = results.filter((r) => r.status === "published").length;
+  const scheduledCount = results.filter(
+    (r) => r.status === "progress" && channelResults.find((c) => c.channelId === r.id)?.status === "scheduled",
+  ).length;
+  const isScheduled = publication.status === "scheduled";
   const pct =
     results.length === 0
       ? 0
@@ -1352,10 +1489,43 @@ function ResultsStep({
 
   return (
     <div className="max-w-[760px]">
+      {isScheduled && (
+        <div className="mb-5 rounded-2xl border border-[var(--pa-warning)]/40 bg-[var(--pa-surface)] px-6 py-5">
+          <div className="mb-1 text-[13px] font-bold text-[var(--pa-ink)]">
+            Publicación programada
+          </div>
+          <div className="mb-4 text-xs text-[var(--pa-muted)]">
+            {formatScheduledFor(publication.scheduledFor, publication.timezone)}
+            {scheduledCount > 0
+              ? ` · ${scheduledCount} canal${scheduledCount === 1 ? "" : "es"} pendiente${scheduledCount === 1 ? "" : "s"}`
+              : ""}
+          </div>
+          <div className="flex flex-wrap gap-3">
+            <button
+              type="button"
+              onClick={onReprogram}
+              disabled={busy}
+              className="rounded-[10px] bg-[var(--pa-navy)] px-4 py-2 text-xs font-bold text-white disabled:opacity-50"
+            >
+              Reprogramar
+            </button>
+            <button
+              type="button"
+              onClick={onCancelSchedule}
+              disabled={busy}
+              className="rounded-[10px] border border-[var(--pa-danger)] px-4 py-2 text-xs font-bold text-[var(--pa-danger)] disabled:opacity-50"
+            >
+              {busy ? "Cancelando…" : "Cancelar programación"}
+            </button>
+          </div>
+        </div>
+      )}
       <div className="mb-5 rounded-2xl border border-[var(--pa-border)] bg-[var(--pa-surface)] px-6 py-5">
         <div className="mb-2.5 text-[13px] font-bold text-[var(--pa-ink)]">
-          {publishedCount} de {results.length} canales publicados ·{" "}
-          {property.titulo}
+          {isScheduled
+            ? `${scheduledCount || results.length} canal${(scheduledCount || results.length) === 1 ? "" : "es"} programado${(scheduledCount || results.length) === 1 ? "" : "s"}`
+            : `${publishedCount} de ${results.length} canales publicados`}{" "}
+          · {property.titulo}
         </div>
         <div className="h-2 overflow-hidden rounded bg-[var(--pa-bg-alt)]">
           <div
@@ -1364,6 +1534,9 @@ function ResultsStep({
           />
         </div>
       </div>
+      {actionError && (
+        <p className="mb-3 text-sm text-[var(--pa-danger)]">{actionError}</p>
+      )}
       {retryError && (
         <p className="mb-3 text-sm text-[var(--pa-danger)]">{retryError}</p>
       )}

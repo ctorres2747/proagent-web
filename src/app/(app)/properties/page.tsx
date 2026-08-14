@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/features/auth/AuthProvider";
@@ -10,7 +10,8 @@ import { ChannelChips } from "@/components/ChannelChips";
 import { CompletenessBar } from "@/components/CompletenessBar";
 import { formatPrice } from "@/lib/format";
 
-const FILTERS = ["Tipo", "Ciudad", "Estado", "Precio"];
+const FILTER_TYPES = ["Todos", "Apartamento", "Casa", "Local", "Lote", "Oficina", "Finca"];
+const FILTER_ESTADOS = ["Todos", "Incompleto", "Casi listo", "Completo"];
 
 export default function PropertiesPage() {
   const { token } = useAuth();
@@ -18,11 +19,42 @@ export default function PropertiesPage() {
   const queryClient = useQueryClient();
   const [view, setView] = useState<"table" | "cards">("table");
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
+  const [tipoFilter, setTipoFilter] = useState("Todos");
+  const [ciudadFilter, setCiudadFilter] = useState("Todos");
+  const [estadoFilter, setEstadoFilter] = useState("Todos");
+  const [openFilter, setOpenFilter] = useState<"tipo" | "ciudad" | "estado" | null>(
+    null,
+  );
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ["properties"],
     queryFn: () => propertiesService.list(token ?? undefined),
   });
+
+  const ciudades = useMemo(() => {
+    const set = new Set((data ?? []).map((p) => p.municipio).filter(Boolean));
+    return ["Todos", ...Array.from(set).sort()];
+  }, [data]);
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return (data ?? []).filter((p) => {
+      if (tipoFilter !== "Todos" && p.tipo !== tipoFilter) return false;
+      if (ciudadFilter !== "Todos" && p.municipio !== ciudadFilter) return false;
+      if (estadoFilter === "Incompleto" && p.completeness >= 70) return false;
+      if (estadoFilter === "Casi listo" && (p.completeness < 70 || p.completeness >= 100))
+        return false;
+      if (estadoFilter === "Completo" && p.completeness < 100) return false;
+      if (!q) return true;
+      return (
+        p.titulo.toLowerCase().includes(q) ||
+        p.municipio.toLowerCase().includes(q) ||
+        p.code.toLowerCase().includes(q) ||
+        (p.barrio?.toLowerCase().includes(q) ?? false)
+      );
+    });
+  }, [data, search, tipoFilter, ciudadFilter, estadoFilter]);
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => propertiesService.delete(id, token ?? undefined),
@@ -68,7 +100,7 @@ export default function PropertiesPage() {
           <p className="mt-1 text-[13px] text-[var(--pa-muted)]">
             {isLoading
               ? "Cargando inventario…"
-              : `${data?.length ?? 0} inmuebles en tu inventario`}
+              : `${filtered.length} de ${data?.length ?? 0} inmuebles`}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
@@ -91,17 +123,68 @@ export default function PropertiesPage() {
         </div>
       </div>
 
-      {/* Filter chips */}
-      <div className="mb-6 flex flex-wrap gap-2.5">
-        {FILTERS.map((f) => (
-          <button
-            key={f}
-            type="button"
-            className="whitespace-nowrap rounded-full border border-[var(--pa-border)] bg-[var(--pa-surface)] px-4 py-2 text-[13px] font-semibold text-[#45525E] hover:border-[var(--pa-navy)]"
-          >
-            {f} ▾
-          </button>
-        ))}
+      {/* Search + filter chips */}
+      <div className="mb-4">
+        <input
+          type="search"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Buscar por título, municipio o código…"
+          className="w-full max-w-md rounded-[10px] border border-[var(--pa-border)] bg-[var(--pa-surface)] px-4 py-2.5 text-[13px] text-[var(--pa-ink)] outline-none focus:border-[var(--pa-navy)]"
+        />
+      </div>
+      <div className="relative mb-6 flex flex-wrap gap-2.5">
+        <FilterChip
+          label={`Tipo${tipoFilter !== "Todos" ? `: ${tipoFilter}` : ""}`}
+          active={openFilter === "tipo"}
+          onClick={() =>
+            setOpenFilter((f) => (f === "tipo" ? null : "tipo"))
+          }
+        />
+        <FilterChip
+          label={`Ciudad${ciudadFilter !== "Todos" ? `: ${ciudadFilter}` : ""}`}
+          active={openFilter === "ciudad"}
+          onClick={() =>
+            setOpenFilter((f) => (f === "ciudad" ? null : "ciudad"))
+          }
+        />
+        <FilterChip
+          label={`Estado${estadoFilter !== "Todos" ? `: ${estadoFilter}` : ""}`}
+          active={openFilter === "estado"}
+          onClick={() =>
+            setOpenFilter((f) => (f === "estado" ? null : "estado"))
+          }
+        />
+        {openFilter === "tipo" && (
+          <FilterMenu
+            options={FILTER_TYPES}
+            selected={tipoFilter}
+            onSelect={(v) => {
+              setTipoFilter(v);
+              setOpenFilter(null);
+            }}
+          />
+        )}
+        {openFilter === "ciudad" && (
+          <FilterMenu
+            options={ciudades}
+            selected={ciudadFilter}
+            onSelect={(v) => {
+              setCiudadFilter(v);
+              setOpenFilter(null);
+            }}
+          />
+        )}
+        {openFilter === "estado" && (
+          <FilterMenu
+            options={FILTER_ESTADOS}
+            selected={estadoFilter}
+            onSelect={(v) => {
+              setEstadoFilter(v);
+              setOpenFilter(null);
+            }}
+          />
+        )}
       </div>
 
       {deleteMutation.isError && (
@@ -129,9 +212,15 @@ export default function PropertiesPage() {
         />
       )}
 
-      {data && data.length > 0 && view === "cards" && (
+      {data && data.length > 0 && filtered.length === 0 && (
+        <p className="text-sm text-[var(--pa-muted)]">
+          Ningún inmueble coincide con los filtros.
+        </p>
+      )}
+
+      {filtered.length > 0 && view === "cards" && (
         <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-5">
-          {data.map((p) => (
+          {filtered.map((p) => (
             <PropertyCard
               key={p.id}
               p={p}
@@ -143,14 +232,67 @@ export default function PropertiesPage() {
         </div>
       )}
 
-      {data && data.length > 0 && view === "table" && (
+      {filtered.length > 0 && view === "table" && (
         <PropertyTable
-          properties={data}
+          properties={filtered}
           onOpen={open}
           onDelete={onDelete}
           deletingId={deletingId}
         />
       )}
+    </div>
+  );
+}
+
+function FilterChip({
+  label,
+  active,
+  onClick,
+}: {
+  label: string;
+  active: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`whitespace-nowrap rounded-full border px-4 py-2 text-[13px] font-semibold transition-colors ${
+        active
+          ? "border-[var(--pa-navy)] bg-[var(--pa-navy)] text-white"
+          : "border-[var(--pa-border)] bg-[var(--pa-surface)] text-[#45525E] hover:border-[var(--pa-navy)]"
+      }`}
+    >
+      {label} ▾
+    </button>
+  );
+}
+
+function FilterMenu({
+  options,
+  selected,
+  onSelect,
+}: {
+  options: string[];
+  selected: string;
+  onSelect: (value: string) => void;
+}) {
+  return (
+    <div className="absolute left-0 top-full z-20 mt-1 min-w-[180px] rounded-xl border border-[var(--pa-border)] bg-[var(--pa-surface)] py-1 shadow-lg">
+      {options.map((opt) => (
+        <button
+          key={opt}
+          type="button"
+          onClick={() => onSelect(opt)}
+          className={`block w-full px-4 py-2 text-left text-[13px] hover:bg-[var(--pa-bg)] ${
+            opt === selected
+              ? "font-bold text-[var(--pa-navy)]"
+              : "text-[var(--pa-ink)]"
+          }`}
+        >
+          {opt}
+        </button>
+      ))}
     </div>
   );
 }
