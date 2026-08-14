@@ -3,6 +3,7 @@ import { apiFetch } from "./client";
 import type {
   ChannelResult,
   Publication,
+  PublicationFilter,
   PublicationStatus,
   PublicationsService,
 } from "@/services/interfaces/publications";
@@ -73,6 +74,14 @@ function mapPub(raw: RawPublication): Publication {
 }
 
 export const publicationsService: PublicationsService = {
+  async list(filter: PublicationFilter, token) {
+    const raw = await apiFetch<RawPublication[]>(LIST_PATH, {
+      token,
+      query: { filter },
+    });
+    return Array.isArray(raw) ? raw.map(mapPub) : [];
+  },
+
   async createDraft(propertyId, token) {
     const raw = await apiFetch<RawPublication>(LIST_PATH, {
       method: "POST",

@@ -32,6 +32,13 @@ export interface PlatformContent {
   isAiGenerated: boolean;
 }
 
+export type PublicationFilter =
+  | "all"
+  | "draft"
+  | "scheduled"
+  | "published"
+  | "error";
+
 export interface Publication {
   id: string;
   propertyId: string;
@@ -48,6 +55,7 @@ export interface Publication {
 }
 
 export interface PublicationsService {
+  list(filter: PublicationFilter, token?: string): Promise<Publication[]>;
   createDraft(propertyId: string, token?: string): Promise<Publication>;
   get(id: string, token?: string): Promise<Publication>;
   patch(

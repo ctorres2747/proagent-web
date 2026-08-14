@@ -13,6 +13,7 @@ interface RequestOptions {
   method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
   token?: string;
   body?: unknown;
+  query?: Record<string, string | number | boolean | undefined | null>;
 }
 
 async function parseError(res: Response): Promise<never> {
@@ -36,13 +37,25 @@ async function parseError(res: Response): Promise<never> {
  */
 export async function apiFetch<T>(
   path: string,
-  { method = "GET", token, body }: RequestOptions = {},
+  { method = "GET", token, body, query }: RequestOptions = {},
 ): Promise<T> {
   const headers: Record<string, string> = { Accept: "application/json" };
   if (body !== undefined) headers["Content-Type"] = "application/json";
   if (token) headers["Authorization"] = `Bearer ${token}`;
 
-  const res = await fetch(`${API_URL}${path}`, {
+  let url = `${API_URL}${path}`;
+  if (query) {
+    const params = new URLSearchParams();
+    for (const [key, value] of Object.entries(query)) {
+      if (value !== undefined && value !== null) {
+        params.set(key, String(value));
+      }
+    }
+    const qs = params.toString();
+    if (qs) url += `?${qs}`;
+  }
+
+  const res = await fetch(url, {
     method,
     headers,
     body: body !== undefined ? JSON.stringify(body) : undefined,
