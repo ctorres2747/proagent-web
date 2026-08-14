@@ -12,7 +12,7 @@ import { USE_HTTP_API } from "@/config/env";
 import { authService } from "@/services";
 import { ApiError } from "@/services/http/client";
 import { MOCK_ADMIN } from "@/services/mocks/auth";
-import type { AgentSession } from "./types";
+import type { AgentSession, LoginResponse } from "./types";
 
 const TOKEN_KEY = "proagent.web.token";
 
@@ -22,6 +22,8 @@ interface AuthContextValue {
   loading: boolean;
   error: string | null;
   login: (username: string, password: string) => Promise<void>;
+  /** Persist a login/handoff response (same storage as login). */
+  establishSession: (response: LoginResponse) => void;
   logout: () => void;
 }
 
@@ -79,25 +81,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
+  const establishSession = useCallback((response: LoginResponse) => {
+    setError(null);
+    setSession(response.agent);
+    setToken(response.access_token);
+    if (typeof window !== "undefined") {
+      localStorage.setItem(TOKEN_KEY, response.access_token);
+    }
+  }, []);
+
   const login = useCallback(async (username: string, password: string) => {
     setError(null);
     try {
       const res = await authService.login(username, password);
-      setSession(res.agent);
-      setToken(res.access_token);
-      if (typeof window !== "undefined")
-        localStorage.setItem(TOKEN_KEY, res.access_token);
+      establishSession(res);
     } catch (err) {
       const message =
         err instanceof Error ? err.message : "No se pudo iniciar sesión";
       setError(message);
       throw err;
     }
-  }, []);
+  }, [establishSession]);
 
   const value = useMemo<AuthContextValue>(
-    () => ({ session, token, loading, error, login, logout }),
-    [session, token, loading, error, login, logout],
+    () => ({ session, token, loading, error, login, establishSession, logout }),
+    [session, token, loading, error, login, establishSession, logout],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

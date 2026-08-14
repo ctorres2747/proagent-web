@@ -40,4 +40,11 @@ export const authService: AuthService = {
     await delay(150);
     return MOCK_ADMIN;
   },
+
+  async exchangeHandoff(): Promise<LoginResponse> {
+    await delay(150);
+    throw new Error(
+      "El handoff de Kanban requiere NEXT_PUBLIC_API_URL (modo HTTP).",
+    );
+  },
 };
