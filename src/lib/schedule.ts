@@ -11,7 +11,7 @@ export function tomorrowDateString(): string {
   return `${yyyy}-${mm}-${dd}`;
 }
 
-/** Build ISO string from local date (YYYY-MM-DD) and time (HH:mm). */
+/** Build ISO UTC from date/time interpreted in America/Bogota (UTC-5, no DST). */
 export function buildScheduleIso(date: string, time: string): string | null {
   const dateMatch = /^(\d{4})-(\d{2})-(\d{2})$/.exec(date.trim());
   const timeMatch = /^(\d{1,2}):(\d{2})$/.exec(time.trim());
@@ -33,9 +33,11 @@ export function buildScheduleIso(date: string, time: string): string | null {
   ) {
     return null;
   }
-  const local = new Date(year, month - 1, day, hour, minute, 0, 0);
-  if (Number.isNaN(local.getTime())) return null;
-  return local.toISOString();
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const bogotaLocal = `${year}-${pad(month)}-${pad(day)}T${pad(hour)}:${pad(minute)}:00-05:00`;
+  const parsed = new Date(bogotaLocal);
+  if (Number.isNaN(parsed.getTime())) return null;
+  return parsed.toISOString();
 }
 
 export function isFutureSchedule(iso: string): boolean {
@@ -52,6 +54,7 @@ export function formatScheduledFor(
     const formatted = new Date(iso).toLocaleString("es-CO", {
       dateStyle: "medium",
       timeStyle: "short",
+      timeZone: "America/Bogota",
     });
     return timezone ? `${formatted} (${timezone})` : formatted;
   } catch {
