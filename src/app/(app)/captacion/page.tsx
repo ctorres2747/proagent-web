@@ -7,12 +7,17 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/features/auth/AuthProvider";
 import { CAPTACION_NATIVE, CAPTACION_URL } from "@/config/env";
 import { CaptacionDetailDrawer } from "@/features/captacion/CaptacionDetailDrawer";
+import { LeadCard } from "@/features/captacion/LeadCard";
 import { ScraperStatusBar } from "@/features/captacion/ScraperStatusBar";
 import { canAccessCaptacion } from "@/lib/agentDisplay";
 import { captacionSubtitle } from "@/lib/captacionSubtitle";
-import { formatPrice } from "@/lib/format";
 import { FilterDropdown } from "@/components/FilterDropdown";
-import { LeadCoverImage } from "@/components/LeadCoverImage";
+import {
+  isPriceRangeActive,
+  matchesPriceRange,
+  PriceRangeFilter,
+  type PriceRange,
+} from "@/components/PriceRangeFilter";
 import { Toast } from "@/components/Toast";
 import { fichasService, leadsService, scraperService } from "@/services";
 import type { Lead, LeadEstado } from "@/services/interfaces/leads";
@@ -24,27 +29,10 @@ const COLUMNS: LeadEstado[] = [
   "Descartado",
 ];
 
-const FILTER_PRECIOS = [
-  { value: "Todos", label: "Todos" },
-  { value: "hasta-500m", label: "Hasta $500M" },
-  { value: "500m-1b", label: "$500M – $1.000M" },
-  { value: "mas-1b", label: "Más de $1.000M" },
-];
-
 type FilterKey = "municipio" | "tipo" | "portal" | "estado" | "precio";
 
 function columnCount(leads: Lead[], estado: LeadEstado): number {
   return leads.filter((l) => l.estado === estado).length;
-}
-
-function matchesPrecio(precioNum: number | null, filter: string): boolean {
-  if (filter === "Todos") return true;
-  if (precioNum === null) return false;
-  if (filter === "hasta-500m") return precioNum <= 500_000_000;
-  if (filter === "500m-1b")
-    return precioNum > 500_000_000 && precioNum <= 1_000_000_000;
-  if (filter === "mas-1b") return precioNum > 1_000_000_000;
-  return true;
 }
 
 function matchesOwnerSearch(lead: Lead, query: string): boolean {
@@ -80,7 +68,7 @@ export default function CaptacionPage() {
   const [tipoFilter, setTipoFilter] = useState("Todos");
   const [portalFilter, setPortalFilter] = useState("Todos");
   const [estadoFilter, setEstadoFilter] = useState("Todos");
-  const [precioFilter, setPrecioFilter] = useState("Todos");
+  const [priceRange, setPriceRange] = useState<PriceRange>({ min: "", max: "" });
   const [ownerSearch, setOwnerSearch] = useState("");
   const [openFilter, setOpenFilter] = useState<FilterKey | null>(null);
 
@@ -166,7 +154,7 @@ export default function CaptacionPage() {
       if (estadoFilter !== "Todos" && lead.estado !== estadoFilter) {
         return false;
       }
-      if (!matchesPrecio(lead.precioNum, precioFilter)) return false;
+      if (!matchesPriceRange(lead.precioNum, priceRange)) return false;
       if (!matchesOwnerSearch(lead, ownerSearch)) return false;
       return true;
     });
@@ -176,7 +164,7 @@ export default function CaptacionPage() {
     tipoFilter,
     portalFilter,
     estadoFilter,
-    precioFilter,
+    priceRange,
     ownerSearch,
   ]);
 
@@ -185,7 +173,7 @@ export default function CaptacionPage() {
     tipoFilter !== "Todos" ||
     portalFilter !== "Todos" ||
     estadoFilter !== "Todos" ||
-    precioFilter !== "Todos" ||
+    isPriceRangeActive(priceRange) ||
     ownerSearch.trim().length > 0;
 
   const clearFilters = () => {
@@ -193,7 +181,7 @@ export default function CaptacionPage() {
     setTipoFilter("Todos");
     setPortalFilter("Todos");
     setEstadoFilter("Todos");
-    setPrecioFilter("Todos");
+    setPriceRange({ min: "", max: "" });
     setOwnerSearch("");
     setOpenFilter(null);
   };
@@ -357,17 +345,14 @@ export default function CaptacionPage() {
           selected={estadoFilter}
           onSelect={setEstadoFilter}
         />
-        <FilterDropdown
-          label="Precio"
-          active={precioFilter !== "Todos"}
+        <PriceRangeFilter
+          range={priceRange}
+          onChange={setPriceRange}
           open={openFilter === "precio"}
           onToggle={() =>
             setOpenFilter((k) => (k === "precio" ? null : "precio"))
           }
           onClose={() => setOpenFilter(null)}
-          options={FILTER_PRECIOS}
-          selected={precioFilter}
-          onSelect={setPrecioFilter}
         />
         <input
           type="search"
@@ -403,54 +388,31 @@ export default function CaptacionPage() {
 
       {!isLoading && !isError && (
         <div className="min-h-0 flex-1 overflow-x-auto">
-          <div className="grid min-h-[420px] min-w-[1080px] grid-cols-4 gap-4">
+          <div className="grid min-h-[420px] w-max min-w-full grid-cols-[repeat(4,minmax(280px,1fr))] gap-5">
             {COLUMNS.map((estado) => (
               <section
                 key={estado}
-                className="flex min-h-[360px] flex-col rounded-2xl border border-[var(--pa-border)] bg-[var(--pa-surface)]"
+                className="flex min-h-[360px] min-w-[280px] flex-col rounded-2xl border border-[var(--pa-border)] bg-[var(--pa-surface)]"
               >
-                <header className="flex items-center justify-between border-b border-[var(--pa-border)] px-3 py-2.5">
-                  <h2 className="text-[13px] font-bold text-[var(--pa-ink)]">
+                <header className="flex items-center justify-between border-b border-[var(--pa-border)] px-3.5 py-3">
+                  <h2 className="text-sm font-bold text-[var(--pa-ink)]">
                     {estado}
                   </h2>
-                  <span className="rounded-full bg-[var(--pa-bg)] px-2 py-0.5 text-[11px] font-semibold text-[var(--pa-muted)]">
+                  <span className="rounded-full bg-[var(--pa-bg)] px-2.5 py-0.5 text-[11px] font-semibold text-[var(--pa-muted)]">
                     {columnCount(filteredLeads, estado)}
                   </span>
                 </header>
-                <div className="flex flex-1 flex-col gap-2 overflow-y-auto p-2">
+                <div className="flex flex-1 flex-col gap-5 overflow-y-auto p-3.5">
                   {filteredLeads
                     .filter((l) => l.estado === estado)
-                    .map((lead) => {
-                      const active = lead.id === selectedId;
-                      return (
-                        <button
-                          key={lead.id}
-                          type="button"
-                          onClick={() => setSelectedId(lead.id)}
-                          className={`rounded-xl border p-3 text-left transition-colors ${
-                            active
-                              ? "border-[var(--pa-navy)] bg-[#E7EEF4]"
-                              : "border-[var(--pa-border)] bg-[var(--pa-bg)] hover:border-[var(--pa-navy)]/40"
-                          }`}
-                        >
-                          <LeadCoverImage url={lead.imagenUrl} />
-                          <p className="text-[12px] font-bold text-[var(--pa-ink)]">
-                            {lead.tipoInmueble ?? "Inmueble"}
-                            {lead.municipio ? ` · ${lead.municipio}` : ""}
-                          </p>
-                          <p className="mt-0.5 text-[12px] font-semibold text-[var(--pa-navy)]">
-                            {lead.precio ??
-                              formatPrice(
-                                lead.precioNum,
-                                (lead.precioNum ?? 0) < 5_000_000,
-                              )}
-                          </p>
-                          <p className="mt-1 text-[11px] text-[var(--pa-muted)]">
-                            {lead.portal}
-                          </p>
-                        </button>
-                      );
-                    })}
+                    .map((lead) => (
+                      <LeadCard
+                        key={lead.id}
+                        lead={lead}
+                        active={lead.id === selectedId}
+                        onClick={() => setSelectedId(lead.id)}
+                      />
+                    ))}
                   {columnCount(filteredLeads, estado) === 0 && (
                     <p className="px-2 py-6 text-center text-[12px] text-[var(--pa-faint)]">
                       Sin leads
