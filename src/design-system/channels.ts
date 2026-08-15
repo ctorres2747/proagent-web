@@ -14,37 +14,43 @@ export const CHANNEL_ORDER: ChannelId[] = [
 
 export const CHANNEL_META: Record<
   ChannelId,
-  { name: string; short: string; logo: string; account: string }
+  {
+    name: string;
+    /** Línea secundaria en cards (Marketplace, Catálogo…). Vacío = no mostrar. */
+    subtitle: string;
+    short: string;
+    logo: string;
+  }
 > = {
   wasi: {
     name: "WASI",
+    subtitle: "",
     short: "W",
     logo: "/channels/wasi.svg",
-    account: "proinversores.wasi",
   },
   facebook: {
-    name: "Facebook Marketplace",
+    name: "Facebook",
+    subtitle: "Marketplace",
     short: "F",
     logo: "/channels/facebook.svg",
-    account: "Proinversores Medellín",
   },
   instagram: {
     name: "Instagram",
+    subtitle: "",
     short: "I",
     logo: "/channels/instagram.svg",
-    account: "@proinversores.co",
   },
   whatsapp: {
-    name: "WhatsApp (catálogo)",
+    name: "WhatsApp",
+    subtitle: "Catálogo",
     short: "Wa",
     logo: "/channels/whatsapp.svg",
-    account: "No conectado",
   },
   web: {
     name: "Sitio web",
+    subtitle: "",
     short: "Web",
     logo: "/channels/web.svg",
-    account: "proinversores.com.co",
   },
 };
 
