@@ -4,13 +4,14 @@ import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/features/auth/AuthProvider";
-import { propertiesService, publicationsService } from "@/services";
+import { propertiesService, publicationsService, channelsService } from "@/services";
 import type { Property } from "@/services/interfaces/properties";
 import type {
   ChannelResult,
   ChannelResultStatus,
   Publication,
 } from "@/services/interfaces/publications";
+import type { ChannelConnection } from "@/services/interfaces/channels";
 import {
   CHANNEL_META,
   CHANNEL_ORDER,
@@ -90,6 +91,9 @@ export default function PublishWizardPage() {
   // Customize form
   const [sharedTitle, setSharedTitle] = useState("");
   const [sharedBody, setSharedBody] = useState("");
+  const [platformContent, setPlatformContent] = useState<
+    Partial<Record<ChannelId, { title: string; body: string }>>
+  >({});
 
   // Channels
   const [selectedChannels, setSelectedChannels] = useState<
@@ -99,7 +103,12 @@ export default function PublishWizardPage() {
     facebook: true,
     instagram: true,
     whatsapp: false,
-    web: true,
+    web: false,
+  });
+
+  const { data: channelConnections } = useQuery({
+    queryKey: ["channel-connections"],
+    queryFn: () => channelsService.list(token ?? undefined),
   });
 
   const {
@@ -142,13 +151,20 @@ export default function PublishWizardPage() {
         setPublication(pub);
         setSharedTitle(pub.sharedTitle || seedTitle || "");
         setSharedBody(pub.sharedBody || seedBody || "");
+        const contentMap: Partial<
+          Record<ChannelId, { title: string; body: string }>
+        > = {};
+        for (const pc of pub.platformContent ?? []) {
+          contentMap[pc.channelId] = { title: pc.title, body: pc.body };
+        }
+        setPlatformContent(contentMap);
         if (pub.selectedChannels.length === 0) {
           setSelectedChannels({
             wasi: true,
             facebook: true,
             instagram: true,
             whatsapp: false,
-            web: true,
+            web: false,
           });
         } else {
           const toggles = Object.fromEntries(
@@ -180,6 +196,20 @@ export default function PublishWizardPage() {
     () => CHANNEL_ORDER.filter((id) => selectedChannels[id]),
     [selectedChannels],
   );
+
+  const connectionById = useMemo(() => {
+    const map = new Map<ChannelId, ChannelConnection>();
+    for (const c of channelConnections ?? []) {
+      map.set(c.channelId, c);
+    }
+    return map;
+  }, [channelConnections]);
+
+  const channelSelectable = (id: ChannelId): boolean => {
+    const conn = connectionById.get(id);
+    if (!conn) return id !== "web";
+    return conn.status === "connected" || conn.status === "needs_auth";
+  };
 
   const onContentContinue = async () => {
     if (!property || !publication) return;
@@ -241,11 +271,29 @@ export default function PublishWizardPage() {
     setActionBusy(true);
     setActionError(null);
     try {
-      const pub = await publicationsService.patch(
+      let pub = await publicationsService.patch(
         publication.id,
         { sharedTitle, sharedBody },
         token ?? undefined,
       );
+      for (const channelId of enabledChannels) {
+        const draft = platformContent[channelId] ?? {
+          title: sharedTitle,
+          body: sharedBody,
+        };
+        pub = await publicationsService.patch(
+          publication.id,
+          {
+            platformContent: {
+              channelId,
+              title: draft.title,
+              body: draft.body,
+              isAiGenerated: false,
+            },
+          },
+          token ?? undefined,
+        );
+      }
       setPublication(pub);
       setStep("preview");
     } catch {
@@ -480,9 +528,12 @@ export default function PublishWizardPage() {
       {step === "channels" && (
         <ChannelsStep
           toggles={selectedChannels}
-          onToggle={(id) =>
-            setSelectedChannels((t) => ({ ...t, [id]: !t[id] }))
-          }
+          connections={channelConnections ?? []}
+          channelSelectable={channelSelectable}
+          onToggle={(id) => {
+            if (!channelSelectable(id)) return;
+            setSelectedChannels((t) => ({ ...t, [id]: !t[id] }));
+          }}
           publicationId={publication.id}
           token={token ?? undefined}
           onAiApplied={(title, body) => {
@@ -495,11 +546,21 @@ export default function PublishWizardPage() {
       )}
       {step === "customize" && (
         <CustomizeStep
+          selectedChannels={enabledChannels}
           sharedTitle={sharedTitle}
           sharedBody={sharedBody}
+          platformContent={platformContent}
           portadaUrl={property.portadaUrl}
-          onTitle={setSharedTitle}
-          onBody={setSharedBody}
+          onPlatformContentChange={(channelId, title, body) => {
+            setPlatformContent((prev) => ({
+              ...prev,
+              [channelId]: { title, body },
+            }));
+            if (channelId === enabledChannels[0]) {
+              setSharedTitle(title);
+              setSharedBody(body);
+            }
+          }}
           busy={actionBusy}
           onNext={() => void onCustomizeContinue()}
         />
@@ -997,8 +1058,49 @@ const AI_ACTIONS: {
   { label: "Más persuasivo", action: "persuasive" },
 ];
 
+function connectionBadge(conn: ChannelConnection | undefined): {
+  label: string;
+  className: string;
+  hint?: string;
+} {
+  if (!conn) {
+    return {
+      label: "Sin datos",
+      className: "bg-[var(--pa-bg-alt)] text-[var(--pa-faint)]",
+    };
+  }
+  if (conn.status === "connected") {
+    return {
+      label: "Conectado",
+      className: "bg-[var(--pa-success-bg)] text-[var(--pa-accent)]",
+      hint: conn.accountName,
+    };
+  }
+  if (conn.status === "unavailable") {
+    return {
+      label: "No disponible",
+      className: "bg-[var(--pa-bg-alt)] text-[var(--pa-muted)]",
+      hint: conn.issue ?? "Próximamente",
+    };
+  }
+  if (conn.status === "needs_auth") {
+    return {
+      label: "Requiere autorización",
+      className: "bg-[var(--pa-warning-bg)] text-[var(--pa-warning-ink)]",
+      hint: conn.issue ?? undefined,
+    };
+  }
+  return {
+    label: "No configurado",
+    className: "bg-[var(--pa-warning-bg)] text-[var(--pa-warning-ink)]",
+    hint: conn.issue ?? "Revisa la configuración en el VPS",
+  };
+}
+
 function ChannelsStep({
   toggles,
+  connections,
+  channelSelectable,
   onToggle,
   publicationId,
   token,
@@ -1007,6 +1109,8 @@ function ChannelsStep({
   onNext,
 }: {
   toggles: Record<ChannelId, boolean>;
+  connections: ChannelConnection[];
+  channelSelectable: (id: ChannelId) => boolean;
   onToggle: (id: ChannelId) => void;
   publicationId: string;
   token?: string;
@@ -1058,11 +1162,15 @@ function ChannelsStep({
         {CHANNEL_ORDER.map((id) => {
           const meta = CHANNEL_META[id];
           const on = toggles[id];
-          const issue = id === "whatsapp";
+          const conn = connections.find((c) => c.channelId === id);
+          const badge = connectionBadge(conn);
+          const selectable = channelSelectable(id);
           return (
             <div
               key={id}
-              className="rounded-2xl border border-[var(--pa-border)] bg-[var(--pa-surface)] p-[18px]"
+              className={`rounded-2xl border border-[var(--pa-border)] bg-[var(--pa-surface)] p-[18px] ${
+                !selectable ? "opacity-80" : ""
+              }`}
             >
               <div className="mb-3 flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-[10px] bg-[var(--pa-bg-alt)] text-[13px] font-extrabold text-[#45525E]">
@@ -1073,14 +1181,15 @@ function ChannelsStep({
                     {meta.name}
                   </div>
                   <div className="text-[11px] text-[var(--pa-muted)]">
-                    {meta.account}
+                    {conn?.accountName ?? meta.account}
                   </div>
                 </div>
                 <button
                   type="button"
                   aria-label={`Alternar ${meta.name}`}
+                  disabled={!selectable}
                   onClick={() => onToggle(id)}
-                  className={`relative h-[22px] w-10 shrink-0 rounded-full transition-colors ${
+                  className={`relative h-[22px] w-10 shrink-0 rounded-full transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
                     on ? "bg-[var(--pa-navy)]" : "bg-[var(--pa-border)]"
                   }`}
                 >
@@ -1091,14 +1200,15 @@ function ChannelsStep({
                 </button>
               </div>
               <span
-                className={`inline-block rounded-md px-2.5 py-1 text-[10px] font-bold ${
-                  issue
-                    ? "bg-[var(--pa-warning-bg)] text-[var(--pa-warning-ink)]"
-                    : "bg-[var(--pa-success-bg)] text-[var(--pa-accent)]"
-                }`}
+                className={`inline-block rounded-md px-2.5 py-1 text-[10px] font-bold ${badge.className}`}
               >
-                {issue ? "Requiere autorización" : "Conectado"}
+                {badge.label}
               </span>
+              {badge.hint && (
+                <p className="mt-2 text-[11px] leading-snug text-[var(--pa-muted)]">
+                  {badge.hint}
+                </p>
+              )}
             </div>
           );
         })}
@@ -1153,39 +1263,60 @@ const PLATFORM_LIMITS: Record<string, number> = {
 };
 
 function CustomizeStep({
+  selectedChannels,
   sharedTitle,
   sharedBody,
+  platformContent,
   portadaUrl,
-  onTitle,
-  onBody,
+  onPlatformContentChange,
   busy,
   onNext,
 }: {
+  selectedChannels: ChannelId[];
   sharedTitle: string;
   sharedBody: string;
+  platformContent: Partial<Record<ChannelId, { title: string; body: string }>>;
   portadaUrl: string | null;
-  onTitle: (v: string) => void;
-  onBody: (v: string) => void;
+  onPlatformContentChange: (
+    channelId: ChannelId,
+    title: string,
+    body: string,
+  ) => void;
   busy: boolean;
   onNext: () => void;
 }) {
-  const platforms: { id: ChannelId; label: string }[] = [
-    { id: "wasi", label: "WASI" },
-    { id: "facebook", label: "Facebook" },
-    { id: "instagram", label: "Instagram" },
-    { id: "whatsapp", label: "WhatsApp" },
-  ];
-  const [active, setActive] = useState<ChannelId>("wasi");
+  const platforms = selectedChannels.map((id) => ({
+    id,
+    label: CHANNEL_META[id].name,
+  }));
+  const [active, setActive] = useState<ChannelId>(
+    selectedChannels[0] ?? "wasi",
+  );
+
+  const activeContent = platformContent[active] ?? {
+    title: sharedTitle,
+    body: sharedBody,
+  };
   const limit = PLATFORM_LIMITS[active] ?? 1000;
+
+  const switchChannel = (next: ChannelId) => {
+    setActive(next);
+  };
 
   return (
     <div className="max-w-[960px]">
-      <div className="mb-6 flex w-fit gap-1.5 rounded-xl bg-[var(--pa-bg-alt)] p-1">
+      <div className="mb-1 text-xl font-extrabold text-[var(--pa-ink)]">
+        Personalizar por canal
+      </div>
+      <p className="mb-6 text-[13px] text-[var(--pa-muted)]">
+        Ajusta título y descripción para cada canal seleccionado.
+      </p>
+      <div className="mb-6 flex w-fit max-w-full flex-wrap gap-1.5 rounded-xl bg-[var(--pa-bg-alt)] p-1">
         {platforms.map((p) => (
           <button
             key={p.id}
             type="button"
-            onClick={() => setActive(p.id)}
+            onClick={() => switchChannel(p.id)}
             className={`rounded-[9px] px-[18px] py-2.5 text-xs transition-colors ${
               active === p.id
                 ? "bg-white font-bold text-[var(--pa-navy)] shadow-sm"
@@ -1198,22 +1329,30 @@ function CustomizeStep({
       </div>
       <div className="grid grid-cols-1 gap-7 lg:grid-cols-[1fr_340px]">
         <Card>
-          <div className={label}>Título</div>
+          <div className={label}>Título ({CHANNEL_META[active].name})</div>
           <input
             className={`${input} mb-4`}
-            value={sharedTitle}
-            onChange={(e) => onTitle(e.target.value)}
+            value={activeContent.title}
+            onChange={(e) =>
+              onPlatformContentChange(active, e.target.value, activeContent.body)
+            }
           />
           <div className="mb-1.5 flex items-center justify-between">
             <div className={label}>Descripción</div>
             <span className="text-[11px] text-[var(--pa-faint)]">
-              {sharedBody.length}/{limit}
+              {activeContent.body.length}/{limit}
             </span>
           </div>
           <textarea
             className={`${input} min-h-[140px] font-normal leading-relaxed text-[#45525E]`}
-            value={sharedBody}
-            onChange={(e) => onBody(e.target.value)}
+            value={activeContent.body}
+            onChange={(e) =>
+              onPlatformContentChange(
+                active,
+                activeContent.title,
+                e.target.value,
+              )
+            }
           />
         </Card>
         <div>
@@ -1233,10 +1372,10 @@ function CustomizeStep({
             )}
             <div className="p-3.5">
               <div className="mb-1 text-[13px] font-bold text-[var(--pa-ink)]">
-                {sharedTitle}
+                {activeContent.title}
               </div>
               <div className="line-clamp-4 text-xs leading-relaxed text-[#45525E]">
-                {sharedBody}
+                {activeContent.body}
               </div>
             </div>
           </div>

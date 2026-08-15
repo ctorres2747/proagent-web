@@ -58,6 +58,8 @@ export interface Property {
   fotos: PropertyPhoto[];
   /** Owning agent id (ownership: an agent sees only their own). */
   ownerAgenteId: string | null;
+  /** Display name of owning agent (admin inventory filter). */
+  ownerAgenteNombre: string | null;
   channels: PropertyChannel[];
 }
 
