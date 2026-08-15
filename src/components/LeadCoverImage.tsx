@@ -8,16 +8,19 @@ export function LeadCoverImage({
   className,
 }: {
   url: string | null | undefined;
-  variant?: "chip" | "card";
+  variant?: "chip" | "card" | "compact";
   className?: string;
 }) {
   const [failed, setFailed] = useState(false);
   const showPlaceholder = !url || failed;
 
-  if (variant === "card") {
+  if (variant === "card" || variant === "compact") {
+    const height = variant === "compact" ? "h-[108px]" : "h-[150px]";
+    const margin = variant === "compact" ? "mb-2" : "mb-3.5";
+    const radius = variant === "compact" ? "rounded-lg" : "rounded-xl";
     if (showPlaceholder) {
       return (
-        <div className="relative mb-3.5 h-[150px] overflow-hidden rounded-xl">
+        <div className={`relative ${margin} ${height} overflow-hidden ${radius}`}>
           <div className="flex h-full w-full items-center justify-center bg-[repeating-linear-gradient(45deg,#E4E8EC,#E4E8EC_10px,#EDEFF2_10px,#EDEFF2_20px)]">
             <span className="font-mono text-[11px] text-[#8B98A5]">Sin foto</span>
           </div>
@@ -25,7 +28,7 @@ export function LeadCoverImage({
       );
     }
     return (
-      <div className="relative mb-3.5 h-[150px] overflow-hidden rounded-xl">
+      <div className={`relative ${margin} ${height} overflow-hidden ${radius}`}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={url}
