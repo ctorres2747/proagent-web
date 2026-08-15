@@ -8,7 +8,10 @@ interface ChannelLogoProps {
   className?: string;
 }
 
-/** Brand logos from /public/channels (local assets; no hotlink). */
+/**
+ * Brand logos in a fixed square frame so circular/glyph marks align
+ * with square app-icon assets across cards and chips.
+ */
 export function ChannelLogo({
   channelId,
   size = 20,
@@ -16,12 +19,17 @@ export function ChannelLogo({
 }: ChannelLogoProps) {
   const meta = CHANNEL_META[channelId];
   return (
-    <Image
-      src={meta.logo}
-      alt={meta.name}
-      width={size}
-      height={size}
-      className={`shrink-0 object-contain ${className}`}
-    />
+    <span
+      className={`inline-flex shrink-0 items-center justify-center overflow-hidden rounded-[22%] ${className}`}
+      style={{ width: size, height: size }}
+    >
+      <Image
+        src={meta.logo}
+        alt={meta.name}
+        width={size}
+        height={size}
+        className="block h-full w-full object-contain"
+      />
+    </span>
   );
 }
