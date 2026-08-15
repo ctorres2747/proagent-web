@@ -1074,7 +1074,6 @@ function connectionBadge(conn: ChannelConnection | undefined): {
     return {
       label: "Conectado",
       className: "bg-[var(--pa-success-bg)] text-[var(--pa-accent)]",
-      hint: conn.accountName,
     };
   }
   if (conn.status === "unavailable") {
@@ -1179,9 +1178,11 @@ function ChannelsStep({
                   <div className="text-sm font-bold leading-snug text-[var(--pa-ink)]">
                     {meta.name}
                   </div>
-                  <div className="text-[11px] leading-snug text-[var(--pa-muted)]">
-                    {conn?.accountName ?? meta.account}
-                  </div>
+                  {meta.subtitle ? (
+                    <div className="text-[11px] leading-snug text-[var(--pa-muted)]">
+                      {meta.subtitle}
+                    </div>
+                  ) : null}
                 </div>
                 <button
                   type="button"
