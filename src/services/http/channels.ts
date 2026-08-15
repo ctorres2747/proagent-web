@@ -6,17 +6,17 @@ import type {
 import type { ChannelId } from "@/design-system/channels";
 
 interface RawConnection {
-  channelId: string;
+  channel_id: string;
   status: string;
-  accountName?: string;
+  account_name?: string | null;
   issue?: string | null;
 }
 
 function mapConnection(raw: RawConnection): ChannelConnection {
   return {
-    channelId: raw.channelId as ChannelId,
+    channelId: raw.channel_id as ChannelId,
     status: raw.status as ChannelConnection["status"],
-    accountName: raw.accountName ?? raw.channelId,
+    accountName: raw.account_name ?? raw.channel_id,
     issue: raw.issue ?? null,
   };
 }
