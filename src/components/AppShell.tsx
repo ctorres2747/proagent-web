@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/features/auth/AuthProvider";
 import { CAPTACION_URL } from "@/config/env";
-import { isProinversoresStaff } from "@/lib/agentDisplay";
+import { canAccessCaptacion } from "@/lib/agentDisplay";
 import { UserMenu } from "@/components/UserMenu";
 
 interface NavItem {
@@ -33,11 +33,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
 
-  const nav: NavItem[] = isProinversoresStaff(session)
+  const nav: NavItem[] = canAccessCaptacion(session)
     ? [
-        ...BASE_NAV.slice(0, 3),
+        ...BASE_NAV.slice(0, 1),
         { href: CAPTACION_URL, label: "Captación", external: true },
-        ...BASE_NAV.slice(3),
+        ...BASE_NAV.slice(1),
       ]
     : BASE_NAV;
 

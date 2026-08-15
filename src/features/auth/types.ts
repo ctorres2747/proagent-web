@@ -9,6 +9,9 @@ export interface AgentSession {
   role: Role;
   /** Email del agente; los @proinversores habilitan reglas admin (E-INV-01). */
   email?: string;
+  canAccessCaptacion?: boolean;
+  /** Sprint 012 — nombre corto para saludo (Andreina, Nataly). */
+  nombrePreferido?: string | null;
 }
 
 /** Respuesta del login JWT (puente temporal /api/mobile/auth/login). */

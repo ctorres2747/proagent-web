@@ -11,6 +11,15 @@ export function firstName(session: AgentSession | null | undefined): string {
   return token;
 }
 
+/** Sprint 012 — preferido → primer token de nombre → username. */
+export function displayName(
+  session: AgentSession | null | undefined,
+): string {
+  const pref = session?.nombrePreferido?.trim();
+  if (pref) return pref;
+  return firstName(session);
+}
+
 export function agentInitials(session: AgentSession | null | undefined): string {
   const name = session?.nombre?.trim() || session?.username?.trim() || "";
   if (!name) return "PA";
@@ -29,4 +38,15 @@ export function isProinversoresStaff(
     email.endsWith("@proinversores.co") ||
     email.includes("@proinversores.")
   );
+}
+
+/** Sprint 011/012 — prefer API gate; fallback to email heuristic in mocks. */
+export function canAccessCaptacion(
+  session: AgentSession | null | undefined,
+): boolean {
+  if (!session) return false;
+  if (session.canAccessCaptacion !== undefined) {
+    return session.canAccessCaptacion;
+  }
+  return isProinversoresStaff(session);
 }
