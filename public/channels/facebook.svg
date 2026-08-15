@@ -1,5 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" role="img" aria-label="Facebook">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" role="img" aria-label="Facebook">
   <title>Facebook</title>
-  <rect width="24" height="24" rx="5.5" fill="#1877F2"/>
-  <path fill="#fff" d="M16.5 12.1h-2.2v7.4h-3.1v-7.4H9.4v-2.6h1.8V8.3c0-1.8 1.1-2.8 2.7-2.8.8 0 1.5.1 1.5.1v2h-.9c-.8 0-1.1.5-1.1 1v1.3h2.4l-.3 2.6z"/>
+  <rect width="40" height="40" rx="9" fill="#1877F2"/>
+  <!-- Glifo “f” estilo app Facebook (vector nítido) -->
+  <path fill="#fff" d="M27.8 20.25h-3.55v11.9h-4.95V20.25h-2.35v-4.15h2.35v-2.55c0-3.35 1.95-5.2 5.05-5.2 1.05 0 2.2.1 2.75.2v3.85h-1.65c-1.55 0-1.85.75-1.85 1.85v1.85h3.55l-.35 4.15z"/>
 </svg>
