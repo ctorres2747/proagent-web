@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/features/auth/AuthProvider";
-import { agentInitials } from "@/lib/agentDisplay";
+import { agentInitials, displayName } from "@/lib/agentDisplay";
 
 export function UserMenu() {
   const { session, logout } = useAuth();
@@ -46,7 +46,7 @@ export function UserMenu() {
           {session && (
             <div className="border-b border-[var(--pa-border)] px-4 py-2.5">
               <div className="text-[13px] font-bold text-[var(--pa-ink)]">
-                {session.nombre}
+                {session ? displayName(session) : ""}
               </div>
               <div className="text-[11px] text-[var(--pa-muted)]">
                 {session.email ?? session.username}

@@ -19,6 +19,7 @@ import {
   type ChannelId,
   type ChannelStatus,
 } from "@/design-system/channels";
+import { ChannelLogo } from "@/components/ChannelLogo";
 import { formatPrice } from "@/lib/format";
 import {
   DEFAULT_TIMEZONE,
@@ -1173,9 +1174,7 @@ function ChannelsStep({
               }`}
             >
               <div className="mb-3 flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-[10px] bg-[var(--pa-bg-alt)] text-[13px] font-extrabold text-[#45525E]">
-                  {meta.initial}
-                </div>
+                <ChannelLogo channelId={id} size={40} className="rounded-[10px]" />
                 <div className="flex-1">
                   <div className="text-sm font-bold text-[var(--pa-ink)]">
                     {meta.name}
@@ -1684,9 +1683,7 @@ function ResultsStep({
           key={r.id}
           className="mb-3 flex items-center gap-3.5 rounded-2xl border border-[var(--pa-border)] bg-[var(--pa-surface)] px-5 py-4"
         >
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[9px] bg-[var(--pa-bg-alt)] text-xs font-extrabold text-[#45525E]">
-            {CHANNEL_META[r.id].initial}
-          </div>
+          <ChannelLogo channelId={r.id} size={36} className="rounded-[9px]" />
           <div className="min-w-0 flex-1">
             <div className="text-[13px] font-bold text-[var(--pa-ink)]">
               {CHANNEL_META[r.id].name}

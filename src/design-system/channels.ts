@@ -14,28 +14,38 @@ export const CHANNEL_ORDER: ChannelId[] = [
 
 export const CHANNEL_META: Record<
   ChannelId,
-  { name: string; short: string; initial: string; account: string }
+  { name: string; short: string; logo: string; account: string }
 > = {
-  wasi: { name: "WASI", short: "W", initial: "W", account: "proinversores.wasi" },
+  wasi: {
+    name: "WASI",
+    short: "W",
+    logo: "/channels/wasi.svg",
+    account: "proinversores.wasi",
+  },
   facebook: {
     name: "Facebook Marketplace",
     short: "F",
-    initial: "F",
+    logo: "/channels/facebook.svg",
     account: "Proinversores Medellín",
   },
   instagram: {
     name: "Instagram",
     short: "I",
-    initial: "I",
+    logo: "/channels/instagram.svg",
     account: "@proinversores.co",
   },
   whatsapp: {
     name: "WhatsApp (catálogo)",
     short: "Wa",
-    initial: "Wa",
+    logo: "/channels/whatsapp.svg",
     account: "No conectado",
   },
-  web: { name: "Sitio web", short: "Web", initial: "Web", account: "proinversores.com.co" },
+  web: {
+    name: "Sitio web",
+    short: "Web",
+    logo: "/channels/web.svg",
+    account: "proinversores.com.co",
+  },
 };
 
 /** Status label + Tailwind classes (never color-only — always a text label). */
