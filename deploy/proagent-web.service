@@ -1,0 +1,36 @@
+# systemd unit — ProAgent Web (Next.js) on the VPS
+#
+# Install (Owner):
+#   sudo cp deploy/proagent-web.service /etc/systemd/system/
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now proagent-web
+#
+# Adjust User, WorkingDirectory, and ExecStart paths to match the server.
+# See docs/deploy.md for full steps.
+
+[Unit]
+Description=ProAgent Web (Next.js)
+Documentation=https://github.com/ctorres2747/proagent-web/blob/main/docs/deploy.md
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=ubuntu
+Group=ubuntu
+WorkingDirectory=/opt/proagent-web
+
+Environment=NODE_ENV=production
+Environment=HOSTNAME=127.0.0.1
+Environment=PORT=3000
+
+# NEXT_PUBLIC_* vars are baked in at `npm run build` — not read here at runtime.
+# Rebuild after changing NEXT_PUBLIC_API_URL (see docs/deploy.md).
+
+ExecStart=/usr/bin/npm run start
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=30
+
+[Install]
+WantedBy=multi-user.target
