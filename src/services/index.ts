@@ -13,18 +13,21 @@ import { channelsService as mockChannels } from "./mocks/channels";
 import { fichasService as mockFichas, leadsService as mockLeads } from "./mocks/leads";
 import { propertiesService as mockProperties } from "./mocks/properties";
 import { publicationsService as mockPublications } from "./mocks/publications";
+import { scraperService as mockScraper } from "./mocks/scraper";
 import { authService as httpAuth } from "./http/auth";
 import { channelsService as httpChannels } from "./http/channels";
 import { fichasService as httpFichas } from "./http/fichas";
 import { leadsService as httpLeads } from "./http/leads";
 import { propertiesService as httpProperties } from "./http/properties";
 import { publicationsService as httpPublications } from "./http/publications";
+import { scraperService as httpScraper } from "./http/scraper";
 
 import type { AuthService } from "./interfaces/auth";
 import type { ChannelsService } from "./interfaces/channels";
 import type { FichasService, LeadsService } from "./interfaces/leads";
 import type { PropertiesService } from "./interfaces/properties";
 import type { PublicationsService } from "./interfaces/publications";
+import type { ScraperService } from "./interfaces/scraper";
 
 export const authService: AuthService = USE_HTTP_API ? httpAuth : mockAuth;
 export const channelsService: ChannelsService = USE_HTTP_API
@@ -40,6 +43,9 @@ export const propertiesService: PropertiesService = USE_HTTP_API
 export const publicationsService: PublicationsService = USE_HTTP_API
   ? httpPublications
   : mockPublications;
+export const scraperService: ScraperService = USE_HTTP_API
+  ? httpScraper
+  : mockScraper;
 
 export type { AuthService } from "./interfaces/auth";
 export type { ChannelsService, ChannelConnection } from "./interfaces/channels";
@@ -59,3 +65,4 @@ export type {
   PublicationFilter,
   ChannelResult,
 } from "./interfaces/publications";
+export type { ScraperService, ScraperStatus } from "./interfaces/scraper";

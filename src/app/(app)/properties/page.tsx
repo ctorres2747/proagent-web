@@ -164,7 +164,7 @@ export default function PropertiesPage() {
       <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="text-[26px] font-extrabold text-[var(--pa-ink)]">
-            Propiedades
+            Inventario
           </h1>
           <p className="mt-1 text-[13px] text-[var(--pa-muted)]">
             {isLoading

@@ -20,6 +20,7 @@ interface RawAgent {
   email?: string | null;
   can_access_captacion?: boolean | null;
   nombre_preferido?: string | null;
+  municipios?: string[] | null;
 }
 
 interface RawLoginResponse {
@@ -42,6 +43,7 @@ function mapAgent(raw: RawAgent): AgentSession {
     email: raw.email ?? undefined,
     canAccessCaptacion: raw.can_access_captacion ?? undefined,
     nombrePreferido: raw.nombre_preferido ?? undefined,
+    municipios: raw.municipios ?? undefined,
   };
 }
 
