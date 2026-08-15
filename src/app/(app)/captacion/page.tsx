@@ -266,7 +266,7 @@ export default function CaptacionPage() {
   const hoyKpi = stats.hoy ?? 0;
 
   return (
-    <div className="flex min-h-[calc(100vh-4rem)] flex-col px-4 py-6 md:px-6">
+    <div className="flex min-h-[calc(100vh-4rem)] flex-col px-6 py-8 md:px-10 md:py-8">
       <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-[26px] font-extrabold text-[var(--pa-ink)]">
@@ -387,22 +387,22 @@ export default function CaptacionPage() {
       )}
 
       {!isLoading && !isError && (
-        <div className="min-h-0 flex-1 overflow-x-auto">
-          <div className="grid min-h-[420px] w-max min-w-full grid-cols-[repeat(4,minmax(280px,1fr))] gap-5">
+        <div className="min-h-0 flex-1">
+          <div className="grid min-h-[420px] min-w-0 grid-cols-4 gap-3">
             {COLUMNS.map((estado) => (
               <section
                 key={estado}
-                className="flex min-h-[360px] min-w-[280px] flex-col rounded-2xl border border-[var(--pa-border)] bg-[var(--pa-surface)]"
+                className="flex min-h-[320px] min-w-0 flex-col rounded-2xl border border-[var(--pa-border)] bg-[var(--pa-surface)]"
               >
-                <header className="flex items-center justify-between border-b border-[var(--pa-border)] px-3.5 py-3">
-                  <h2 className="text-sm font-bold text-[var(--pa-ink)]">
+                <header className="flex items-center justify-between border-b border-[var(--pa-border)] px-2.5 py-2">
+                  <h2 className="text-[12px] font-bold text-[var(--pa-ink)]">
                     {estado}
                   </h2>
-                  <span className="rounded-full bg-[var(--pa-bg)] px-2.5 py-0.5 text-[11px] font-semibold text-[var(--pa-muted)]">
+                  <span className="rounded-full bg-[var(--pa-bg)] px-2 py-0.5 text-[10px] font-semibold text-[var(--pa-muted)]">
                     {columnCount(filteredLeads, estado)}
                   </span>
                 </header>
-                <div className="flex flex-1 flex-col gap-5 overflow-y-auto p-3.5">
+                <div className="flex flex-1 flex-col gap-2 overflow-y-auto p-2">
                   {filteredLeads
                     .filter((l) => l.estado === estado)
                     .map((lead) => (

@@ -4,7 +4,7 @@ import { LeadCoverImage } from "@/components/LeadCoverImage";
 import { formatPrice } from "@/lib/format";
 import type { Lead } from "@/services/interfaces/leads";
 
-/** Lead card — misma línea gráfica que PropertyCard (Inventario tarjetas). */
+/** Lead card compacta — cabe en 4 columnas dentro del max-w compartido del shell. */
 export function LeadCard({
   lead,
   active,
@@ -20,19 +20,19 @@ export function LeadCard({
     <button
       type="button"
       onClick={onClick}
-      className={`flex w-full flex-col rounded-2xl border bg-[var(--pa-surface)] p-3.5 text-left transition-shadow hover:shadow-sm ${
+      className={`flex w-full min-w-0 flex-col rounded-xl border bg-[var(--pa-surface)] p-2.5 text-left transition-shadow hover:shadow-sm ${
         active
           ? "border-[var(--pa-navy)] ring-1 ring-[var(--pa-navy)]"
           : "border-[var(--pa-border)]"
       }`}
     >
-      <LeadCoverImage url={lead.imagenUrl} variant="card" />
-      <div className="mb-1 line-clamp-1 text-sm font-bold text-[var(--pa-ink)]">
+      <LeadCoverImage url={lead.imagenUrl} variant="compact" />
+      <div className="line-clamp-2 text-[12px] font-bold leading-snug text-[var(--pa-ink)]">
         {lead.tipoInmueble ?? "Inmueble"}
         {lead.municipio ? ` · ${lead.municipio}` : ""}
       </div>
-      <div className="mb-2.5 text-xs text-[var(--pa-muted)]">{lead.portal}</div>
-      <div className="text-[15px] font-extrabold text-[var(--pa-navy)]">
+      <div className="mt-0.5 text-[11px] text-[var(--pa-muted)]">{lead.portal}</div>
+      <div className="mt-1.5 text-[13px] font-extrabold text-[var(--pa-navy)]">
         {lead.precio ?? formatPrice(lead.precioNum, esArriendo)}
       </div>
     </button>

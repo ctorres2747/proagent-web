@@ -36,8 +36,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const staff = canAccessCaptacion(session);
   const captacionHref = CAPTACION_NATIVE ? "/captacion" : CAPTACION_URL;
   const captacionExternal = !CAPTACION_NATIVE;
-  const fullWidthMain =
-    pathname === "/captacion" || pathname.startsWith("/captacion/");
 
   const nav: NavItem[] = staff
     ? [
@@ -167,11 +165,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </header>
 
         <main className="flex-1 overflow-y-auto">
-          <div
-            className={`mx-auto w-full ${fullWidthMain ? "" : "max-w-[1280px]"}`}
-          >
-            {children}
-          </div>
+          <div className="mx-auto w-full max-w-[1440px]">{children}</div>
         </main>
       </div>
     </div>

@@ -10,6 +10,11 @@ import { ChannelChips } from "@/components/ChannelChips";
 import { CompletenessBar } from "@/components/CompletenessBar";
 import { CoverImage } from "@/components/CoverImage";
 import { FilterDropdown } from "@/components/FilterDropdown";
+import {
+  matchesPriceRange,
+  PriceRangeFilter,
+  type PriceRange,
+} from "@/components/PriceRangeFilter";
 import { formatPrice } from "@/lib/format";
 import {
   buildMunicipioOptions,
@@ -18,23 +23,8 @@ import {
 
 const FILTER_TYPES = ["Todos", "Apartamento", "Casa", "Local", "Lote", "Oficina", "Finca"];
 const FILTER_ESTADOS = ["Todos", "Incompleto", "Casi listo", "Completo"];
-const FILTER_PRECIOS = [
-  { value: "Todos", label: "Todos" },
-  { value: "hasta-500m", label: "Hasta $500M" },
-  { value: "500m-1b", label: "$500M – $1.000M" },
-  { value: "mas-1b", label: "Más de $1.000M" },
-];
 
 type FilterKey = "tipo" | "municipio" | "estado" | "precio" | "propietario";
-
-function matchesPrecio(precio: number | null, filter: string): boolean {
-  if (filter === "Todos") return true;
-  if (precio === null) return false;
-  if (filter === "hasta-500m") return precio <= 500_000_000;
-  if (filter === "500m-1b") return precio > 500_000_000 && precio <= 1_000_000_000;
-  if (filter === "mas-1b") return precio > 1_000_000_000;
-  return true;
-}
 
 export default function PropertiesPage() {
   const { session, token } = useAuth();
@@ -46,7 +36,7 @@ export default function PropertiesPage() {
   const [tipoFilter, setTipoFilter] = useState("Todos");
   const [municipioFilter, setMunicipioFilter] = useState("Todos");
   const [estadoFilter, setEstadoFilter] = useState("Todos");
-  const [precioFilter, setPrecioFilter] = useState("Todos");
+  const [priceRange, setPriceRange] = useState<PriceRange>({ min: "", max: "" });
   const [propietarioFilter, setPropietarioFilter] = useState("Todos");
   const [openFilter, setOpenFilter] = useState<FilterKey | null>(null);
   const [shortcutFaltanDatos, setShortcutFaltanDatos] = useState(false);
@@ -91,7 +81,7 @@ export default function PropertiesPage() {
       if (estadoFilter === "Casi listo" && (p.completeness < 70 || p.completeness >= 100))
         return false;
       if (estadoFilter === "Completo" && p.completeness < 100) return false;
-      if (!matchesPrecio(p.precio, precioFilter)) return false;
+      if (!matchesPriceRange(p.precio, priceRange)) return false;
       if (
         propietarioFilter !== "Todos" &&
         p.ownerAgenteId !== propietarioFilter
@@ -119,7 +109,7 @@ export default function PropertiesPage() {
     tipoFilter,
     municipioFilter,
     estadoFilter,
-    precioFilter,
+    priceRange,
     propietarioFilter,
     shortcutFaltanDatos,
     shortcutErrorCanales,
@@ -273,21 +263,14 @@ export default function PropertiesPage() {
           selected={estadoFilter}
           onSelect={setEstadoFilter}
         />
-        <FilterDropdown
-          label={`Precio${
-            precioFilter !== "Todos"
-              ? `: ${FILTER_PRECIOS.find((p) => p.value === precioFilter)?.label ?? precioFilter}`
-              : ""
-          }`}
-          active={precioFilter !== "Todos"}
+        <PriceRangeFilter
+          range={priceRange}
+          onChange={setPriceRange}
           open={openFilter === "precio"}
           onToggle={() =>
             setOpenFilter((f) => (f === "precio" ? null : "precio"))
           }
           onClose={() => setOpenFilter(null)}
-          options={FILTER_PRECIOS}
-          selected={precioFilter}
-          onSelect={setPrecioFilter}
         />
         {showPropietarioFilter && (
           <FilterDropdown
