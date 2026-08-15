@@ -15,6 +15,11 @@ export interface AgentSession {
   nombrePreferido?: string | null;
   /** Sprint 014 — municipios de captación del asesor. */
   municipios?: string[];
+  /** Sprint 013 — foto de perfil (URL pública). */
+  fotoPerfilUrl?: string | null;
+  telefono?: string | null;
+  instagramHandle?: string | null;
+  bioCorta?: string | null;
 }
 
 /** Respuesta del login JWT (puente temporal /api/mobile/auth/login). */

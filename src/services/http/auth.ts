@@ -21,6 +21,10 @@ interface RawAgent {
   can_access_captacion?: boolean | null;
   nombre_preferido?: string | null;
   municipios?: string[] | null;
+  foto_perfil_url?: string | null;
+  telefono?: string | null;
+  instagram_handle?: string | null;
+  bio_corta?: string | null;
 }
 
 interface RawLoginResponse {
@@ -44,6 +48,10 @@ function mapAgent(raw: RawAgent): AgentSession {
     canAccessCaptacion: raw.can_access_captacion ?? undefined,
     nombrePreferido: raw.nombre_preferido ?? undefined,
     municipios: raw.municipios ?? undefined,
+    fotoPerfilUrl: raw.foto_perfil_url ?? undefined,
+    telefono: raw.telefono ?? undefined,
+    instagramHandle: raw.instagram_handle ?? undefined,
+    bioCorta: raw.bio_corta ?? undefined,
   };
 }
 
