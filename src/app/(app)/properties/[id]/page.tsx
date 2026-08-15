@@ -1173,13 +1173,13 @@ function ChannelsStep({
                 !selectable ? "opacity-80" : ""
               }`}
             >
-              <div className="mb-3 flex items-center gap-3">
-                <ChannelLogo channelId={id} size={40} className="rounded-[10px]" />
-                <div className="flex-1">
-                  <div className="text-sm font-bold text-[var(--pa-ink)]">
+              <div className="mb-3 flex items-start gap-3">
+                <ChannelLogo channelId={id} size={40} />
+                <div className="min-w-0 flex-1 pt-0.5">
+                  <div className="text-sm font-bold leading-snug text-[var(--pa-ink)]">
                     {meta.name}
                   </div>
-                  <div className="text-[11px] text-[var(--pa-muted)]">
+                  <div className="text-[11px] leading-snug text-[var(--pa-muted)]">
                     {conn?.accountName ?? meta.account}
                   </div>
                 </div>
@@ -1188,7 +1188,7 @@ function ChannelsStep({
                   aria-label={`Alternar ${meta.name}`}
                   disabled={!selectable}
                   onClick={() => onToggle(id)}
-                  className={`relative h-[22px] w-10 shrink-0 rounded-full transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
+                  className={`relative mt-1 h-[22px] w-10 shrink-0 rounded-full transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
                     on ? "bg-[var(--pa-navy)]" : "bg-[var(--pa-border)]"
                   }`}
                 >
@@ -1683,7 +1683,7 @@ function ResultsStep({
           key={r.id}
           className="mb-3 flex items-center gap-3.5 rounded-2xl border border-[var(--pa-border)] bg-[var(--pa-surface)] px-5 py-4"
         >
-          <ChannelLogo channelId={r.id} size={36} className="rounded-[9px]" />
+          <ChannelLogo channelId={r.id} size={36} />
           <div className="min-w-0 flex-1">
             <div className="text-[13px] font-bold text-[var(--pa-ink)]">
               {CHANNEL_META[r.id].name}

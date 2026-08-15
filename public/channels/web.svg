@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" role="img" aria-label="ProAgent Web">
   <title>ProAgent</title>
-  <rect width="24" height="24" rx="6" fill="#0A3D62"/>
+  <rect width="24" height="24" rx="5.5" fill="#0A3D62"/>
   <path fill="#fff" d="M7.2 6.4h5.1c2.85 0 4.55 1.55 4.55 3.95 0 2.45-1.8 4.05-4.7 4.05H9.55V17.6H7.2V6.4zm2.35 2.05v4.05h2.55c1.55 0 2.4-.75 2.4-2.05s-.8-2-2.35-2H9.55z"/>
 </svg>
