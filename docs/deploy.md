@@ -149,3 +149,7 @@ Ver [`.env.example`](../.env.example) en este repo.
 - Sprint spec: `proagent-mobile/sprints/009-deploy-proagent-web.md`
 - Frontera Kanban ↔ ProAgent: `agente-inmobiliario/docs/frontera-kanban-proagent.md`
 - Handoff auth: ruta `/auth/handoff` en esta app
+
+## Seguridad / npm audit
+
+Pendiente **P0**: ver [`security-npm-audit.md`](./security-npm-audit.md). No ejecutar `npm audit fix --force` en el VPS.
