@@ -8,7 +8,7 @@ interface ChannelLogoProps {
   className?: string;
 }
 
-/** Official-style channel logo from /public/channels (no hotlink). */
+/** Brand logos from /public/channels (local assets; no hotlink). */
 export function ChannelLogo({
   channelId,
   size = 20,
@@ -21,7 +21,7 @@ export function ChannelLogo({
       alt={meta.name}
       width={size}
       height={size}
-      className={`shrink-0 rounded-md ${className}`}
+      className={`shrink-0 object-contain ${className}`}
     />
   );
 }
