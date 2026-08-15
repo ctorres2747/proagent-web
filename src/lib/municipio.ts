@@ -49,3 +49,6 @@ export function propertyMatchesMunicipio(
   if (!selectedKey) return true;
   return municipioKey(municipio) === selectedKey;
 }
+
+/** Alias para leads — misma normalización que inventario. */
+export const leadMatchesMunicipio = propertyMatchesMunicipio;

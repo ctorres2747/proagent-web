@@ -7,10 +7,12 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/features/auth/AuthProvider";
 import { CAPTACION_NATIVE, CAPTACION_URL } from "@/config/env";
 import { CaptacionDetailDrawer } from "@/features/captacion/CaptacionDetailDrawer";
+import { CriteriosCaptacionPanel } from "@/features/captacion/CriteriosCaptacionPanel";
 import { LeadCard } from "@/features/captacion/LeadCard";
 import { ScraperStatusBar } from "@/features/captacion/ScraperStatusBar";
 import { canAccessCaptacion } from "@/lib/agentDisplay";
 import { captacionSubtitle } from "@/lib/captacionSubtitle";
+import { buildMunicipioOptions, leadMatchesMunicipio } from "@/lib/municipio";
 import { FilterDropdown } from "@/components/FilterDropdown";
 import {
   isPriceRangeActive,
@@ -71,6 +73,7 @@ export default function CaptacionPage() {
   const [priceRange, setPriceRange] = useState<PriceRange>({ min: "", max: "" });
   const [ownerSearch, setOwnerSearch] = useState("");
   const [openFilter, setOpenFilter] = useState<FilterKey | null>(null);
+  const [criteriosOpen, setCriteriosOpen] = useState(false);
 
   const staff = canAccessCaptacion(session);
 
@@ -125,9 +128,13 @@ export default function CaptacionPage() {
     setPublishError(null);
   }, [selected]);
 
-  const municipios = useMemo(
+  const municipioOptions = useMemo(
     () =>
-      [...new Set((leads ?? []).map((l) => l.municipio).filter(Boolean) as string[])].sort(),
+      buildMunicipioOptions(
+        (leads ?? [])
+          .map((l) => l.municipio)
+          .filter((m): m is string => Boolean(m)),
+      ),
     [leads],
   );
   const tipos = useMemo(
@@ -142,7 +149,12 @@ export default function CaptacionPage() {
 
   const filteredLeads = useMemo(() => {
     return (leads ?? []).filter((lead) => {
-      if (municipioFilter !== "Todos" && lead.municipio !== municipioFilter) {
+      if (
+        !leadMatchesMunicipio(
+          lead.municipio ?? "",
+          municipioFilter === "Todos" ? null : municipioFilter,
+        )
+      ) {
         return false;
       }
       if (tipoFilter !== "Todos" && lead.tipoInmueble !== tipoFilter) {
@@ -276,9 +288,18 @@ export default function CaptacionPage() {
             {captacionSubtitle(session)}
           </p>
         </div>
-        <p className="text-[12px] text-[var(--pa-faint)]">
-          {filteredLeads.length} de {leads?.length ?? 0} leads
-        </p>
+        <div className="flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            onClick={() => setCriteriosOpen(true)}
+            className="rounded-[10px] border border-[var(--pa-border)] bg-[var(--pa-surface)] px-4 py-2 text-[13px] font-semibold text-[var(--pa-navy)] hover:bg-[var(--pa-bg)]"
+          >
+            Mis criterios de captación
+          </button>
+          <p className="text-[12px] text-[var(--pa-faint)]">
+            {filteredLeads.length} de {leads?.length ?? 0} leads
+          </p>
+        </div>
       </div>
 
       <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -288,7 +309,11 @@ export default function CaptacionPage() {
 
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <FilterDropdown
-          label="Municipio"
+          label={`Municipio${
+            municipioFilter !== "Todos"
+              ? `: ${municipioOptions.find((m) => m.key === municipioFilter)?.label ?? municipioFilter}`
+              : ""
+          }`}
           active={municipioFilter !== "Todos"}
           open={openFilter === "municipio"}
           onToggle={() =>
@@ -297,7 +322,7 @@ export default function CaptacionPage() {
           onClose={() => setOpenFilter(null)}
           options={[
             { value: "Todos", label: "Todos" },
-            ...municipios.map((m) => ({ value: m, label: m })),
+            ...municipioOptions.map((m) => ({ value: m.key, label: m.label })),
           ]}
           selected={municipioFilter}
           onSelect={setMunicipioFilter}
@@ -456,6 +481,18 @@ export default function CaptacionPage() {
           saveError={saveError}
           publishError={publishError}
           canPublish={canPublish}
+        />
+      ) : null}
+
+      {criteriosOpen ? (
+        <CriteriosCaptacionPanel
+          session={session}
+          token={token ?? undefined}
+          onClose={() => setCriteriosOpen(false)}
+          onSaved={() =>
+            setToast({ message: "Criterios de captación guardados" })
+          }
+          onError={(message) => setToast({ message, type: "error" })}
         />
       ) : null}
 

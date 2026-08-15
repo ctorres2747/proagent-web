@@ -10,12 +10,14 @@ import { USE_HTTP_API } from "@/config/env";
 
 import { authService as mockAuth } from "./mocks/auth";
 import { channelsService as mockChannels } from "./mocks/channels";
+import { criteriosService as mockCriterios } from "./mocks/criterios";
 import { fichasService as mockFichas, leadsService as mockLeads } from "./mocks/leads";
 import { propertiesService as mockProperties } from "./mocks/properties";
 import { publicationsService as mockPublications } from "./mocks/publications";
 import { scraperService as mockScraper } from "./mocks/scraper";
 import { authService as httpAuth } from "./http/auth";
 import { channelsService as httpChannels } from "./http/channels";
+import { criteriosService as httpCriterios } from "./http/criterios";
 import { fichasService as httpFichas } from "./http/fichas";
 import { leadsService as httpLeads } from "./http/leads";
 import { propertiesService as httpProperties } from "./http/properties";
@@ -24,6 +26,7 @@ import { scraperService as httpScraper } from "./http/scraper";
 
 import type { AuthService } from "./interfaces/auth";
 import type { ChannelsService } from "./interfaces/channels";
+import type { CriteriosService } from "./interfaces/criterios";
 import type { FichasService, LeadsService } from "./interfaces/leads";
 import type { PropertiesService } from "./interfaces/properties";
 import type { PublicationsService } from "./interfaces/publications";
@@ -34,6 +37,9 @@ export const channelsService: ChannelsService = USE_HTTP_API
   ? httpChannels
   : mockChannels;
 export const leadsService: LeadsService = USE_HTTP_API ? httpLeads : mockLeads;
+export const criteriosService: CriteriosService = USE_HTTP_API
+  ? httpCriterios
+  : mockCriterios;
 export const fichasService: FichasService = USE_HTTP_API
   ? httpFichas
   : mockFichas;
@@ -49,6 +55,11 @@ export const scraperService: ScraperService = USE_HTTP_API
 
 export type { AuthService } from "./interfaces/auth";
 export type { ChannelsService, ChannelConnection } from "./interfaces/channels";
+export type {
+  CriteriosCaptacion,
+  CriteriosCaptacionUpdate,
+  CriteriosService,
+} from "./interfaces/criterios";
 export type {
   FichasService,
   Lead,
