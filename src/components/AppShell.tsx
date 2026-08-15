@@ -18,7 +18,7 @@ interface NavItem {
 const BASE_NAV: NavItem[] = [
   { href: "/", label: "Inicio" },
   { href: "/properties", label: "Propiedades" },
-  { href: "/publications", label: "Publicar" },
+  { href: "/publications", label: "Publicación" },
   { href: "/clients", label: "Clientes", disabled: true },
   { href: "/more", label: "Más", disabled: true },
 ];
