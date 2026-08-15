@@ -19,6 +19,7 @@ interface RawAgent {
   role?: string | null;
   email?: string | null;
   can_access_captacion?: boolean | null;
+  nombre_preferido?: string | null;
 }
 
 interface RawLoginResponse {
@@ -40,6 +41,7 @@ function mapAgent(raw: RawAgent): AgentSession {
     role: toRole(raw.role),
     email: raw.email ?? undefined,
     canAccessCaptacion: raw.can_access_captacion ?? undefined,
+    nombrePreferido: raw.nombre_preferido ?? undefined,
   };
 }
 

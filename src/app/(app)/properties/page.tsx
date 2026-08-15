@@ -49,6 +49,8 @@ export default function PropertiesPage() {
   const [precioFilter, setPrecioFilter] = useState("Todos");
   const [propietarioFilter, setPropietarioFilter] = useState("Todos");
   const [openFilter, setOpenFilter] = useState<FilterKey | null>(null);
+  const [shortcutFaltanDatos, setShortcutFaltanDatos] = useState(false);
+  const [shortcutErrorCanales, setShortcutErrorCanales] = useState(false);
 
   const isAdmin = session?.role === "admin";
 
@@ -96,6 +98,13 @@ export default function PropertiesPage() {
       ) {
         return false;
       }
+      if (shortcutFaltanDatos && p.completeness >= 100) return false;
+      if (
+        shortcutErrorCanales &&
+        !p.channels.some((c) => c.status === "error")
+      ) {
+        return false;
+      }
       if (!q) return true;
       return (
         p.titulo.toLowerCase().includes(q) ||
@@ -112,6 +121,8 @@ export default function PropertiesPage() {
     estadoFilter,
     precioFilter,
     propietarioFilter,
+    shortcutFaltanDatos,
+    shortcutErrorCanales,
   ]);
 
   const deleteMutation = useMutation({
@@ -190,6 +201,30 @@ export default function PropertiesPage() {
           placeholder="Buscar por título, municipio o código…"
           className="w-full max-w-md rounded-[10px] border border-[var(--pa-border)] bg-[var(--pa-surface)] px-4 py-2.5 text-[13px] text-[var(--pa-ink)] outline-none focus:border-[var(--pa-navy)]"
         />
+      </div>
+      <div className="mb-3 flex flex-wrap gap-2">
+        <button
+          type="button"
+          onClick={() => setShortcutFaltanDatos((v) => !v)}
+          className={`rounded-full px-4 py-2 text-[13px] font-semibold transition-colors ${
+            shortcutFaltanDatos
+              ? "bg-[var(--pa-navy)] text-white"
+              : "border border-[var(--pa-border)] bg-[var(--pa-surface)] text-[#45525E] hover:border-[var(--pa-navy)]"
+          }`}
+        >
+          Faltan datos
+        </button>
+        <button
+          type="button"
+          onClick={() => setShortcutErrorCanales((v) => !v)}
+          className={`rounded-full px-4 py-2 text-[13px] font-semibold transition-colors ${
+            shortcutErrorCanales
+              ? "bg-[var(--pa-danger)] text-white"
+              : "border border-[var(--pa-border)] bg-[var(--pa-surface)] text-[#45525E] hover:border-[var(--pa-danger)]"
+          }`}
+        >
+          Error en canales
+        </button>
       </div>
       <div className="mb-6 flex flex-wrap gap-2.5">
         <FilterDropdown

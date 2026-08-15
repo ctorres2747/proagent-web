@@ -11,6 +11,8 @@ export interface AgentSession {
   email?: string;
   /** Sprint 010/011 — staff Proinversores puede ver Captación (API gate). */
   canAccessCaptacion?: boolean;
+  /** Sprint 012 — nombre corto para saludo (Andreina, Nataly). */
+  nombrePreferido?: string | null;
 }
 
 /** Respuesta del login JWT (puente temporal /api/mobile/auth/login). */

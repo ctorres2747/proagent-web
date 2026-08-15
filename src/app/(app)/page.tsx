@@ -3,7 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/features/auth/AuthProvider";
 import { propertiesService } from "@/services";
-import { firstName } from "@/lib/agentDisplay";
+import { displayName } from "@/lib/agentDisplay";
 
 export default function DashboardPage() {
   const { session, token } = useAuth();
@@ -18,7 +18,7 @@ export default function DashboardPage() {
   return (
     <div className="px-6 py-8 md:px-10">
       <h1 className="text-2xl font-bold text-[var(--pa-navy)]">
-        Hola, {firstName(session)}
+        Hola, {displayName(session)}
       </h1>
       <p className="mt-1 text-sm text-[var(--pa-muted)]">
         Panel de {session?.role === "admin" ? "administrador" : "agente"} ·
