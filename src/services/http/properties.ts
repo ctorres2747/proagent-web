@@ -56,6 +56,7 @@ interface RawProperty {
   portada_url?: string | null;
   fotos?: RawPhoto[] | null;
   owner_agente_id?: number | string | null;
+  owner_agente_nombre?: string | null;
   channels?: { id: string; status: string }[] | null;
 }
 
@@ -135,6 +136,9 @@ function mapProperty(raw: RawProperty): Property {
       raw.owner_agente_id !== null && raw.owner_agente_id !== undefined
         ? String(raw.owner_agente_id)
         : null,
+    ownerAgenteNombre: raw.owner_agente_nombre?.trim()
+      ? raw.owner_agente_nombre.trim()
+      : null,
     channels: mapChannels(raw.channels),
   };
 }

@@ -12,3 +12,8 @@ const FORCE_MOCKS: boolean = process.env.NEXT_PUBLIC_USE_MOCKS === "true";
 
 /** True when the app should talk HTTP to the backend; false = mocks. */
 export const USE_HTTP_API: boolean = !FORCE_MOCKS && API_URL.length > 0;
+
+/** Kanban / captación interna (deep-link, no embed). */
+export const CAPTACION_URL: string = (
+  process.env.NEXT_PUBLIC_CAPTACION_URL ?? "https://agente.proinversores.bond"
+).replace(/\/$/, "");

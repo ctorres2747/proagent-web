@@ -46,6 +46,7 @@ const MOCK_PROPERTIES: Property[] = [
     portadaUrl: null,
     fotos: [],
     ownerAgenteId: "mock-admin",
+    ownerAgenteNombre: "Andreina Torres",
     channels: channels({
       wasi: "published",
       facebook: "published",
@@ -84,6 +85,7 @@ const MOCK_PROPERTIES: Property[] = [
     portadaUrl: null,
     fotos: [],
     ownerAgenteId: "mock-admin",
+    ownerAgenteNombre: "Andreina Torres",
     channels: channels({ wasi: "progress" }),
   },
   {
@@ -117,6 +119,7 @@ const MOCK_PROPERTIES: Property[] = [
     portadaUrl: null,
     fotos: [],
     ownerAgenteId: "mock-asesor",
+    ownerAgenteNombre: "Laura Méndez",
     channels: channels({
       wasi: "published",
       facebook: "error",
@@ -155,6 +158,7 @@ const MOCK_PROPERTIES: Property[] = [
     portadaUrl: null,
     fotos: [],
     ownerAgenteId: "mock-asesor",
+    ownerAgenteNombre: "Laura Méndez",
     channels: channels({}),
   },
   {
@@ -188,6 +192,7 @@ const MOCK_PROPERTIES: Property[] = [
     portadaUrl: null,
     fotos: [],
     ownerAgenteId: "mock-admin",
+    ownerAgenteNombre: "Andreina Torres",
     channels: channels({
       wasi: "published",
       facebook: "published",
@@ -227,6 +232,7 @@ const MOCK_PROPERTIES: Property[] = [
     portadaUrl: null,
     fotos: [],
     ownerAgenteId: "mock-admin",
+    ownerAgenteNombre: "Andreina Torres",
     channels: channels({ wasi: "published", web: "progress" }),
   },
 ];
@@ -276,6 +282,7 @@ export const propertiesService: PropertiesService = {
       portadaUrl: null,
       fotos: [],
       ownerAgenteId: "mock-admin",
+    ownerAgenteNombre: "Andreina Torres",
       channels: channels({}),
     };
     MOCK_PROPERTIES.unshift(created);

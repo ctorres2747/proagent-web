@@ -4,14 +4,18 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/features/auth/AuthProvider";
+import { CAPTACION_URL } from "@/config/env";
+import { isProinversoresStaff } from "@/lib/agentDisplay";
+import { UserMenu } from "@/components/UserMenu";
 
 interface NavItem {
   href: string;
   label: string;
   disabled?: boolean;
+  external?: boolean;
 }
 
-const NAV: NavItem[] = [
+const BASE_NAV: NavItem[] = [
   { href: "/", label: "Inicio" },
   { href: "/properties", label: "Propiedades" },
   { href: "/publications", label: "Publicar" },
@@ -24,19 +28,21 @@ function isActive(pathname: string, href: string): boolean {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
-function initials(name: string): string {
-  const parts = name.trim().split(/\s+/).slice(0, 2);
-  return parts.map((p) => p[0]?.toUpperCase() ?? "").join("") || "PA";
-}
-
 export function AppShell({ children }: { children: React.ReactNode }) {
-  const { session, logout } = useAuth();
+  const { session } = useAuth();
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
 
+  const nav: NavItem[] = isProinversoresStaff(session)
+    ? [
+        ...BASE_NAV.slice(0, 3),
+        { href: CAPTACION_URL, label: "Captación", external: true },
+        ...BASE_NAV.slice(3),
+      ]
+    : BASE_NAV;
+
   return (
     <div className="flex min-h-screen bg-[image:var(--pa-bg-app)] text-[var(--pa-ink)]">
-      {/* Sidebar */}
       <aside
         className={`sticky top-0 hidden h-screen shrink-0 flex-col border-r border-[var(--pa-border)] bg-[var(--pa-surface)] transition-[width] duration-150 md:flex ${
           collapsed ? "w-[68px]" : "w-56"
@@ -54,8 +60,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </div>
 
         <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto p-3">
-          {NAV.map((item) => {
-            const active = isActive(pathname, item.href);
+          {nav.map((item) => {
+            const active = !item.external && isActive(pathname, item.href);
             const dotColor = active
               ? "bg-white"
               : item.disabled
@@ -77,16 +83,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 </div>
               );
             }
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`flex items-center gap-3 rounded-[10px] px-3 py-2.5 transition-colors ${
-                  active
-                    ? "bg-[var(--pa-navy)]"
-                    : "hover:bg-[var(--pa-bg)]"
-                }`}
-              >
+            const className = `flex items-center gap-3 rounded-[10px] px-3 py-2.5 transition-colors ${
+              active
+                ? "bg-[var(--pa-navy)]"
+                : "hover:bg-[var(--pa-bg)]"
+            }`;
+            const label = (
+              <>
                 <span className={`h-2 w-2 shrink-0 rounded-full ${dotColor}`} />
                 {!collapsed && (
                   <span
@@ -99,6 +102,25 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                     {item.label}
                   </span>
                 )}
+              </>
+            );
+            if (item.external) {
+              return (
+                <a
+                  key={item.href}
+                  href={item.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={className}
+                  title="Kanban interno de captación"
+                >
+                  {label}
+                </a>
+              );
+            }
+            return (
+              <Link key={item.href} href={item.href} className={className}>
+                {label}
               </Link>
             );
           })}
@@ -116,9 +138,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </div>
       </aside>
 
-      {/* Main */}
       <div className="flex min-w-0 flex-1 flex-col">
-        {/* Topbar */}
         <header className="flex h-16 shrink-0 items-center gap-4 border-b border-[var(--pa-border)] bg-[var(--pa-surface)] px-5 md:px-7">
           <div className="flex min-w-0 max-w-[420px] flex-1 items-center truncate rounded-[10px] border border-[var(--pa-border)] bg-[var(--pa-bg)] px-3.5 py-2.5 text-[13px] text-[var(--pa-faint)]">
             Buscar propiedad, cliente o código…
@@ -133,14 +153,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           >
             + Nueva propiedad
           </Link>
-          <button
-            type="button"
-            onClick={logout}
-            title="Cerrar sesión"
-            className="flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-full bg-[var(--pa-bg-alt)] text-[13px] font-bold text-[#45525E]"
-          >
-            {session ? initials(session.nombre) : "PA"}
-          </button>
+          <UserMenu />
         </header>
 
         <main className="flex-1 overflow-y-auto">

@@ -8,44 +8,94 @@ import { propertiesService } from "@/services";
 import type { Property } from "@/services/interfaces/properties";
 import { ChannelChips } from "@/components/ChannelChips";
 import { CompletenessBar } from "@/components/CompletenessBar";
+import { CoverImage } from "@/components/CoverImage";
+import { FilterDropdown } from "@/components/FilterDropdown";
 import { formatPrice } from "@/lib/format";
+import {
+  buildMunicipioOptions,
+  propertyMatchesMunicipio,
+} from "@/lib/municipio";
 
 const FILTER_TYPES = ["Todos", "Apartamento", "Casa", "Local", "Lote", "Oficina", "Finca"];
 const FILTER_ESTADOS = ["Todos", "Incompleto", "Casi listo", "Completo"];
+const FILTER_PRECIOS = [
+  { value: "Todos", label: "Todos" },
+  { value: "hasta-500m", label: "Hasta $500M" },
+  { value: "500m-1b", label: "$500M – $1.000M" },
+  { value: "mas-1b", label: "Más de $1.000M" },
+];
+
+type FilterKey = "tipo" | "municipio" | "estado" | "precio" | "propietario";
+
+function matchesPrecio(precio: number | null, filter: string): boolean {
+  if (filter === "Todos") return true;
+  if (precio === null) return false;
+  if (filter === "hasta-500m") return precio <= 500_000_000;
+  if (filter === "500m-1b") return precio > 500_000_000 && precio <= 1_000_000_000;
+  if (filter === "mas-1b") return precio > 1_000_000_000;
+  return true;
+}
 
 export default function PropertiesPage() {
-  const { token } = useAuth();
+  const { session, token } = useAuth();
   const router = useRouter();
   const queryClient = useQueryClient();
   const [view, setView] = useState<"table" | "cards">("table");
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [tipoFilter, setTipoFilter] = useState("Todos");
-  const [ciudadFilter, setCiudadFilter] = useState("Todos");
+  const [municipioFilter, setMunicipioFilter] = useState("Todos");
   const [estadoFilter, setEstadoFilter] = useState("Todos");
-  const [openFilter, setOpenFilter] = useState<"tipo" | "ciudad" | "estado" | null>(
-    null,
-  );
+  const [precioFilter, setPrecioFilter] = useState("Todos");
+  const [propietarioFilter, setPropietarioFilter] = useState("Todos");
+  const [openFilter, setOpenFilter] = useState<FilterKey | null>(null);
+
+  const isAdmin = session?.role === "admin";
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ["properties"],
     queryFn: () => propertiesService.list(token ?? undefined),
   });
 
-  const ciudades = useMemo(() => {
-    const set = new Set((data ?? []).map((p) => p.municipio).filter(Boolean));
-    return ["Todos", ...Array.from(set).sort()];
+  const municipioOptions = useMemo(
+    () => buildMunicipioOptions((data ?? []).map((p) => p.municipio)),
+    [data],
+  );
+
+  const propietarioOptions = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const p of data ?? []) {
+      if (!p.ownerAgenteId) continue;
+      map.set(
+        p.ownerAgenteId,
+        p.ownerAgenteNombre ?? `Agente ${p.ownerAgenteId}`,
+      );
+    }
+    return Array.from(map.entries())
+      .map(([id, label]) => ({ id, label }))
+      .sort((a, b) => a.label.localeCompare(b.label, "es"));
   }, [data]);
+
+  const showPropietarioFilter = isAdmin && propietarioOptions.length > 1;
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
+    const municipioKey =
+      municipioFilter === "Todos" ? null : municipioFilter;
     return (data ?? []).filter((p) => {
       if (tipoFilter !== "Todos" && p.tipo !== tipoFilter) return false;
-      if (ciudadFilter !== "Todos" && p.municipio !== ciudadFilter) return false;
+      if (!propertyMatchesMunicipio(p.municipio, municipioKey)) return false;
       if (estadoFilter === "Incompleto" && p.completeness >= 70) return false;
       if (estadoFilter === "Casi listo" && (p.completeness < 70 || p.completeness >= 100))
         return false;
       if (estadoFilter === "Completo" && p.completeness < 100) return false;
+      if (!matchesPrecio(p.precio, precioFilter)) return false;
+      if (
+        propietarioFilter !== "Todos" &&
+        p.ownerAgenteId !== propietarioFilter
+      ) {
+        return false;
+      }
       if (!q) return true;
       return (
         p.titulo.toLowerCase().includes(q) ||
@@ -54,7 +104,15 @@ export default function PropertiesPage() {
         (p.barrio?.toLowerCase().includes(q) ?? false)
       );
     });
-  }, [data, search, tipoFilter, ciudadFilter, estadoFilter]);
+  }, [
+    data,
+    search,
+    tipoFilter,
+    municipioFilter,
+    estadoFilter,
+    precioFilter,
+    propietarioFilter,
+  ]);
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => propertiesService.delete(id, token ?? undefined),
@@ -133,56 +191,91 @@ export default function PropertiesPage() {
           className="w-full max-w-md rounded-[10px] border border-[var(--pa-border)] bg-[var(--pa-surface)] px-4 py-2.5 text-[13px] text-[var(--pa-ink)] outline-none focus:border-[var(--pa-navy)]"
         />
       </div>
-      <div className="relative mb-6 flex flex-wrap gap-2.5">
-        <FilterChip
+      <div className="mb-6 flex flex-wrap gap-2.5">
+        <FilterDropdown
           label={`Tipo${tipoFilter !== "Todos" ? `: ${tipoFilter}` : ""}`}
-          active={openFilter === "tipo"}
-          onClick={() =>
+          active={tipoFilter !== "Todos"}
+          open={openFilter === "tipo"}
+          onToggle={() =>
             setOpenFilter((f) => (f === "tipo" ? null : "tipo"))
           }
+          onClose={() => setOpenFilter(null)}
+          options={FILTER_TYPES.map((v) => ({ value: v, label: v }))}
+          selected={tipoFilter}
+          onSelect={setTipoFilter}
         />
-        <FilterChip
-          label={`Ciudad${ciudadFilter !== "Todos" ? `: ${ciudadFilter}` : ""}`}
-          active={openFilter === "ciudad"}
-          onClick={() =>
-            setOpenFilter((f) => (f === "ciudad" ? null : "ciudad"))
+        <FilterDropdown
+          label={`Municipio${
+            municipioFilter !== "Todos"
+              ? `: ${municipioOptions.find((m) => m.key === municipioFilter)?.label ?? municipioFilter}`
+              : ""
+          }`}
+          active={municipioFilter !== "Todos"}
+          open={openFilter === "municipio"}
+          onToggle={() =>
+            setOpenFilter((f) => (f === "municipio" ? null : "municipio"))
           }
+          onClose={() => setOpenFilter(null)}
+          options={[
+            { value: "Todos", label: "Todos" },
+            ...municipioOptions.map((m) => ({
+              value: m.key,
+              label: m.label,
+            })),
+          ]}
+          selected={municipioFilter}
+          onSelect={setMunicipioFilter}
         />
-        <FilterChip
+        <FilterDropdown
           label={`Estado${estadoFilter !== "Todos" ? `: ${estadoFilter}` : ""}`}
-          active={openFilter === "estado"}
-          onClick={() =>
+          active={estadoFilter !== "Todos"}
+          open={openFilter === "estado"}
+          onToggle={() =>
             setOpenFilter((f) => (f === "estado" ? null : "estado"))
           }
+          onClose={() => setOpenFilter(null)}
+          options={FILTER_ESTADOS.map((v) => ({ value: v, label: v }))}
+          selected={estadoFilter}
+          onSelect={setEstadoFilter}
         />
-        {openFilter === "tipo" && (
-          <FilterMenu
-            options={FILTER_TYPES}
-            selected={tipoFilter}
-            onSelect={(v) => {
-              setTipoFilter(v);
-              setOpenFilter(null);
-            }}
-          />
-        )}
-        {openFilter === "ciudad" && (
-          <FilterMenu
-            options={ciudades}
-            selected={ciudadFilter}
-            onSelect={(v) => {
-              setCiudadFilter(v);
-              setOpenFilter(null);
-            }}
-          />
-        )}
-        {openFilter === "estado" && (
-          <FilterMenu
-            options={FILTER_ESTADOS}
-            selected={estadoFilter}
-            onSelect={(v) => {
-              setEstadoFilter(v);
-              setOpenFilter(null);
-            }}
+        <FilterDropdown
+          label={`Precio${
+            precioFilter !== "Todos"
+              ? `: ${FILTER_PRECIOS.find((p) => p.value === precioFilter)?.label ?? precioFilter}`
+              : ""
+          }`}
+          active={precioFilter !== "Todos"}
+          open={openFilter === "precio"}
+          onToggle={() =>
+            setOpenFilter((f) => (f === "precio" ? null : "precio"))
+          }
+          onClose={() => setOpenFilter(null)}
+          options={FILTER_PRECIOS}
+          selected={precioFilter}
+          onSelect={setPrecioFilter}
+        />
+        {showPropietarioFilter && (
+          <FilterDropdown
+            label={`Propietario${
+              propietarioFilter !== "Todos"
+                ? `: ${propietarioOptions.find((o) => o.id === propietarioFilter)?.label ?? ""}`
+                : ""
+            }`}
+            active={propietarioFilter !== "Todos"}
+            open={openFilter === "propietario"}
+            onToggle={() =>
+              setOpenFilter((f) => (f === "propietario" ? null : "propietario"))
+            }
+            onClose={() => setOpenFilter(null)}
+            options={[
+              { value: "Todos", label: "Todos" },
+              ...propietarioOptions.map((o) => ({
+                value: o.id,
+                label: o.label,
+              })),
+            ]}
+            selected={propietarioFilter}
+            onSelect={setPropietarioFilter}
           />
         )}
       </div>
@@ -244,59 +337,6 @@ export default function PropertiesPage() {
   );
 }
 
-function FilterChip({
-  label,
-  active,
-  onClick,
-}: {
-  label: string;
-  active: boolean;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`whitespace-nowrap rounded-full border px-4 py-2 text-[13px] font-semibold transition-colors ${
-        active
-          ? "border-[var(--pa-navy)] bg-[var(--pa-navy)] text-white"
-          : "border-[var(--pa-border)] bg-[var(--pa-surface)] text-[#45525E] hover:border-[var(--pa-navy)]"
-      }`}
-    >
-      {label} ▾
-    </button>
-  );
-}
-
-function FilterMenu({
-  options,
-  selected,
-  onSelect,
-}: {
-  options: string[];
-  selected: string;
-  onSelect: (value: string) => void;
-}) {
-  return (
-    <div className="absolute left-0 top-full z-20 mt-1 min-w-[180px] rounded-xl border border-[var(--pa-border)] bg-[var(--pa-surface)] py-1 shadow-lg">
-      {options.map((opt) => (
-        <button
-          key={opt}
-          type="button"
-          onClick={() => onSelect(opt)}
-          className={`block w-full px-4 py-2 text-left text-[13px] hover:bg-[var(--pa-bg)] ${
-            opt === selected
-              ? "font-bold text-[var(--pa-navy)]"
-              : "text-[var(--pa-ink)]"
-          }`}
-        >
-          {opt}
-        </button>
-      ))}
-    </div>
-  );
-}
-
 function SegBtn({
   active,
   onClick,
@@ -335,8 +375,13 @@ function PropertyCard({
   return (
     <div className="flex flex-col rounded-2xl border border-[var(--pa-border)] bg-[var(--pa-surface)] p-3.5 text-left transition-shadow hover:shadow-sm">
       <button type="button" onClick={onClick} className="text-left">
-        <div className="relative mb-3.5 flex h-[150px] items-center justify-center rounded-xl bg-[repeating-linear-gradient(45deg,#E4E8EC,#E4E8EC_10px,#EDEFF2_10px,#EDEFF2_20px)]">
-          <span className="font-mono text-[11px] text-[#8B98A5]">foto portada</span>
+        <div className="relative mb-3.5 h-[150px] overflow-hidden rounded-xl">
+          <CoverImage
+            url={p.portadaUrl}
+            alt={p.titulo}
+            className="h-full w-full"
+            placeholderClassName="h-full w-full"
+          />
           <span className="absolute left-2.5 top-2.5 rounded-md bg-white/90 px-2.5 py-1 text-[11px] font-bold text-[var(--pa-ink)]">
             {p.code}
           </span>
@@ -402,9 +447,16 @@ function PropertyTable({
           <button
             type="button"
             onClick={() => onOpen(p)}
-            className="h-11 w-11 rounded-lg bg-[repeating-linear-gradient(45deg,#E4E8EC,#E4E8EC_6px,#EDEFF2_6px,#EDEFF2_12px)]"
+            className="h-11 w-11 overflow-hidden rounded-lg"
             aria-label={`Abrir ${p.titulo}`}
-          />
+          >
+            <CoverImage
+              url={p.portadaUrl}
+              alt=""
+              className="h-full w-full"
+              placeholderClassName="h-11 w-11"
+            />
+          </button>
           <button type="button" onClick={() => onOpen(p)} className="min-w-0 text-left">
             <div className="line-clamp-1 text-[13px] font-bold text-[var(--pa-ink)]">
               {p.titulo}
