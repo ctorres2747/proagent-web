@@ -10,6 +10,7 @@ export const MOCK_ADMIN: AgentSession = {
   nombre: "Admin Proinversores",
   role: "admin",
   email: "admin@proinversores.com",
+  canAccessCaptacion: true,
 };
 
 const MOCK_TOKEN = "mock-jwt-token";

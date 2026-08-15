@@ -17,3 +17,10 @@ export const USE_HTTP_API: boolean = !FORCE_MOCKS && API_URL.length > 0;
 export const CAPTACION_URL: string = (
   process.env.NEXT_PUBLIC_CAPTACION_URL ?? "https://agente.proinversores.bond"
 ).replace(/\/$/, "");
+
+/**
+ * Sprint 011 — Captación nativa en Next (`/captacion`).
+ * Default **false**: nav sigue al Kanban HTML externo. Owner activa tras smoke.
+ */
+export const CAPTACION_NATIVE: boolean =
+  process.env.NEXT_PUBLIC_CAPTACION_NATIVE === "true";

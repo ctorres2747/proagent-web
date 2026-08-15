@@ -9,6 +9,8 @@ export interface AgentSession {
   role: Role;
   /** Email del agente; los @proinversores habilitan reglas admin (E-INV-01). */
   email?: string;
+  /** Sprint 010/011 — staff Proinversores puede ver Captación (API gate). */
+  canAccessCaptacion?: boolean;
 }
 
 /** Respuesta del login JWT (puente temporal /api/mobile/auth/login). */

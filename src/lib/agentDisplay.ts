@@ -30,3 +30,14 @@ export function isProinversoresStaff(
     email.includes("@proinversores.")
   );
 }
+
+/** Sprint 011 — prefer API gate; fallback to email heuristic in mocks. */
+export function canAccessCaptacion(
+  session: AgentSession | null | undefined,
+): boolean {
+  if (!session) return false;
+  if (session.canAccessCaptacion !== undefined) {
+    return session.canAccessCaptacion;
+  }
+  return isProinversoresStaff(session);
+}
