@@ -1,14 +1,20 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/features/auth/AuthProvider";
 import { CAPTACION_NATIVE, CAPTACION_URL } from "@/config/env";
+import { CaptacionDetailDrawer } from "@/features/captacion/CaptacionDetailDrawer";
+import { ScraperStatusBar } from "@/features/captacion/ScraperStatusBar";
 import { canAccessCaptacion } from "@/lib/agentDisplay";
+import { captacionSubtitle } from "@/lib/captacionSubtitle";
 import { formatPrice } from "@/lib/format";
-import { fichasService, leadsService } from "@/services";
+import { FilterDropdown } from "@/components/FilterDropdown";
+import { LeadCoverImage } from "@/components/LeadCoverImage";
+import { Toast } from "@/components/Toast";
+import { fichasService, leadsService, scraperService } from "@/services";
 import type { Lead, LeadEstado } from "@/services/interfaces/leads";
 
 const COLUMNS: LeadEstado[] = [
@@ -18,15 +24,45 @@ const COLUMNS: LeadEstado[] = [
   "Descartado",
 ];
 
-const ESTADO_OPTIONS: LeadEstado[] = [
-  "Pendiente",
-  "En contacto",
-  "Captado",
-  "Descartado",
+const FILTER_PRECIOS = [
+  { value: "Todos", label: "Todos" },
+  { value: "hasta-500m", label: "Hasta $500M" },
+  { value: "500m-1b", label: "$500M – $1.000M" },
+  { value: "mas-1b", label: "Más de $1.000M" },
 ];
+
+type FilterKey = "municipio" | "tipo" | "portal" | "estado" | "precio";
 
 function columnCount(leads: Lead[], estado: LeadEstado): number {
   return leads.filter((l) => l.estado === estado).length;
+}
+
+function matchesPrecio(precioNum: number | null, filter: string): boolean {
+  if (filter === "Todos") return true;
+  if (precioNum === null) return false;
+  if (filter === "hasta-500m") return precioNum <= 500_000_000;
+  if (filter === "500m-1b")
+    return precioNum > 500_000_000 && precioNum <= 1_000_000_000;
+  if (filter === "mas-1b") return precioNum > 1_000_000_000;
+  return true;
+}
+
+function matchesOwnerSearch(lead: Lead, query: string): boolean {
+  const q = query.trim().toLowerCase();
+  if (!q) return true;
+  const tel = (lead.telefono ?? "").replace(/\D/g, "");
+  const name = (lead.nombrePublicador ?? "").toLowerCase();
+  const qDigits = q.replace(/\D/g, "");
+  return name.includes(q) || (qDigits.length > 0 && tel.includes(qDigits));
+}
+
+function KpiCard({ value, label }: { value: number; label: string }) {
+  return (
+    <div className="rounded-xl border border-[var(--pa-border)] bg-[var(--pa-surface)] px-4 py-3">
+      <p className="text-[22px] font-extrabold text-[var(--pa-ink)]">{value}</p>
+      <p className="text-[11px] font-semibold text-[var(--pa-muted)]">{label}</p>
+    </div>
+  );
 }
 
 export default function CaptacionPage() {
@@ -36,6 +72,17 @@ export default function CaptacionPage() {
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [publishError, setPublishError] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ message: string; type?: "error" } | null>(
+    null,
+  );
+
+  const [municipioFilter, setMunicipioFilter] = useState("Todos");
+  const [tipoFilter, setTipoFilter] = useState("Todos");
+  const [portalFilter, setPortalFilter] = useState("Todos");
+  const [estadoFilter, setEstadoFilter] = useState("Todos");
+  const [precioFilter, setPrecioFilter] = useState("Todos");
+  const [ownerSearch, setOwnerSearch] = useState("");
+  const [openFilter, setOpenFilter] = useState<FilterKey | null>(null);
 
   const staff = canAccessCaptacion(session);
 
@@ -54,6 +101,14 @@ export default function CaptacionPage() {
     queryKey: ["leads"],
     queryFn: () => leadsService.list(token ?? undefined),
     enabled: staff && CAPTACION_NATIVE,
+  });
+
+  const { data: scraperStatus } = useQuery({
+    queryKey: ["scraper-status"],
+    queryFn: () => scraperService.status(token ?? undefined),
+    enabled: staff && CAPTACION_NATIVE,
+    refetchInterval: (q) =>
+      q.state.data?.running || q.state.data?.queueStatus ? 5000 : 60000,
   });
 
   const selected = useMemo(
@@ -82,14 +137,78 @@ export default function CaptacionPage() {
     setPublishError(null);
   }, [selected]);
 
+  const municipios = useMemo(
+    () =>
+      [...new Set((leads ?? []).map((l) => l.municipio).filter(Boolean) as string[])].sort(),
+    [leads],
+  );
+  const tipos = useMemo(
+    () =>
+      [...new Set((leads ?? []).map((l) => l.tipoInmueble).filter(Boolean) as string[])].sort(),
+    [leads],
+  );
+  const portales = useMemo(
+    () => [...new Set((leads ?? []).map((l) => l.portal))].sort(),
+    [leads],
+  );
+
+  const filteredLeads = useMemo(() => {
+    return (leads ?? []).filter((lead) => {
+      if (municipioFilter !== "Todos" && lead.municipio !== municipioFilter) {
+        return false;
+      }
+      if (tipoFilter !== "Todos" && lead.tipoInmueble !== tipoFilter) {
+        return false;
+      }
+      if (portalFilter !== "Todos" && lead.portal !== portalFilter) {
+        return false;
+      }
+      if (estadoFilter !== "Todos" && lead.estado !== estadoFilter) {
+        return false;
+      }
+      if (!matchesPrecio(lead.precioNum, precioFilter)) return false;
+      if (!matchesOwnerSearch(lead, ownerSearch)) return false;
+      return true;
+    });
+  }, [
+    leads,
+    municipioFilter,
+    tipoFilter,
+    portalFilter,
+    estadoFilter,
+    precioFilter,
+    ownerSearch,
+  ]);
+
+  const hasActiveFilters =
+    municipioFilter !== "Todos" ||
+    tipoFilter !== "Todos" ||
+    portalFilter !== "Todos" ||
+    estadoFilter !== "Todos" ||
+    precioFilter !== "Todos" ||
+    ownerSearch.trim().length > 0;
+
+  const clearFilters = () => {
+    setMunicipioFilter("Todos");
+    setTipoFilter("Todos");
+    setPortalFilter("Todos");
+    setEstadoFilter("Todos");
+    setPrecioFilter("Todos");
+    setOwnerSearch("");
+    setOpenFilter(null);
+  };
+
   const updateMutation = useMutation({
     mutationFn: (payload: Parameters<typeof leadsService.update>[1]) =>
       leadsService.update(selectedId!, payload, token ?? undefined),
-    onSuccess: (updated) => {
+    onSuccess: (updated, variables) => {
       queryClient.setQueryData<Lead[]>(["leads"], (prev) =>
         prev?.map((l) => (l.id === updated.id ? updated : l)),
       );
       setSaveError(null);
+      if (variables.estado && selected && variables.estado !== selected.estado) {
+        setToast({ message: `Lead movido a "${variables.estado}"` });
+      }
     },
     onError: (err) => {
       setSaveError(
@@ -109,6 +228,8 @@ export default function CaptacionPage() {
       );
     },
   });
+
+  const dismissToast = useCallback(() => setToast(null), []);
 
   if (!staff) {
     return null;
@@ -152,21 +273,121 @@ export default function CaptacionPage() {
     Boolean(draft.telefono.trim()) &&
     Boolean(draft.nombrePublicador.trim());
 
+  const stats = scraperStatus?.stats ?? {};
+  const totalKpi = stats.total ?? leads?.length ?? 0;
+  const hoyKpi = stats.hoy ?? 0;
+
   return (
     <div className="flex min-h-[calc(100vh-4rem)] flex-col px-4 py-6 md:px-6">
-      <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
+      <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-[26px] font-extrabold text-[var(--pa-ink)]">
             Captación
           </h1>
           <p className="mt-1 text-[13px] text-[var(--pa-muted)]">
-            Leads de portales — seguimiento interno Proinversores.
+            {captacionSubtitle(session)}
           </p>
         </div>
         <p className="text-[12px] text-[var(--pa-faint)]">
-          {leads?.length ?? 0} leads activos
+          {filteredLeads.length} de {leads?.length ?? 0} leads
         </p>
       </div>
+
+      <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <KpiCard value={totalKpi} label="Total leads" />
+        <KpiCard value={hoyKpi} label="Nuevos hoy" />
+      </div>
+
+      <div className="mb-4 flex flex-wrap items-center gap-2">
+        <FilterDropdown
+          label="Municipio"
+          active={municipioFilter !== "Todos"}
+          open={openFilter === "municipio"}
+          onToggle={() =>
+            setOpenFilter((k) => (k === "municipio" ? null : "municipio"))
+          }
+          onClose={() => setOpenFilter(null)}
+          options={[
+            { value: "Todos", label: "Todos" },
+            ...municipios.map((m) => ({ value: m, label: m })),
+          ]}
+          selected={municipioFilter}
+          onSelect={setMunicipioFilter}
+        />
+        <FilterDropdown
+          label="Tipo"
+          active={tipoFilter !== "Todos"}
+          open={openFilter === "tipo"}
+          onToggle={() => setOpenFilter((k) => (k === "tipo" ? null : "tipo"))}
+          onClose={() => setOpenFilter(null)}
+          options={[
+            { value: "Todos", label: "Todos" },
+            ...tipos.map((t) => ({ value: t, label: t })),
+          ]}
+          selected={tipoFilter}
+          onSelect={setTipoFilter}
+        />
+        <FilterDropdown
+          label="Portal"
+          active={portalFilter !== "Todos"}
+          open={openFilter === "portal"}
+          onToggle={() =>
+            setOpenFilter((k) => (k === "portal" ? null : "portal"))
+          }
+          onClose={() => setOpenFilter(null)}
+          options={[
+            { value: "Todos", label: "Todos" },
+            ...portales.map((p) => ({ value: p, label: p })),
+          ]}
+          selected={portalFilter}
+          onSelect={setPortalFilter}
+        />
+        <FilterDropdown
+          label="Estado"
+          active={estadoFilter !== "Todos"}
+          open={openFilter === "estado"}
+          onToggle={() =>
+            setOpenFilter((k) => (k === "estado" ? null : "estado"))
+          }
+          onClose={() => setOpenFilter(null)}
+          options={[
+            { value: "Todos", label: "Todos" },
+            ...COLUMNS.map((e) => ({ value: e, label: e })),
+          ]}
+          selected={estadoFilter}
+          onSelect={setEstadoFilter}
+        />
+        <FilterDropdown
+          label="Precio"
+          active={precioFilter !== "Todos"}
+          open={openFilter === "precio"}
+          onToggle={() =>
+            setOpenFilter((k) => (k === "precio" ? null : "precio"))
+          }
+          onClose={() => setOpenFilter(null)}
+          options={FILTER_PRECIOS}
+          selected={precioFilter}
+          onSelect={setPrecioFilter}
+        />
+        <input
+          type="search"
+          value={ownerSearch}
+          onChange={(e) => setOwnerSearch(e.target.value)}
+          placeholder="Propietario / teléfono"
+          className="min-w-[160px] rounded-full border border-[var(--pa-border)] bg-[var(--pa-surface)] px-4 py-2 text-[13px] font-semibold text-[#45525E] placeholder:font-normal placeholder:text-[var(--pa-faint)]"
+        />
+        {hasActiveFilters ? (
+          <button
+            type="button"
+            onClick={clearFilters}
+            className="text-[13px] font-semibold text-[var(--pa-navy)] underline"
+          >
+            Limpiar filtros
+          </button>
+        ) : null}
+      </div>
+
+      {scraperStatus ? <ScraperStatusBar status={scraperStatus} /> : null}
 
       {isLoading && (
         <p className="text-sm text-[var(--pa-muted)]">Cargando leads…</p>
@@ -181,23 +402,23 @@ export default function CaptacionPage() {
       )}
 
       {!isLoading && !isError && (
-        <div className="flex min-h-0 flex-1 flex-col gap-4 xl:flex-row">
-          <div className="grid min-h-[420px] flex-1 grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="min-h-0 flex-1 overflow-x-auto">
+          <div className="grid min-h-[420px] min-w-[1080px] grid-cols-4 gap-4">
             {COLUMNS.map((estado) => (
               <section
                 key={estado}
-                className="flex min-h-[320px] flex-col rounded-2xl border border-[var(--pa-border)] bg-[var(--pa-surface)]"
+                className="flex min-h-[360px] flex-col rounded-2xl border border-[var(--pa-border)] bg-[var(--pa-surface)]"
               >
                 <header className="flex items-center justify-between border-b border-[var(--pa-border)] px-3 py-2.5">
                   <h2 className="text-[13px] font-bold text-[var(--pa-ink)]">
                     {estado}
                   </h2>
                   <span className="rounded-full bg-[var(--pa-bg)] px-2 py-0.5 text-[11px] font-semibold text-[var(--pa-muted)]">
-                    {columnCount(leads ?? [], estado)}
+                    {columnCount(filteredLeads, estado)}
                   </span>
                 </header>
                 <div className="flex flex-1 flex-col gap-2 overflow-y-auto p-2">
-                  {(leads ?? [])
+                  {filteredLeads
                     .filter((l) => l.estado === estado)
                     .map((lead) => {
                       const active = lead.id === selectedId;
@@ -212,25 +433,17 @@ export default function CaptacionPage() {
                               : "border-[var(--pa-border)] bg-[var(--pa-bg)] hover:border-[var(--pa-navy)]/40"
                           }`}
                         >
-                          {lead.imagenUrl ? (
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <img
-                              src={lead.imagenUrl}
-                              alt=""
-                              className="mb-2 h-20 w-full rounded-lg object-cover"
-                            />
-                          ) : (
-                            <div className="mb-2 flex h-20 items-center justify-center rounded-lg bg-[var(--pa-bg-alt)] text-[11px] text-[var(--pa-faint)]">
-                              Sin foto
-                            </div>
-                          )}
+                          <LeadCoverImage url={lead.imagenUrl} />
                           <p className="text-[12px] font-bold text-[var(--pa-ink)]">
                             {lead.tipoInmueble ?? "Inmueble"}
                             {lead.municipio ? ` · ${lead.municipio}` : ""}
                           </p>
                           <p className="mt-0.5 text-[12px] font-semibold text-[var(--pa-navy)]">
                             {lead.precio ??
-                              formatPrice(lead.precioNum, (lead.precioNum ?? 0) < 5_000_000)}
+                              formatPrice(
+                                lead.precioNum,
+                                (lead.precioNum ?? 0) < 5_000_000,
+                              )}
                           </p>
                           <p className="mt-1 text-[11px] text-[var(--pa-muted)]">
                             {lead.portal}
@@ -238,7 +451,7 @@ export default function CaptacionPage() {
                         </button>
                       );
                     })}
-                  {columnCount(leads ?? [], estado) === 0 && (
+                  {columnCount(filteredLeads, estado) === 0 && (
                     <p className="px-2 py-6 text-center text-[12px] text-[var(--pa-faint)]">
                       Sin leads
                     </p>
@@ -247,210 +460,6 @@ export default function CaptacionPage() {
               </section>
             ))}
           </div>
-
-          <aside className="w-full shrink-0 rounded-2xl border border-[var(--pa-border)] bg-[var(--pa-surface)] xl:w-[360px]">
-            {!selected ? (
-              <div className="flex h-full min-h-[280px] flex-col items-center justify-center px-6 py-10 text-center">
-                <p className="text-[14px] font-bold text-[var(--pa-ink)]">
-                  Selecciona un lead
-                </p>
-                <p className="mt-2 text-[13px] text-[var(--pa-muted)]">
-                  Elige una tarjeta para ver teléfono, notas y cambiar estado.
-                </p>
-              </div>
-            ) : (
-              <div className="flex flex-col p-4">
-                <div className="mb-4 border-b border-[var(--pa-border)] pb-4">
-                  <p className="text-[11px] font-semibold uppercase tracking-wide text-[var(--pa-faint)]">
-                    {selected.portal} · #{selected.id}
-                  </p>
-                  <h3 className="mt-1 text-[17px] font-extrabold text-[var(--pa-ink)]">
-                    {selected.tipoInmueble ?? "Inmueble"}
-                    {selected.municipio ? ` en ${selected.municipio}` : ""}
-                  </h3>
-                  <p className="mt-1 text-[14px] font-bold text-[var(--pa-navy)]">
-                    {selected.precio ??
-                      formatPrice(
-                        selected.precioNum,
-                        (selected.precioNum ?? 0) < 5_000_000,
-                      )}
-                  </p>
-                  <dl className="mt-3 grid grid-cols-2 gap-x-3 gap-y-1 text-[12px]">
-                    {selected.areaM2 ? (
-                      <>
-                        <dt className="text-[var(--pa-muted)]">Área</dt>
-                        <dd>{selected.areaM2} m²</dd>
-                      </>
-                    ) : null}
-                    {selected.habitaciones ? (
-                      <>
-                        <dt className="text-[var(--pa-muted)]">Habitaciones</dt>
-                        <dd>{selected.habitaciones}</dd>
-                      </>
-                    ) : null}
-                    {selected.banos ? (
-                      <>
-                        <dt className="text-[var(--pa-muted)]">Baños</dt>
-                        <dd>{selected.banos}</dd>
-                      </>
-                    ) : null}
-                  </dl>
-                  {selected.linkPublicacion &&
-                  !selected.linkPublicacion.startsWith("manual-") ? (
-                    <a
-                      href={selected.linkPublicacion}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="mt-3 inline-block text-[12px] font-semibold text-[var(--pa-navy)] underline"
-                    >
-                      Ver publicación original
-                    </a>
-                  ) : null}
-                </div>
-
-                <div className="space-y-3">
-                  <label className="block">
-                    <span className="mb-1 block text-[12px] font-semibold text-[var(--pa-muted)]">
-                      Estado
-                    </span>
-                    <select
-                      value={draft.estado}
-                      onChange={(e) =>
-                        setDraft((d) => ({
-                          ...d,
-                          estado: e.target.value as LeadEstado,
-                        }))
-                      }
-                      className="w-full rounded-[10px] border border-[var(--pa-border)] bg-[var(--pa-bg)] px-3 py-2 text-[13px]"
-                    >
-                      {ESTADO_OPTIONS.map((opt) => (
-                        <option key={opt} value={opt}>
-                          {opt}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-
-                  <label className="block">
-                    <span className="mb-1 block text-[12px] font-semibold text-[var(--pa-muted)]">
-                      Teléfono propietario
-                    </span>
-                    <input
-                      type="tel"
-                      value={draft.telefono}
-                      onChange={(e) =>
-                        setDraft((d) => ({ ...d, telefono: e.target.value }))
-                      }
-                      className="w-full rounded-[10px] border border-[var(--pa-border)] bg-[var(--pa-bg)] px-3 py-2 text-[13px]"
-                      placeholder="300 123 4567"
-                    />
-                  </label>
-
-                  <label className="block">
-                    <span className="mb-1 block text-[12px] font-semibold text-[var(--pa-muted)]">
-                      Nombre propietario
-                    </span>
-                    <input
-                      type="text"
-                      value={draft.nombrePublicador}
-                      onChange={(e) =>
-                        setDraft((d) => ({
-                          ...d,
-                          nombrePublicador: e.target.value,
-                        }))
-                      }
-                      className="w-full rounded-[10px] border border-[var(--pa-border)] bg-[var(--pa-bg)] px-3 py-2 text-[13px]"
-                    />
-                  </label>
-
-                  <label className="block">
-                    <span className="mb-1 block text-[12px] font-semibold text-[var(--pa-muted)]">
-                      Fecha recontacto
-                    </span>
-                    <input
-                      type="date"
-                      value={draft.fechaRecontacto}
-                      onChange={(e) =>
-                        setDraft((d) => ({
-                          ...d,
-                          fechaRecontacto: e.target.value,
-                        }))
-                      }
-                      className="w-full rounded-[10px] border border-[var(--pa-border)] bg-[var(--pa-bg)] px-3 py-2 text-[13px]"
-                    />
-                  </label>
-
-                  <label className="block">
-                    <span className="mb-1 block text-[12px] font-semibold text-[var(--pa-muted)]">
-                      Notas
-                    </span>
-                    <textarea
-                      value={draft.notas}
-                      onChange={(e) =>
-                        setDraft((d) => ({ ...d, notas: e.target.value }))
-                      }
-                      rows={3}
-                      className="w-full resize-y rounded-[10px] border border-[var(--pa-border)] bg-[var(--pa-bg)] px-3 py-2 text-[13px]"
-                    />
-                  </label>
-                </div>
-
-                {saveError ? (
-                  <p className="mt-3 text-[12px] text-[var(--pa-danger)]">
-                    {saveError}
-                  </p>
-                ) : null}
-
-                <div className="mt-4 flex flex-col gap-2">
-                  <button
-                    type="button"
-                    onClick={handleSave}
-                    disabled={updateMutation.isPending}
-                    className="rounded-[10px] border border-[var(--pa-navy)] bg-[var(--pa-surface)] px-4 py-2.5 text-[13px] font-bold text-[var(--pa-navy)] hover:bg-[var(--pa-bg)] disabled:opacity-60"
-                  >
-                    {updateMutation.isPending ? "Guardando…" : "Guardar cambios"}
-                  </button>
-
-                  {draft.telefono.trim() ? (
-                    <a
-                      href={`https://wa.me/57${draft.telefono.replace(/\D/g, "")}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="rounded-[10px] border border-[var(--pa-border)] px-4 py-2.5 text-center text-[13px] font-semibold text-[var(--pa-accent)] hover:bg-[var(--pa-bg)]"
-                    >
-                      WhatsApp
-                    </a>
-                  ) : null}
-
-                  <button
-                    type="button"
-                    onClick={() => publishMutation.mutate()}
-                    disabled={!canPublish || publishMutation.isPending}
-                    title={
-                      selected.estado !== "Captado"
-                        ? "Disponible al pasar a Captado"
-                        : undefined
-                    }
-                    className="rounded-[10px] bg-[var(--pa-navy)] px-4 py-2.5 text-[13px] font-bold text-white hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    {publishMutation.isPending
-                      ? "Creando ficha…"
-                      : "Publicar inmueble"}
-                  </button>
-                  {!canPublish && selected.estado !== "Captado" ? (
-                    <p className="text-center text-[11px] text-[var(--pa-muted)]">
-                      Disponible al pasar a Captado (con nombre y teléfono).
-                    </p>
-                  ) : null}
-                  {publishError ? (
-                    <p className="text-[12px] text-[var(--pa-danger)]">
-                      {publishError}
-                    </p>
-                  ) : null}
-                </div>
-              </div>
-            )}
-          </aside>
         </div>
       )}
 
@@ -471,6 +480,26 @@ export default function CaptacionPage() {
           </Link>
         </div>
       )}
+
+      {selected ? (
+        <CaptacionDetailDrawer
+          lead={selected}
+          draft={draft}
+          onDraftChange={(patch) => setDraft((d) => ({ ...d, ...patch }))}
+          onClose={() => setSelectedId(null)}
+          onSave={handleSave}
+          onPublish={() => publishMutation.mutate()}
+          savePending={updateMutation.isPending}
+          publishPending={publishMutation.isPending}
+          saveError={saveError}
+          publishError={publishError}
+          canPublish={canPublish}
+        />
+      ) : null}
+
+      {toast ? (
+        <Toast message={toast.message} type={toast.type} onClose={dismissToast} />
+      ) : null}
     </div>
   );
 }

@@ -12,6 +12,7 @@ export const MOCK_ADMIN: AgentSession = {
   email: "admin@proinversores.com",
   canAccessCaptacion: true,
   nombrePreferido: "Admin",
+  municipios: ["Envigado", "Sabaneta", "El Poblado"],
 };
 
 const MOCK_TOKEN = "mock-jwt-token";
@@ -29,6 +30,7 @@ export const authService: AuthService = {
           nombre: username || "Asesor Demo",
           role: "asesor",
           email: username || undefined,
+          municipios: ["Envigado", "Sabaneta"],
         };
     return {
       access_token: MOCK_TOKEN,

@@ -13,6 +13,8 @@ export interface AgentSession {
   canAccessCaptacion?: boolean;
   /** Sprint 012 — nombre corto para saludo (Andreina, Nataly). */
   nombrePreferido?: string | null;
+  /** Sprint 014 — municipios de captación del asesor. */
+  municipios?: string[];
 }
 
 /** Respuesta del login JWT (puente temporal /api/mobile/auth/login). */
