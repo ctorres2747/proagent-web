@@ -1,14 +1,14 @@
 import type { AgentSession } from "@/features/auth/types";
 
-/** Subtítulo del tablero Captación — paridad con Kanban HTML. */
+/** Subtítulo del tablero Captación — municipios del asesor (sin repetir el título). */
 export function captacionSubtitle(session: AgentSession | null): string {
-  if (!session) return "Captación de inmuebles";
+  if (!session) return "Todas las zonas";
   if (session.role === "admin") {
-    return "Captación — vista combinada de todos los asesores";
+    return "Vista combinada de todos los asesores";
   }
   const municipios = session.municipios ?? [];
   if (municipios.length > 0) {
-    return `Captación — ${municipios.join(", ")}`;
+    return municipios.join(", ");
   }
-  return "Captación — Todas las zonas";
+  return "Todas las zonas";
 }
