@@ -15,3 +15,6 @@
 - Captación gated staff Proinversores
 - Brand navy `#0A3D62` + tokens alineados a BRAND
 - Publicar desde Captado → misma app (wizard), no drawer legacy Kanban
+
+### Regla Owner
+- **ProAgent Mobile no incluye Captación/Kanban**, ni para staff Proinversores.
