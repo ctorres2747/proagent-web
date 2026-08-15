@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/features/auth/AuthProvider";
-import { CAPTACION_URL } from "@/config/env";
+import { CAPTACION_NATIVE, CAPTACION_URL } from "@/config/env";
 import { canAccessCaptacion } from "@/lib/agentDisplay";
 import { UserMenu } from "@/components/UserMenu";
 
@@ -33,10 +33,18 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
 
-  const nav: NavItem[] = canAccessCaptacion(session)
+  const staff = canAccessCaptacion(session);
+  const captacionHref = CAPTACION_NATIVE ? "/captacion" : CAPTACION_URL;
+  const captacionExternal = !CAPTACION_NATIVE;
+
+  const nav: NavItem[] = staff
     ? [
         ...BASE_NAV.slice(0, 1),
-        { href: CAPTACION_URL, label: "Captación", external: true },
+        {
+          href: captacionHref,
+          label: "Captación",
+          external: captacionExternal,
+        },
         ...BASE_NAV.slice(1),
       ]
     : BASE_NAV;
