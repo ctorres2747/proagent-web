@@ -44,6 +44,12 @@ npm run lint       # eslint
 npm run typecheck  # tsc --noEmit
 ```
 
+## Deploy (producción)
+
+Guía paso a paso (VPS + Caddy + systemd): [`docs/deploy.md`](docs/deploy.md).
+
+URL pública recomendada: `https://app.proinversores.bond` · API: `https://agente.proinversores.bond`
+
 ## Rutas
 
 - `/login` — login JWT (se omite en modo mocks); admite `?next=` con path relativo allowlist
