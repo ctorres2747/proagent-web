@@ -51,10 +51,10 @@ function mapResult(raw: RawChannelResult): ChannelResult {
   };
 }
 
-function mapPub(raw: RawPublication): Publication {
+function mapPub(raw: RawPublication & { property_id?: string }): Publication {
   return {
     id: String(raw.id),
-    propertyId: String(raw.propertyId),
+    propertyId: String(raw.propertyId ?? raw.property_id ?? ""),
     sharedTitle: raw.sharedTitle ?? "",
     sharedBody: raw.sharedBody ?? "",
     platformContent: (raw.platformContent ?? []).map((pc) => ({

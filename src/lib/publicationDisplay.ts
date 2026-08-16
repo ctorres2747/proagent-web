@@ -57,6 +57,32 @@ export function stageLabel(stage: PublicationStage): string {
   return PUBLICATION_STAGE_LABEL[stage];
 }
 
+export type PublicationShortcuts = {
+  sinPublicar?: boolean;
+  programadas?: boolean;
+  conError?: boolean;
+};
+
+export function matchesPublicationShortcuts(
+  stage: PublicationStage,
+  shortcuts: PublicationShortcuts,
+): boolean {
+  if (shortcuts.sinPublicar && stage !== "none" && stage !== "draft") {
+    return false;
+  }
+  if (
+    shortcuts.programadas &&
+    stage !== "scheduled" &&
+    stage !== "publishing"
+  ) {
+    return false;
+  }
+  if (shortcuts.conError && stage !== "failed" && stage !== "partial") {
+    return false;
+  }
+  return true;
+}
+
 export function matchesPublicationStageFilter(
   stage: PublicationStage,
   filter: PublicationFilterLabel,
