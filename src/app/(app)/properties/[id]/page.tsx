@@ -9,6 +9,7 @@ import type { Property } from "@/services/interfaces/properties";
 import type {
   ChannelResult,
   ChannelResultStatus,
+  PlatformContent,
   Publication,
 } from "@/services/interfaces/publications";
 import type { ChannelConnection } from "@/services/interfaces/channels";
@@ -35,6 +36,11 @@ import {
   pickCanonicalPublication,
 } from "@/lib/publicationResolve";
 import { ApiError } from "@/services/http/client";
+import { formatChannelResultMeta } from "@/lib/channelResults";
+import {
+  isChannelPersonalized,
+  platformContentForChannel,
+} from "@/lib/publicationContent";
 
 type StepId =
   | "content"
@@ -62,18 +68,6 @@ function mapResultStatus(status: ChannelResultStatus): ChannelStatus {
   if (status === "failed") return "error";
   if (status === "unavailable") return "none";
   return "progress";
-}
-
-function formatPublishedAt(iso: string | null): string {
-  if (!iso) return "";
-  try {
-    return new Date(iso).toLocaleString("es-CO", {
-      dateStyle: "short",
-      timeStyle: "short",
-    });
-  } catch {
-    return iso;
-  }
 }
 
 type ContentFormSnapshot = {
@@ -154,6 +148,17 @@ export default function PublishWizardPage() {
     whatsapp: false,
     web: false,
   });
+  const [savedSelectedChannels, setSavedSelectedChannels] = useState<
+    Record<ChannelId, boolean> | null
+  >(null);
+  const [savedCustomizeSnapshot, setSavedCustomizeSnapshot] = useState<{
+    sharedTitle: string;
+    sharedBody: string;
+    platformContent: Partial<Record<ChannelId, { title: string; body: string }>>;
+  } | null>(null);
+  const [republishedChannelIds, setRepublishedChannelIds] = useState<
+    Set<ChannelId>
+  >(() => new Set());
 
   const { data: channelConnections } = useQuery({
     queryKey: ["channel-connections"],
@@ -232,6 +237,12 @@ export default function PublishWizardPage() {
             ]),
           ) as Record<ChannelId, boolean>;
           setSelectedChannels(toggles);
+          setSavedSelectedChannels(toggles);
+          setSavedCustomizeSnapshot({
+            sharedTitle: pub.sharedTitle || seedTitle || "",
+            sharedBody: pub.sharedBody || seedBody || "",
+            platformContent: contentMap,
+          });
         }
         setStep(initialWizardStep(pub));
       })
@@ -281,6 +292,46 @@ export default function PublishWizardPage() {
     return !contentFormsEqual(currentContent, savedContent);
   }, [currentContent, savedContent]);
 
+  const isChannelsDirty = useMemo(() => {
+    if (!savedSelectedChannels) return false;
+    return CHANNEL_ORDER.some(
+      (id) => selectedChannels[id] !== savedSelectedChannels[id],
+    );
+  }, [savedSelectedChannels, selectedChannels]);
+
+  const isCustomizeDirty = useMemo(() => {
+    if (!savedCustomizeSnapshot) return false;
+    if (
+      sharedTitle !== savedCustomizeSnapshot.sharedTitle ||
+      sharedBody !== savedCustomizeSnapshot.sharedBody
+    ) {
+      return true;
+    }
+    for (const id of enabledChannels) {
+      const current = platformContent[id] ?? {
+        title: sharedTitle,
+        body: sharedBody,
+      };
+      const saved = savedCustomizeSnapshot.platformContent[id] ?? {
+        title: savedCustomizeSnapshot.sharedTitle,
+        body: savedCustomizeSnapshot.sharedBody,
+      };
+      if (
+        current.title !== saved.title ||
+        current.body !== saved.body
+      ) {
+        return true;
+      }
+    }
+    return false;
+  }, [
+    enabledChannels,
+    platformContent,
+    savedCustomizeSnapshot,
+    sharedBody,
+    sharedTitle,
+  ]);
+
   const channelSelectable = (id: ChannelId): boolean => {
     const conn = connectionById.get(id);
     if (!conn) return id !== "web";
@@ -329,6 +380,10 @@ export default function PublishWizardPage() {
   };
 
   const onChannelsContinue = async () => {
+    await saveChannelsChanges({ advance: true });
+  };
+
+  const saveChannelsChanges = async (options?: { advance?: boolean }) => {
     if (!publication) return;
     setActionBusy(true);
     setActionError(null);
@@ -339,7 +394,11 @@ export default function PublishWizardPage() {
         token ?? undefined,
       );
       setPublication(pub);
-      setStep("customize");
+      const toggles = Object.fromEntries(
+        CHANNEL_ORDER.map((id) => [id, enabledChannels.includes(id)]),
+      ) as Record<ChannelId, boolean>;
+      setSavedSelectedChannels(toggles);
+      if (options?.advance) setStep("customize");
     } catch {
       setActionError("No se pudieron guardar los canales.");
     } finally {
@@ -347,7 +406,7 @@ export default function PublishWizardPage() {
     }
   };
 
-  const onCustomizeContinue = async () => {
+  const saveCustomizeChanges = async (options?: { advance?: boolean }) => {
     if (!publication) return;
     setActionBusy(true);
     setActionError(null);
@@ -376,7 +435,12 @@ export default function PublishWizardPage() {
         );
       }
       setPublication(pub);
-      setStep("preview");
+      setSavedCustomizeSnapshot({
+        sharedTitle,
+        sharedBody,
+        platformContent: { ...platformContent },
+      });
+      if (options?.advance) setStep("preview");
     } catch {
       setActionError("No se pudo guardar la personalización.");
     } finally {
@@ -384,28 +448,52 @@ export default function PublishWizardPage() {
     }
   };
 
-  const onPublishNow = async () => {
+  const onCustomizeContinue = async () => {
+    await saveCustomizeChanges({ advance: true });
+  };
+
+  const publishWithChannels = async (
+    channels: ChannelId[],
+    opts?: { scheduledFor?: string; timezone?: string },
+  ) => {
     if (!publication) return;
+    if (channels.length === 0) {
+      setActionError("Selecciona al menos un canal para publicar.");
+      return;
+    }
     setActionBusy(true);
     setActionError(null);
     try {
+      await publicationsService.patch(
+        publication.id,
+        { selectedChannels: channels },
+        token ?? undefined,
+      );
       const pub = await publicationsService.publish(
         publication.id,
-        undefined,
+        opts,
         token ?? undefined,
       );
       setPublication(pub);
       setStep("results");
     } catch (err) {
       setActionError(
-        formatActionError(err, "No se pudo publicar. Intenta de nuevo."),
+        formatActionError(err, "No se pudo completar la publicación."),
       );
     } finally {
       setActionBusy(false);
     }
   };
 
-  const onSchedulePublish = async (date: string, time: string) => {
+  const onPublishNow = async (channels?: ChannelId[]) => {
+    await publishWithChannels(channels ?? enabledChannels);
+  };
+
+  const onSchedulePublish = async (
+    date: string,
+    time: string,
+    channels?: ChannelId[],
+  ) => {
     if (!publication) return;
     const validation = scheduleValidationError(date, time);
     if (validation) {
@@ -417,23 +505,10 @@ export default function PublishWizardPage() {
       setActionError("Fecha u hora inválida.");
       return;
     }
-    setActionBusy(true);
-    setActionError(null);
-    try {
-      const pub = await publicationsService.publish(
-        publication.id,
-        { scheduledFor, timezone: DEFAULT_TIMEZONE },
-        token ?? undefined,
-      );
-      setPublication(pub);
-      setStep("results");
-    } catch (err) {
-      setActionError(
-        formatActionError(err, "No se pudo programar la publicación. Intenta de nuevo."),
-      );
-    } finally {
-      setActionBusy(false);
-    }
+    await publishWithChannels(channels ?? enabledChannels, {
+      scheduledFor,
+      timezone: DEFAULT_TIMEZONE,
+    });
   };
 
   const [cancelScheduleOpen, setCancelScheduleOpen] = useState(false);
@@ -656,6 +731,8 @@ export default function PublishWizardPage() {
             setSharedBody(body);
           }}
           busy={actionBusy}
+          isDirty={isChannelsDirty}
+          onSave={() => void saveChannelsChanges()}
           onNext={() => void onChannelsContinue()}
         />
       )}
@@ -677,6 +754,8 @@ export default function PublishWizardPage() {
             }
           }}
           busy={actionBusy}
+          isDirty={isCustomizeDirty}
+          onSave={() => void saveCustomizeChanges()}
           onNext={() => void onCustomizeContinue()}
         />
       )}
@@ -684,10 +763,19 @@ export default function PublishWizardPage() {
         <PreviewStep
           property={displayProperty}
           publication={publication}
+          connections={channelConnections ?? []}
+          channelSelectable={channelSelectable}
+          selectedChannels={selectedChannels}
+          onToggleChannel={(id) => {
+            if (!channelSelectable(id)) return;
+            setSelectedChannels((t) => ({ ...t, [id]: !t[id] }));
+          }}
           busy={actionBusy}
           actionError={actionError}
-          onPublishNow={() => void onPublishNow()}
-          onSchedule={(date, time) => void onSchedulePublish(date, time)}
+          onPublishNow={(channels) => void onPublishNow(channels)}
+          onSchedule={(date, time, channels) =>
+            void onSchedulePublish(date, time, channels)
+          }
           onDraft={() => void onSaveDraft()}
           onCancelSchedule={requestCancelSchedule}
         />
@@ -698,11 +786,18 @@ export default function PublishWizardPage() {
           publication={publication}
           publicationId={publication.id}
           channelResults={publication.channelResults}
+          sharedTitle={publication.sharedTitle}
+          sharedBody={publication.sharedBody}
+          platformContent={publication.platformContent}
+          republishedChannelIds={republishedChannelIds}
           token={token ?? undefined}
           busy={actionBusy}
           actionError={actionError}
           onCancelSchedule={requestCancelSchedule}
           onReprogram={() => setStep("preview")}
+          onRepublished={(channelId) =>
+            setRepublishedChannelIds((prev) => new Set(prev).add(channelId))
+          }
           onResultUpdated={(result) => {
             setPublication((prev) => {
               if (!prev) return prev;
@@ -1235,6 +1330,8 @@ function ChannelsStep({
   token,
   onAiApplied,
   busy,
+  isDirty,
+  onSave,
   onNext,
 }: {
   toggles: Record<ChannelId, boolean>;
@@ -1245,6 +1342,8 @@ function ChannelsStep({
   token?: string;
   onAiApplied: (title: string, body: string) => void;
   busy: boolean;
+  isDirty: boolean;
+  onSave: () => void;
   onNext: () => void;
 }) {
   const [aiBusy, setAiBusy] = useState(false);
@@ -1377,9 +1476,19 @@ function ChannelsStep({
         </p>
       </div>
 
-      <PrimaryBlock onClick={onNext} disabled={busy || aiBusy} className="w-[240px]">
-        {busy ? "Guardando…" : "Continuar a personalizar"}
-      </PrimaryBlock>
+      <div className="flex flex-col gap-2 sm:flex-row">
+        <button
+          type="button"
+          onClick={onSave}
+          disabled={!isDirty || busy}
+          className="rounded-xl border border-[var(--pa-navy)] bg-[var(--pa-surface)] px-6 py-3.5 text-center text-[13px] font-bold text-[var(--pa-navy)] transition-opacity hover:bg-[var(--pa-bg)] disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {busy ? "Guardando…" : "Guardar cambios"}
+        </button>
+        <PrimaryBlock onClick={onNext} disabled={busy || aiBusy} className="w-[240px]">
+          {busy ? "Guardando…" : "Continuar a personalizar"}
+        </PrimaryBlock>
+      </div>
     </div>
   );
 }
@@ -1399,6 +1508,8 @@ function CustomizeStep({
   portadaUrl,
   onPlatformContentChange,
   busy,
+  isDirty,
+  onSave,
   onNext,
 }: {
   selectedChannels: ChannelId[];
@@ -1412,6 +1523,8 @@ function CustomizeStep({
     body: string,
   ) => void;
   busy: boolean;
+  isDirty: boolean;
+  onSave: () => void;
   onNext: () => void;
 }) {
   const platforms = selectedChannels.map((id) => ({
@@ -1510,9 +1623,19 @@ function CustomizeStep({
           </div>
         </div>
       </div>
-      <PrimaryBlock onClick={onNext} disabled={busy} className="mt-6 w-[220px]">
-        {busy ? "Guardando…" : "Ir a vista previa"}
-      </PrimaryBlock>
+      <div className="mt-6 flex flex-col gap-2 sm:flex-row">
+        <button
+          type="button"
+          onClick={onSave}
+          disabled={!isDirty || busy}
+          className="rounded-xl border border-[var(--pa-navy)] bg-[var(--pa-surface)] px-6 py-3.5 text-center text-[13px] font-bold text-[var(--pa-navy)] transition-opacity hover:bg-[var(--pa-bg)] disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {busy ? "Guardando…" : "Guardar cambios"}
+        </button>
+        <PrimaryBlock onClick={onNext} disabled={busy} className="w-[220px]">
+          {busy ? "Guardando…" : "Ir a vista previa"}
+        </PrimaryBlock>
+      </div>
     </div>
   );
 }
@@ -1520,6 +1643,10 @@ function CustomizeStep({
 function PreviewStep({
   property,
   publication,
+  connections,
+  channelSelectable,
+  selectedChannels,
+  onToggleChannel,
   busy,
   actionError,
   onPublishNow,
@@ -1529,10 +1656,14 @@ function PreviewStep({
 }: {
   property: Property;
   publication: Publication;
+  connections: ChannelConnection[];
+  channelSelectable: (id: ChannelId) => boolean;
+  selectedChannels: Record<ChannelId, boolean>;
+  onToggleChannel: (id: ChannelId) => void;
   busy: boolean;
   actionError: string | null;
-  onPublishNow: () => void;
-  onSchedule: (date: string, time: string) => void;
+  onPublishNow: (channels: ChannelId[]) => void;
+  onSchedule: (date: string, time: string, channels: ChannelId[]) => void;
   onDraft: () => void;
   onCancelSchedule: () => void;
 }) {
@@ -1540,6 +1671,10 @@ function PreviewStep({
   const [scheduleDate, setScheduleDate] = useState(tomorrowDateString());
   const [scheduleTime, setScheduleTime] = useState("17:00");
   const isScheduled = publication.status === "scheduled";
+  const activeChannels = useMemo(
+    () => CHANNEL_ORDER.filter((id) => selectedChannels[id]),
+    [selectedChannels],
+  );
   const facts = [
     property.alcobas !== null ? `${property.alcobas} alcobas` : null,
     property.banos !== null ? `${property.banos} baños` : null,
@@ -1581,6 +1716,63 @@ function PreviewStep({
       <div className="flex flex-col gap-4">
         <Card>
           <div className="mb-3 text-xs font-bold uppercase text-[var(--pa-muted)]">
+            Canales a publicar
+          </div>
+          <div className="space-y-2">
+            {CHANNEL_ORDER.map((id) => {
+              const meta = CHANNEL_META[id];
+              const conn = connections.find((c) => c.channelId === id);
+              const selectable = channelSelectable(id);
+              const on = selectedChannels[id];
+              return (
+                <div
+                  key={id}
+                  className={`flex items-center gap-3 rounded-xl border border-[var(--pa-border)] px-3 py-2.5 ${
+                    !selectable ? "opacity-70" : ""
+                  }`}
+                >
+                  <ChannelLogo channelId={id} size={28} />
+                  <div className="min-w-0 flex-1">
+                    <div className="text-[13px] font-bold text-[var(--pa-ink)]">
+                      {meta.name}
+                    </div>
+                    {!selectable && conn?.issue ? (
+                      <div className="text-[10px] text-[var(--pa-muted)]">
+                        {conn.issue}
+                      </div>
+                    ) : null}
+                    {busy && on ? (
+                      <div className="text-[10px] font-semibold text-[var(--pa-warning-ink)]">
+                        Publicando…
+                      </div>
+                    ) : null}
+                  </div>
+                  <button
+                    type="button"
+                    aria-label={`Alternar ${meta.name}`}
+                    disabled={!selectable || busy}
+                    onClick={() => onToggleChannel(id)}
+                    className={`relative h-[22px] w-10 shrink-0 rounded-full transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
+                      on ? "bg-[var(--pa-navy)]" : "bg-[var(--pa-border)]"
+                    }`}
+                  >
+                    <span
+                      className="absolute top-[3px] h-4 w-4 rounded-full bg-white transition-all"
+                      style={{ left: on ? 21 : 3 }}
+                    />
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+          {activeChannels.length === 0 ? (
+            <p className="mt-2 text-xs text-[var(--pa-danger)]">
+              Activa al menos un canal para publicar.
+            </p>
+          ) : null}
+        </Card>
+        <Card>
+          <div className="mb-3 text-xs font-bold uppercase text-[var(--pa-muted)]">
             Checklist
           </div>
           <div className="space-y-1.5 text-[13px] text-[var(--pa-ink)]">
@@ -1615,13 +1807,16 @@ function PreviewStep({
           </div>
         ) : !scheduling ? (
           <>
-            <PrimaryBlock onClick={onPublishNow} disabled={busy}>
+            <PrimaryBlock
+              onClick={() => onPublishNow(activeChannels)}
+              disabled={busy || activeChannels.length === 0}
+            >
               {busy ? "Publicando…" : "Publicar ahora"}
             </PrimaryBlock>
             <button
               type="button"
               onClick={() => setScheduling(true)}
-              disabled={busy}
+              disabled={busy || activeChannels.length === 0}
               className="rounded-xl border border-[var(--pa-border)] px-6 py-3 text-center text-[13px] font-bold text-[var(--pa-ink)] disabled:opacity-50"
             >
               Programar…
@@ -1656,8 +1851,8 @@ function PreviewStep({
               />
             </div>
             <PrimaryBlock
-              onClick={() => onSchedule(scheduleDate, scheduleTime)}
-              disabled={busy}
+              onClick={() => onSchedule(scheduleDate, scheduleTime, activeChannels)}
+              disabled={busy || activeChannels.length === 0}
             >
               {busy ? "Programando…" : "Confirmar programación"}
             </PrimaryBlock>
@@ -1681,11 +1876,16 @@ function ResultsStep({
   publication,
   publicationId,
   channelResults,
+  sharedTitle,
+  sharedBody,
+  platformContent,
+  republishedChannelIds,
   token,
   busy,
   actionError,
   onCancelSchedule,
   onReprogram,
+  onRepublished,
   onResultUpdated,
   onPublicationRefresh,
 }: {
@@ -1693,11 +1893,16 @@ function ResultsStep({
   publication: Publication;
   publicationId: string;
   channelResults: ChannelResult[];
+  sharedTitle: string;
+  sharedBody: string;
+  platformContent: PlatformContent[];
+  republishedChannelIds: Set<ChannelId>;
   token?: string;
   busy: boolean;
   actionError: string | null;
   onCancelSchedule: () => void;
   onReprogram: () => void;
+  onRepublished: (channelId: ChannelId) => void;
   onResultUpdated: (result: ChannelResult) => void;
   onPublicationRefresh: (publication: Publication) => void;
 }) {
@@ -1724,6 +1929,8 @@ function ResultsStep({
         status: "none" as ChannelStatus,
         meta: "No se intentó publicar",
         error: null as string | null,
+        note: null as string | null,
+        personalized: false,
         canRetry: false,
         canRemove: false,
         canRepublish: false,
@@ -1731,19 +1938,16 @@ function ResultsStep({
     }
     const uiStatus = mapResultStatus(found.status);
     const isPublished = found.status === "published";
+    const channelPc = platformContentForChannel(platformContent, id);
     return {
       id,
       status: uiStatus,
-      meta: found.publishedAt
-        ? formatPublishedAt(found.publishedAt)
-        : found.status === "pending" || found.status === "publishing"
-          ? "En proceso…"
-          : found.status === "failed"
-            ? "Falló"
-            : found.status === "waiting"
-              ? "Sin publicar en este canal"
-              : STATUS_META[uiStatus].label,
-      error: found.errorMessage,
+      meta: formatChannelResultMeta(found, {
+        republished: republishedChannelIds.has(id),
+      }),
+      error: found.status === "failed" ? found.errorMessage : null,
+      note: isPublished ? found.statusNote : null,
+      personalized: isChannelPersonalized(sharedTitle, sharedBody, channelPc),
       canRetry: found.status === "failed",
       canRemove: isPublished,
       canRepublish: isPublished,
@@ -1771,7 +1975,9 @@ function ResultsStep({
       );
       onResultUpdated(result);
     } catch {
-      setRetryError("No se pudo reintentar el canal.");
+      setRetryError(
+        `No se pudo reintentar la publicación de ${CHANNEL_META[channelId].name}.`,
+      );
     } finally {
       setRetrying(null);
     }
@@ -1792,9 +1998,12 @@ function ResultsStep({
         onResultUpdated(result);
         const refreshed = await publicationsService.get(publicationId, token);
         onPublicationRefresh(refreshed);
+        onRepublished(channelId);
         setPendingConfirm(null);
       } catch {
-        setRepublishError("No se pudo republicar en ese canal.");
+        setRepublishError(
+          `No se pudo republicar en ${CHANNEL_META[channelId].name}.`,
+        );
       } finally {
         setRepublishing(null);
       }
@@ -1813,7 +2022,9 @@ function ResultsStep({
       onPublicationRefresh(refreshed);
       setPendingConfirm(null);
     } catch {
-      setRemoveError("No se pudo quitar la publicación de ese canal.");
+      setRemoveError(
+        `No se pudo quitar la publicación de ${CHANNEL_META[channelId].name}.`,
+      );
     } finally {
       setRemoving(null);
     }
@@ -1889,9 +2100,17 @@ function ResultsStep({
               {CHANNEL_META[r.id].name}
             </div>
             <div className="text-[11px] text-[var(--pa-faint)]">{r.meta}</div>
-            {r.error && (
+            {r.personalized ? (
+              <div className="mt-1 inline-block rounded-md bg-[var(--pa-info-bg)] px-2 py-0.5 text-[10px] font-bold text-[#47586A]">
+                Publicación personalizada
+              </div>
+            ) : null}
+            {r.error ? (
               <div className="mt-1 text-xs text-[var(--pa-danger)]">{r.error}</div>
-            )}
+            ) : null}
+            {r.note ? (
+              <div className="mt-1 text-xs text-[var(--pa-muted)]">{r.note}</div>
+            ) : null}
           </div>
           <span
             className={`whitespace-nowrap rounded-md px-2.5 py-1 text-[10px] font-bold ${STATUS_META[r.status].chip}`}
