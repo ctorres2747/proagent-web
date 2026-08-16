@@ -6,6 +6,7 @@ import { useAuth } from "@/features/auth/AuthProvider";
 import { agentInitials } from "@/lib/agentDisplay";
 import { CHANNEL_META, CHANNEL_ORDER, type ChannelId } from "@/design-system/channels";
 import { ChannelLogo } from "@/components/ChannelLogo";
+import { ProfilePhotoCropModal } from "@/components/ProfilePhotoCropModal";
 import { Toast } from "@/components/Toast";
 import { channelsService, profileService } from "@/services";
 import type { AgentProfile } from "@/services/interfaces/profile";
@@ -48,6 +49,7 @@ function ProfileTab({
     bioCorta: "",
   });
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [cropFile, setCropFile] = useState<File | null>(null);
 
   useEffect(() => {
     if (!data) return;
@@ -107,6 +109,17 @@ function ProfileTab({
 
   return (
     <div className="space-y-6">
+      {cropFile ? (
+        <ProfilePhotoCropModal
+          file={cropFile}
+          busy={photoMutation.isPending}
+          onCancel={() => setCropFile(null)}
+          onConfirm={(file) => {
+            setCropFile(null);
+            photoMutation.mutate(file);
+          }}
+        />
+      ) : null}
       <div className="flex flex-wrap items-center gap-4">
         <div className="relative">
           <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-full bg-[var(--pa-bg-alt)] text-xl font-bold text-[#45525E]">
@@ -136,7 +149,7 @@ function ProfileTab({
             className="hidden"
             onChange={(e) => {
               const file = e.target.files?.[0];
-              if (file) photoMutation.mutate(file);
+              if (file) setCropFile(file);
               e.target.value = "";
             }}
           />
