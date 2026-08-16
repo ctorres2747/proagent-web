@@ -28,6 +28,14 @@ export function UserMenu() {
   }, [open]);
 
   const avatarUrl = agentAvatarUrl(session);
+  const [avatarBroken, setAvatarBroken] = useState(false);
+
+  useEffect(() => {
+    setAvatarBroken(false);
+  }, [avatarUrl]);
+
+  const showAvatarPhoto = Boolean(avatarUrl) && !avatarBroken;
+  const initials = session ? agentInitials(session) : "PA";
 
   return (
     <div ref={rootRef} className="relative">
@@ -36,20 +44,19 @@ export function UserMenu() {
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
         aria-haspopup="menu"
+        aria-label={session ? `Menú de ${displayName(session)}` : "Menú de usuario"}
         className="flex h-[38px] w-[38px] shrink-0 items-center justify-center overflow-hidden rounded-full bg-[var(--pa-bg-alt)] text-[13px] font-bold text-[#45525E]"
       >
-        {avatarUrl ? (
+        {showAvatarPhoto ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
-            src={avatarUrl}
+            src={avatarUrl!}
             alt=""
             className="h-full w-full object-cover"
-            onError={(e) => {
-              e.currentTarget.style.display = "none";
-            }}
+            onError={() => setAvatarBroken(true)}
           />
         ) : (
-          session ? agentInitials(session) : "PA"
+          initials
         )}
       </button>
       {open && (
