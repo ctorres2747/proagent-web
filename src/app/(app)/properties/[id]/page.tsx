@@ -20,6 +20,7 @@ import {
   type ChannelStatus,
 } from "@/design-system/channels";
 import { ChannelLogo } from "@/components/ChannelLogo";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { DeletePropertyDialog } from "@/components/DeletePropertyDialog";
 import { formatPrice } from "@/lib/format";
 import {
@@ -435,12 +436,15 @@ export default function PublishWizardPage() {
     }
   };
 
+  const [cancelScheduleOpen, setCancelScheduleOpen] = useState(false);
+
+  const requestCancelSchedule = () => {
+    if (!publication) return;
+    setCancelScheduleOpen(true);
+  };
+
   const onCancelSchedule = async () => {
     if (!publication) return;
-    const ok = window.confirm(
-      "¿Cancelar la programación? La publicación volverá a borrador.",
-    );
-    if (!ok) return;
     setActionBusy(true);
     setActionError(null);
     try {
@@ -450,6 +454,7 @@ export default function PublishWizardPage() {
         token ?? undefined,
       );
       setPublication(pub);
+      setCancelScheduleOpen(false);
       setStep("preview");
     } catch {
       setActionError("No se pudo cancelar la programación.");
@@ -562,6 +567,20 @@ export default function PublishWizardPage() {
         }}
       />
 
+      <ConfirmDialog
+        open={cancelScheduleOpen}
+        title="¿Cancelar la publicación programada?"
+        message="La publicación volverá a borrador. Podrás programarla o publicarla de nuevo cuando quieras."
+        confirmLabel="Cancelar programación"
+        tone="danger"
+        busy={actionBusy}
+        onCancel={() => {
+          if (actionBusy) return;
+          setCancelScheduleOpen(false);
+        }}
+        onConfirm={() => void onCancelSchedule()}
+      />
+
       {/* Stepper */}
       <div className="mb-7 flex items-center gap-1 overflow-x-auto">
         {STEPS.map((st, i) => (
@@ -670,7 +689,7 @@ export default function PublishWizardPage() {
           onPublishNow={() => void onPublishNow()}
           onSchedule={(date, time) => void onSchedulePublish(date, time)}
           onDraft={() => void onSaveDraft()}
-          onCancelSchedule={() => void onCancelSchedule()}
+          onCancelSchedule={requestCancelSchedule}
         />
       )}
       {step === "results" && publication && (
@@ -682,7 +701,7 @@ export default function PublishWizardPage() {
           token={token ?? undefined}
           busy={actionBusy}
           actionError={actionError}
-          onCancelSchedule={() => void onCancelSchedule()}
+          onCancelSchedule={requestCancelSchedule}
           onReprogram={() => setStep("preview")}
           onResultUpdated={(result) => {
             setPublication((prev) => {
@@ -1688,6 +1707,14 @@ function ResultsStep({
   const [retryError, setRetryError] = useState<string | null>(null);
   const [republishError, setRepublishError] = useState<string | null>(null);
   const [removeError, setRemoveError] = useState<string | null>(null);
+  const [pendingConfirm, setPendingConfirm] = useState<{
+    kind: "remove" | "republish";
+    channelId: ChannelId;
+  } | null>(null);
+
+  const pendingChannelName = pendingConfirm
+    ? CHANNEL_META[pendingConfirm.channelId].name
+    : "";
 
   const results = CHANNEL_ORDER.map((id) => {
     const found = channelResults.find((r) => r.channelId === id);
@@ -1750,40 +1777,27 @@ function ResultsStep({
     }
   };
 
-  const onRepublish = async (channelId: ChannelId) => {
-    const name = CHANNEL_META[channelId].name;
-    if (
-      !window.confirm(
-        `¿Republicar en ${name}? Se actualizará el anuncio con el contenido actual.`,
-      )
-    ) {
-      return;
-    }
-    setRepublishing(channelId);
-    setRepublishError(null);
-    try {
-      const result = await publicationsService.republishChannel(
-        publicationId,
-        channelId,
-        token,
-      );
-      onResultUpdated(result);
-      const refreshed = await publicationsService.get(publicationId, token);
-      onPublicationRefresh(refreshed);
-    } catch {
-      setRepublishError("No se pudo republicar en ese canal.");
-    } finally {
-      setRepublishing(null);
-    }
-  };
-
-  const onRemove = async (channelId: ChannelId) => {
-    const name = CHANNEL_META[channelId].name;
-    if (
-      !window.confirm(
-        `¿Quitar la publicación de ${name}? El anuncio se ocultará o eliminará en ese canal.`,
-      )
-    ) {
+  const runConfirmedChannelAction = async () => {
+    if (!pendingConfirm) return;
+    const { kind, channelId } = pendingConfirm;
+    if (kind === "republish") {
+      setRepublishing(channelId);
+      setRepublishError(null);
+      try {
+        const result = await publicationsService.republishChannel(
+          publicationId,
+          channelId,
+          token,
+        );
+        onResultUpdated(result);
+        const refreshed = await publicationsService.get(publicationId, token);
+        onPublicationRefresh(refreshed);
+        setPendingConfirm(null);
+      } catch {
+        setRepublishError("No se pudo republicar en ese canal.");
+      } finally {
+        setRepublishing(null);
+      }
       return;
     }
     setRemoving(channelId);
@@ -1797,6 +1811,7 @@ function ResultsStep({
       onResultUpdated(result);
       const refreshed = await publicationsService.get(publicationId, token);
       onPublicationRefresh(refreshed);
+      setPendingConfirm(null);
     } catch {
       setRemoveError("No se pudo quitar la publicación de ese canal.");
     } finally {
@@ -1897,7 +1912,9 @@ function ResultsStep({
             <button
               type="button"
               disabled={actionBusy}
-              onClick={() => void onRepublish(r.id)}
+              onClick={() =>
+                setPendingConfirm({ kind: "republish", channelId: r.id })
+              }
               className="whitespace-nowrap rounded-lg border border-[var(--pa-navy)] px-3.5 py-1.5 text-[11px] font-bold text-[var(--pa-navy)] disabled:opacity-50"
             >
               {republishing === r.id ? "Republicando…" : "Republicar"}
@@ -1907,7 +1924,9 @@ function ResultsStep({
             <button
               type="button"
               disabled={actionBusy}
-              onClick={() => void onRemove(r.id)}
+              onClick={() =>
+                setPendingConfirm({ kind: "remove", channelId: r.id })
+              }
               className="whitespace-nowrap rounded-lg border border-[var(--pa-danger)] px-3.5 py-1.5 text-[11px] font-bold text-[var(--pa-danger)] disabled:opacity-50"
             >
               {removing === r.id ? "Quitando…" : "Quitar"}
@@ -1915,6 +1934,30 @@ function ResultsStep({
           )}
         </div>
       ))}
+
+      <ConfirmDialog
+        open={pendingConfirm !== null}
+        title={
+          pendingConfirm?.kind === "remove"
+            ? `¿Quitar de ${pendingChannelName}?`
+            : `¿Republicar en ${pendingChannelName}?`
+        }
+        message={
+          pendingConfirm?.kind === "remove"
+            ? "El anuncio se ocultará o eliminará en ese canal. Podrás republicar después si lo necesitas."
+            : "Se actualizará el anuncio con el título, descripción y fotos actuales de esta publicación."
+        }
+        confirmLabel={
+          pendingConfirm?.kind === "remove" ? "Quitar" : "Republicar"
+        }
+        tone={pendingConfirm?.kind === "remove" ? "danger" : "primary"}
+        busy={republishing !== null || removing !== null}
+        onCancel={() => {
+          if (republishing !== null || removing !== null) return;
+          setPendingConfirm(null);
+        }}
+        onConfirm={() => void runConfirmedChannelAction()}
+      />
     </div>
   );
 }
