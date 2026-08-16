@@ -649,6 +649,7 @@ export default function PublishWizardPage() {
           actionError={actionError}
           onCancelSchedule={() => void onCancelSchedule()}
           onReprogram={() => setStep("preview")}
+          onRepublicar={() => setStep("preview")}
           onResultUpdated={(result) => {
             setPublication((prev) => {
               if (!prev) return prev;
@@ -661,6 +662,7 @@ export default function PublishWizardPage() {
               };
             });
           }}
+          onPublicationRefresh={(pub) => setPublication(pub)}
         />
       )}
     </div>
@@ -1631,7 +1633,9 @@ function ResultsStep({
   actionError,
   onCancelSchedule,
   onReprogram,
+  onRepublicar,
   onResultUpdated,
+  onPublicationRefresh,
 }: {
   property: Property;
   publication: Publication;
@@ -1642,10 +1646,14 @@ function ResultsStep({
   actionError: string | null;
   onCancelSchedule: () => void;
   onReprogram: () => void;
+  onRepublicar: () => void;
   onResultUpdated: (result: ChannelResult) => void;
+  onPublicationRefresh: (publication: Publication) => void;
 }) {
   const [retrying, setRetrying] = useState<ChannelId | null>(null);
+  const [removing, setRemoving] = useState<ChannelId | null>(null);
   const [retryError, setRetryError] = useState<string | null>(null);
+  const [removeError, setRemoveError] = useState<string | null>(null);
 
   const results = CHANNEL_ORDER.map((id) => {
     const found = channelResults.find((r) => r.channelId === id);
@@ -1656,9 +1664,12 @@ function ResultsStep({
         meta: "No se intentó publicar",
         error: null as string | null,
         canRetry: false,
+        canRemove: false,
       };
     }
     const uiStatus = mapResultStatus(found.status);
+    const isPublished = found.status === "published";
+    const isPublishing = found.status === "publishing";
     return {
       id,
       status: uiStatus,
@@ -1668,9 +1679,12 @@ function ResultsStep({
           ? "En proceso…"
           : found.status === "failed"
             ? "Falló"
-            : STATUS_META[uiStatus].label,
+            : found.status === "waiting"
+              ? "Sin publicar en este canal"
+              : STATUS_META[uiStatus].label,
       error: found.errorMessage,
       canRetry: found.status === "failed",
+      canRemove: isPublished || isPublishing,
     };
   });
   const publishedCount = results.filter((r) => r.status === "published").length;
@@ -1678,6 +1692,11 @@ function ResultsStep({
     (r) => r.status === "progress" && channelResults.find((c) => c.channelId === r.id)?.status === "scheduled",
   ).length;
   const isScheduled = publication.status === "scheduled";
+  const canRepublicar =
+    !isScheduled &&
+    (publication.status === "published" ||
+      publication.status === "partial" ||
+      publishedCount > 0);
   const pct =
     results.length === 0
       ? 0
@@ -1700,8 +1719,47 @@ function ResultsStep({
     }
   };
 
+  const onRemove = async (channelId: ChannelId) => {
+    const name = CHANNEL_META[channelId].name;
+    if (
+      !window.confirm(
+        `¿Quitar la publicación de ${name}? El anuncio se ocultará o eliminará en ese canal.`,
+      )
+    ) {
+      return;
+    }
+    setRemoving(channelId);
+    setRemoveError(null);
+    try {
+      const result = await publicationsService.removeChannel(
+        publicationId,
+        channelId,
+        token,
+      );
+      onResultUpdated(result);
+      const refreshed = await publicationsService.get(publicationId, token);
+      onPublicationRefresh(refreshed);
+    } catch {
+      setRemoveError("No se pudo quitar la publicación de ese canal.");
+    } finally {
+      setRemoving(null);
+    }
+  };
+
   return (
     <div className="max-w-[760px]">
+      {canRepublicar && (
+        <div className="mb-5 flex flex-wrap gap-3">
+          <button
+            type="button"
+            onClick={onRepublicar}
+            disabled={busy || retrying !== null || removing !== null}
+            className="rounded-[10px] bg-[var(--pa-navy)] px-4 py-2 text-xs font-bold text-white disabled:opacity-50"
+          >
+            Republicar
+          </button>
+        </div>
+      )}
       {isScheduled && (
         <div className="mb-5 rounded-2xl border border-[var(--pa-warning)]/40 bg-[var(--pa-surface)] px-6 py-5">
           <div className="mb-1 text-[13px] font-bold text-[var(--pa-ink)]">
@@ -1753,6 +1811,9 @@ function ResultsStep({
       {retryError && (
         <p className="mb-3 text-sm text-[var(--pa-danger)]">{retryError}</p>
       )}
+      {removeError && (
+        <p className="mb-3 text-sm text-[var(--pa-danger)]">{removeError}</p>
+      )}
       {results.map((r) => (
         <div
           key={r.id}
@@ -1776,11 +1837,21 @@ function ResultsStep({
           {r.canRetry && (
             <button
               type="button"
-              disabled={retrying !== null}
+              disabled={retrying !== null || removing !== null}
               onClick={() => void onRetry(r.id)}
               className="whitespace-nowrap rounded-lg border border-[var(--pa-border)] px-3.5 py-1.5 text-[11px] font-bold text-[var(--pa-ink)] disabled:opacity-50"
             >
               {retrying === r.id ? "Reintentando…" : "Reintentar"}
+            </button>
+          )}
+          {r.canRemove && (
+            <button
+              type="button"
+              disabled={retrying !== null || removing !== null}
+              onClick={() => void onRemove(r.id)}
+              className="whitespace-nowrap rounded-lg border border-[var(--pa-danger)] px-3.5 py-1.5 text-[11px] font-bold text-[var(--pa-danger)] disabled:opacity-50"
+            >
+              {removing === r.id ? "Quitando…" : "Quitar"}
             </button>
           )}
         </div>
