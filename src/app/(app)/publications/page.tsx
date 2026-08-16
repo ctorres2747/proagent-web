@@ -2,174 +2,620 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/features/auth/AuthProvider";
 import { propertiesService, publicationsService } from "@/services";
-import type { PublicationFilter } from "@/services/interfaces/publications";
+import type { Property } from "@/services/interfaces/properties";
+import type { Publication } from "@/services/interfaces/publications";
+import { ChannelChips } from "@/components/ChannelChips";
+import { CoverImage } from "@/components/CoverImage";
+import { FilterDropdown } from "@/components/FilterDropdown";
+import {
+  PropertyListSkeleton,
+  PropertySearchInput,
+  ViewToggle,
+} from "@/components/properties/PropertyListUi";
+import {
+  matchesPriceRange,
+  PriceRangeFilter,
+  type PriceRange,
+} from "@/components/PriceRangeFilter";
+import { formatPrice } from "@/lib/format";
+import {
+  buildMunicipioOptions,
+  propertyMatchesMunicipio,
+} from "@/lib/municipio";
+import { matchesPropertySearch } from "@/lib/propertySearch";
+import {
+  indexPublicationsByProperty,
+  matchesPublicationStageFilter,
+  PUBLICATION_FILTER_OPTIONS,
+  publicationStage,
+  publicationTitle,
+  PUBLICATION_STAGE_CLASS,
+  stageLabel,
+  type PublicationFilterLabel,
+} from "@/lib/publicationDisplay";
 import { formatScheduledFor } from "@/lib/schedule";
 
-const FILTERS: { id: PublicationFilter; label: string }[] = [
-  { id: "all", label: "Todas" },
-  { id: "draft", label: "Borradores" },
-  { id: "scheduled", label: "Programadas" },
-  { id: "published", label: "Publicadas" },
-  { id: "error", label: "Con error" },
+const FILTER_TYPES = [
+  "Todos",
+  "Apartamento",
+  "Casa",
+  "Local",
+  "Lote",
+  "Oficina",
+  "Finca",
 ];
 
-const STATUS_LABEL: Record<string, string> = {
-  draft: "Borrador",
-  scheduled: "Programada",
-  publishing: "Publicando",
-  published: "Publicada",
-  partial: "Parcial",
-  failed: "Error",
-};
+type FilterKey = "tipo" | "municipio" | "estado" | "precio" | "propietario";
 
-const STATUS_CLASS: Record<string, string> = {
-  draft: "bg-[var(--pa-bg-alt)] text-[var(--pa-muted)]",
-  scheduled: "bg-[#FEF3E2] text-[#B45309]",
-  publishing: "bg-[#FEF3E2] text-[#B45309]",
-  published: "bg-[#E6F4EE] text-[var(--pa-accent)]",
-  partial: "bg-[#FEF3E2] text-[#B45309]",
-  failed: "bg-[#FCEAEA] text-[var(--pa-danger)]",
-};
-
-export default function PublicationsInboxPage() {
-  const { token } = useAuth();
+export default function PublicationsPage() {
+  const { session, token } = useAuth();
   const router = useRouter();
-  const [filter, setFilter] = useState<PublicationFilter>("all");
+  const queryClient = useQueryClient();
+  const [view, setView] = useState<"table" | "cards">("table");
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
+  const [tipoFilter, setTipoFilter] = useState("Todos");
+  const [municipioFilter, setMunicipioFilter] = useState("Todos");
+  const [estadoFilter, setEstadoFilter] = useState<PublicationFilterLabel>(
+    "Todos",
+  );
+  const [priceRange, setPriceRange] = useState<PriceRange>({ min: "", max: "" });
+  const [propietarioFilter, setPropietarioFilter] = useState("Todos");
+  const [openFilter, setOpenFilter] = useState<FilterKey | null>(null);
+  const [shortcutSinPublicar, setShortcutSinPublicar] = useState(false);
+  const [shortcutError, setShortcutError] = useState(false);
+  const [shortcutProgramadas, setShortcutProgramadas] = useState(false);
 
-  const {
-    data: publications,
-    isLoading,
-    isError,
-    error,
-  } = useQuery({
-    queryKey: ["publications", filter],
-    queryFn: () => publicationsService.list(filter, token ?? undefined),
+  const isAdmin = session?.role === "admin";
+
+  const { data: properties, isLoading, isError } = useQuery({
+    queryKey: ["properties"],
+    queryFn: () => propertiesService.list(token ?? undefined),
   });
 
-  const propertyIds = useMemo(
-    () => [...new Set((publications ?? []).map((p) => p.propertyId))],
+  const { data: publications } = useQuery({
+    queryKey: ["publications", "all"],
+    queryFn: () => publicationsService.list("all", token ?? undefined),
+  });
+
+  const pubByPropertyId = useMemo(
+    () => indexPublicationsByProperty(publications ?? []),
     [publications],
   );
 
-  const { data: properties } = useQuery({
-    queryKey: ["properties", "for-publications", propertyIds.join(",")],
-    queryFn: async () => {
-      const list = await propertiesService.list(token ?? undefined);
-      return Object.fromEntries(list.map((p) => [p.id, p]));
+  const municipioOptions = useMemo(
+    () => buildMunicipioOptions((properties ?? []).map((p) => p.municipio)),
+    [properties],
+  );
+
+  const propietarioOptions = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const p of properties ?? []) {
+      if (!p.ownerAgenteId) continue;
+      map.set(
+        p.ownerAgenteId,
+        p.ownerAgenteNombre ?? `Agente ${p.ownerAgenteId}`,
+      );
+    }
+    return Array.from(map.entries())
+      .map(([id, label]) => ({ id, label }))
+      .sort((a, b) => a.label.localeCompare(b.label, "es"));
+  }, [properties]);
+
+  const showPropietarioFilter = isAdmin && propietarioOptions.length > 1;
+
+  const filtered = useMemo(() => {
+    const municipioKey =
+      municipioFilter === "Todos" ? null : municipioFilter;
+    return (properties ?? []).filter((p) => {
+      const pub = pubByPropertyId.get(p.id);
+      const stage = publicationStage(pub);
+
+      if (tipoFilter !== "Todos" && p.tipo !== tipoFilter) return false;
+      if (!propertyMatchesMunicipio(p.municipio, municipioKey)) return false;
+      if (!matchesPublicationStageFilter(stage, estadoFilter)) return false;
+      if (!matchesPriceRange(p.precio, priceRange)) return false;
+      if (
+        propietarioFilter !== "Todos" &&
+        p.ownerAgenteId !== propietarioFilter
+      ) {
+        return false;
+      }
+      if (shortcutSinPublicar && stage !== "none" && stage !== "draft") {
+        return false;
+      }
+      if (
+        shortcutError &&
+        stage !== "failed" &&
+        stage !== "partial"
+      ) {
+        return false;
+      }
+      if (
+        shortcutProgramadas &&
+        stage !== "scheduled" &&
+        stage !== "publishing"
+      ) {
+        return false;
+      }
+      return matchesPropertySearch(p, search);
+    });
+  }, [
+    properties,
+    pubByPropertyId,
+    search,
+    tipoFilter,
+    municipioFilter,
+    estadoFilter,
+    priceRange,
+    propietarioFilter,
+    shortcutSinPublicar,
+    shortcutError,
+    shortcutProgramadas,
+  ]);
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => propertiesService.delete(id, token ?? undefined),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["properties"] });
+      void queryClient.invalidateQueries({ queryKey: ["publications"] });
     },
-    enabled: propertyIds.length > 0,
+    onSettled: () => setDeletingId(null),
   });
 
-  const openPublication = (propertyId: string) => {
-    router.push(`/properties/${propertyId}`);
+  const createMutation = useMutation({
+    mutationFn: () =>
+      propertiesService.create(
+        { titulo: "Nueva propiedad", municipio: "Medellín" },
+        token ?? undefined,
+      ),
+    onSuccess: (created) => {
+      void queryClient.invalidateQueries({ queryKey: ["properties"] });
+      router.push(`/properties/${created.id}`);
+    },
+  });
+
+  const open = (p: Property) => router.push(`/properties/${p.id}`);
+
+  const onDelete = (p: Property) => {
+    const ok = window.confirm(
+      `¿Eliminar «${p.titulo}»? Esta acción no se puede deshacer.`,
+    );
+    if (!ok) return;
+    setDeletingId(p.id);
+    deleteMutation.mutate(p.id);
   };
 
   return (
-    <div className="px-6 py-8 md:px-10">
-      <h1 className="text-[26px] font-extrabold text-[var(--pa-ink)]">
-        Publicaciones
-      </h1>
-      <p className="mb-6 mt-1 text-[13px] text-[var(--pa-muted)]">
-        Borradores, programadas y resultados por canal.
-      </p>
-
-      <div className="mb-6 flex flex-wrap gap-2">
-        {FILTERS.map((f) => (
+    <div className="px-6 py-8 md:px-10 md:py-8">
+      <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <h1 className="text-[26px] font-extrabold text-[var(--pa-ink)]">
+            Publicación
+          </h1>
+          <p className="mt-1 text-[13px] text-[var(--pa-muted)]">
+            {isLoading
+              ? "Cargando propiedades…"
+              : `${filtered.length} de ${properties?.length ?? 0} inmuebles · estado por canal`}
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center gap-3">
           <button
-            key={f.id}
             type="button"
-            onClick={() => setFilter(f.id)}
-            className={`rounded-full px-4 py-2 text-[13px] font-semibold transition-colors ${
-              filter === f.id
-                ? "bg-[var(--pa-navy)] text-white"
-                : "border border-[var(--pa-border)] bg-[var(--pa-surface)] text-[#45525E] hover:border-[var(--pa-navy)]"
-            }`}
+            onClick={() => createMutation.mutate()}
+            disabled={createMutation.isPending}
+            className="rounded-[10px] bg-[var(--pa-navy)] px-4 py-2.5 text-[13px] font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
           >
-            {f.label}
+            {createMutation.isPending ? "Creando…" : "Nueva propiedad"}
           </button>
-        ))}
+          <ViewToggle view={view} onView={setView} />
+        </div>
       </div>
 
-      {isLoading && (
-        <p className="text-sm text-[var(--pa-muted)]">Cargando publicaciones…</p>
-      )}
+      <div className="mb-4">
+        <PropertySearchInput value={search} onChange={setSearch} />
+      </div>
 
-      {isError && (
-        <p className="text-sm text-[var(--pa-danger)]">
-          {error instanceof Error
-            ? error.message
-            : "No se pudieron cargar las publicaciones."}
+      <div className="mb-3 flex flex-wrap gap-2">
+        <button
+          type="button"
+          onClick={() => setShortcutSinPublicar((v) => !v)}
+          className={`rounded-full px-4 py-2 text-[13px] font-semibold transition-colors ${
+            shortcutSinPublicar
+              ? "bg-[var(--pa-navy)] text-white"
+              : "border border-[var(--pa-border)] bg-[var(--pa-surface)] text-[#45525E] hover:border-[var(--pa-navy)]"
+          }`}
+        >
+          Sin publicar
+        </button>
+        <button
+          type="button"
+          onClick={() => setShortcutProgramadas((v) => !v)}
+          className={`rounded-full px-4 py-2 text-[13px] font-semibold transition-colors ${
+            shortcutProgramadas
+              ? "bg-[#B45309] text-white"
+              : "border border-[var(--pa-border)] bg-[var(--pa-surface)] text-[#45525E] hover:border-[#B45309]"
+          }`}
+        >
+          Programadas
+        </button>
+        <button
+          type="button"
+          onClick={() => setShortcutError((v) => !v)}
+          className={`rounded-full px-4 py-2 text-[13px] font-semibold transition-colors ${
+            shortcutError
+              ? "bg-[var(--pa-danger)] text-white"
+              : "border border-[var(--pa-border)] bg-[var(--pa-surface)] text-[#45525E] hover:border-[var(--pa-danger)]"
+          }`}
+        >
+          Con error
+        </button>
+      </div>
+
+      <div className="mb-6 flex flex-wrap gap-2.5">
+        <FilterDropdown
+          label={`Tipo${tipoFilter !== "Todos" ? `: ${tipoFilter}` : ""}`}
+          active={tipoFilter !== "Todos"}
+          open={openFilter === "tipo"}
+          onToggle={() =>
+            setOpenFilter((f) => (f === "tipo" ? null : "tipo"))
+          }
+          onClose={() => setOpenFilter(null)}
+          options={FILTER_TYPES.map((v) => ({ value: v, label: v }))}
+          selected={tipoFilter}
+          onSelect={setTipoFilter}
+        />
+        <FilterDropdown
+          label={`Municipio${
+            municipioFilter !== "Todos"
+              ? `: ${municipioOptions.find((m) => m.key === municipioFilter)?.label ?? municipioFilter}`
+              : ""
+          }`}
+          active={municipioFilter !== "Todos"}
+          open={openFilter === "municipio"}
+          onToggle={() =>
+            setOpenFilter((f) => (f === "municipio" ? null : "municipio"))
+          }
+          onClose={() => setOpenFilter(null)}
+          options={[
+            { value: "Todos", label: "Todos" },
+            ...municipioOptions.map((m) => ({
+              value: m.key,
+              label: m.label,
+            })),
+          ]}
+          selected={municipioFilter}
+          onSelect={setMunicipioFilter}
+        />
+        <FilterDropdown
+          label={`Estado${estadoFilter !== "Todos" ? `: ${estadoFilter}` : ""}`}
+          active={estadoFilter !== "Todos"}
+          open={openFilter === "estado"}
+          onToggle={() =>
+            setOpenFilter((f) => (f === "estado" ? null : "estado"))
+          }
+          onClose={() => setOpenFilter(null)}
+          options={PUBLICATION_FILTER_OPTIONS.map((o) => ({
+            value: o.value,
+            label: o.label,
+          }))}
+          selected={estadoFilter}
+          onSelect={(v) => setEstadoFilter(v as PublicationFilterLabel)}
+        />
+        <PriceRangeFilter
+          range={priceRange}
+          onChange={setPriceRange}
+          open={openFilter === "precio"}
+          onToggle={() =>
+            setOpenFilter((f) => (f === "precio" ? null : "precio"))
+          }
+          onClose={() => setOpenFilter(null)}
+        />
+        {showPropietarioFilter && (
+          <FilterDropdown
+            label={`Propietario${
+              propietarioFilter !== "Todos"
+                ? `: ${propietarioOptions.find((o) => o.id === propietarioFilter)?.label ?? ""}`
+                : ""
+            }`}
+            active={propietarioFilter !== "Todos"}
+            open={openFilter === "propietario"}
+            onToggle={() =>
+              setOpenFilter((f) => (f === "propietario" ? null : "propietario"))
+            }
+            onClose={() => setOpenFilter(null)}
+            options={[
+              { value: "Todos", label: "Todos" },
+              ...propietarioOptions.map((o) => ({
+                value: o.id,
+                label: o.label,
+              })),
+            ]}
+            selected={propietarioFilter}
+            onSelect={setPropietarioFilter}
+          />
+        )}
+      </div>
+
+      {deleteMutation.isError && (
+        <p className="mb-4 text-sm text-[var(--pa-danger)]">
+          No se pudo eliminar la propiedad.
+        </p>
+      )}
+      {createMutation.isError && (
+        <p className="mb-4 text-sm text-[var(--pa-danger)]">
+          No se pudo crear la propiedad.
         </p>
       )}
 
-      {!isLoading && !isError && publications?.length === 0 && (
-        <div className="rounded-2xl border border-dashed border-[var(--pa-border)] bg-[var(--pa-surface)] px-8 py-16 text-center">
-          <p className="text-[15px] font-bold text-[var(--pa-ink)]">
-            Sin publicaciones
-          </p>
-          <p className="mt-2 text-[13px] text-[var(--pa-muted)]">
-            {filter === "all"
-              ? "Crea una publicación desde una propiedad del inventario."
-              : "No hay publicaciones con este filtro."}
-          </p>
-          <button
-            type="button"
-            onClick={() => router.push("/properties")}
-            className="mt-6 rounded-[10px] bg-[var(--pa-navy)] px-5 py-3 text-[13px] font-bold text-white"
-          >
-            Ir al inventario
-          </button>
+      {isLoading && <PropertyListSkeleton />}
+      {isError && (
+        <p className="text-sm text-[var(--pa-danger)]">
+          No se pudieron cargar las propiedades.
+        </p>
+      )}
+
+      {properties && properties.length === 0 && (
+        <EmptyState
+          onCreate={() => createMutation.mutate()}
+          creating={createMutation.isPending}
+        />
+      )}
+
+      {properties && properties.length > 0 && filtered.length === 0 && (
+        <p className="text-sm text-[var(--pa-muted)]">
+          Ningún inmueble coincide con los filtros.
+        </p>
+      )}
+
+      {filtered.length > 0 && view === "cards" && (
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-5">
+          {filtered.map((p) => (
+            <PublicationCard
+              key={p.id}
+              property={p}
+              publication={pubByPropertyId.get(p.id)}
+              onClick={() => open(p)}
+              onDelete={() => onDelete(p)}
+              deleting={deletingId === p.id}
+            />
+          ))}
         </div>
       )}
 
-      <div className="flex flex-col gap-3">
-        {publications?.map((pub) => {
-          const property = properties?.[pub.propertyId];
-          const title =
-            pub.sharedTitle || property?.titulo || `Propiedad ${pub.propertyId}`;
-          return (
-            <button
-              key={pub.id}
-              type="button"
-              onClick={() => openPublication(pub.propertyId)}
-              className="flex items-center gap-4 rounded-2xl border border-[var(--pa-border)] bg-[var(--pa-surface)] px-5 py-4 text-left transition-shadow hover:shadow-sm"
-            >
-              <div className="min-w-0 flex-1">
-                <div className="mb-1 flex flex-wrap items-center gap-2">
-                  <span className="line-clamp-1 text-[14px] font-bold text-[var(--pa-ink)]">
-                    {title}
-                  </span>
-                  <span
-                    className={`rounded-md px-2 py-0.5 text-[11px] font-bold ${STATUS_CLASS[pub.status] ?? STATUS_CLASS.draft}`}
-                  >
-                    {STATUS_LABEL[pub.status] ?? pub.status}
-                  </span>
-                </div>
-                <div className="text-xs text-[var(--pa-muted)]">
-                  {property
-                    ? `${property.tipo} · ${property.municipio}`
-                    : `Propiedad #${pub.propertyId}`}
-                  {pub.status === "scheduled" && pub.scheduledFor
-                    ? ` · ${formatScheduledFor(pub.scheduledFor, pub.timezone)}`
-                    : ""}
-                </div>
-                {pub.channelResults.length > 0 && (
-                  <div className="mt-1 text-[11px] text-[var(--pa-faint)]">
-                    {pub.channelResults.length} canal
-                    {pub.channelResults.length === 1 ? "" : "es"}
-                  </div>
-                )}
-              </div>
-              <span className="shrink-0 text-[13px] font-bold text-[var(--pa-navy)]">
-                Abrir →
-              </span>
-            </button>
-          );
-        })}
+      {filtered.length > 0 && view === "table" && (
+        <PublicationTable
+          properties={filtered}
+          pubByPropertyId={pubByPropertyId}
+          onOpen={open}
+          onDelete={onDelete}
+          deletingId={deletingId}
+        />
+      )}
+    </div>
+  );
+}
+
+function PublicationStatusBadge({
+  publication,
+}: {
+  publication?: Publication;
+}) {
+  const stage = publicationStage(publication);
+  return (
+    <span
+      className={`inline-flex rounded-md px-2 py-0.5 text-[11px] font-bold ${PUBLICATION_STAGE_CLASS[stage]}`}
+    >
+      {stageLabel(stage)}
+    </span>
+  );
+}
+
+function PublicationCard({
+  property,
+  publication,
+  onClick,
+  onDelete,
+  deleting,
+}: {
+  property: Property;
+  publication?: Publication;
+  onClick: () => void;
+  onDelete: () => void;
+  deleting: boolean;
+}) {
+  const stage = publicationStage(publication);
+  const title = publicationTitle(property, publication);
+
+  return (
+    <div className="flex flex-col rounded-2xl border border-[var(--pa-border)] bg-[var(--pa-surface)] p-3.5 text-left transition-shadow hover:shadow-sm">
+      <button type="button" onClick={onClick} className="text-left">
+        <div className="relative mb-3.5 h-[150px] overflow-hidden rounded-xl">
+          <CoverImage
+            url={property.portadaUrl}
+            alt={title}
+            className="h-full w-full"
+            placeholderClassName="h-full w-full"
+          />
+          <span className="absolute left-2.5 top-2.5 rounded-md bg-white/90 px-2.5 py-1 text-[11px] font-bold text-[var(--pa-ink)]">
+            {property.code}
+          </span>
+          <span className="absolute right-2.5 top-2.5">
+            <PublicationStatusBadge publication={publication} />
+          </span>
+        </div>
+        <div className="mb-1 line-clamp-1 text-sm font-bold text-[var(--pa-ink)]">
+          {title}
+        </div>
+        <div className="mb-2.5 text-xs text-[var(--pa-muted)]">
+          {property.tipo} · {property.municipio}
+          {property.nombreContacto ? ` · ${property.nombreContacto}` : ""}
+        </div>
+        <div className="mb-3 text-[15px] font-extrabold text-[var(--pa-navy)]">
+          {formatPrice(property.precio, property.esArriendo)}
+        </div>
+        {stage === "scheduled" && publication?.scheduledFor ? (
+          <div className="mb-3 text-[11px] font-semibold text-[#B45309]">
+            {formatScheduledFor(
+              publication.scheduledFor,
+              publication.timezone,
+            )}
+          </div>
+        ) : null}
+        <ChannelChips channels={property.channels} />
+        {publication && publication.channelResults.length > 0 ? (
+          <div className="mt-2 text-[11px] text-[var(--pa-faint)]">
+            {publication.channelResults.length} canal
+            {publication.channelResults.length === 1 ? "" : "es"} en última
+            publicación
+          </div>
+        ) : null}
+      </button>
+      <button
+        type="button"
+        onClick={onDelete}
+        disabled={deleting}
+        className="mt-3 self-start text-xs font-bold text-[var(--pa-danger)] hover:underline disabled:opacity-50"
+      >
+        {deleting ? "Eliminando…" : "Eliminar"}
+      </button>
+    </div>
+  );
+}
+
+function PublicationTable({
+  properties,
+  pubByPropertyId,
+  onOpen,
+  onDelete,
+  deletingId,
+}: {
+  properties: Property[];
+  pubByPropertyId: Map<string, Publication>;
+  onOpen: (p: Property) => void;
+  onDelete: (p: Property) => void;
+  deletingId: string | null;
+}) {
+  const cols =
+    "grid-cols-[64px_2fr_1fr_1fr_1.1fr_1.2fr_1.4fr_72px]";
+  return (
+    <div className="overflow-hidden rounded-2xl border border-[var(--pa-border)] bg-[var(--pa-surface)]">
+      <div
+        className={`grid ${cols} gap-3 border-b border-[var(--pa-border)] bg-[var(--pa-bg)] px-5 py-3.5 text-[11px] font-bold uppercase tracking-wide text-[var(--pa-muted)]`}
+      >
+        <div />
+        <div>Título</div>
+        <div>Tipo</div>
+        <div>Precio</div>
+        <div>Estado</div>
+        <div>Programada</div>
+        <div>Canales</div>
+        <div />
       </div>
+      {properties.map((p) => {
+        const pub = pubByPropertyId.get(p.id);
+        const title = publicationTitle(p, pub);
+        const stage = publicationStage(pub);
+        return (
+          <div
+            key={p.id}
+            className={`grid w-full ${cols} items-center gap-3 border-b border-[var(--pa-bg-alt)] px-5 py-3 last:border-b-0 hover:bg-[var(--pa-bg)]`}
+          >
+            <button
+              type="button"
+              onClick={() => onOpen(p)}
+              className="h-11 w-11 overflow-hidden rounded-lg"
+              aria-label={`Abrir ${title}`}
+            >
+              <CoverImage
+                url={p.portadaUrl}
+                alt=""
+                className="h-full w-full"
+                placeholderClassName="h-11 w-11"
+              />
+            </button>
+            <button
+              type="button"
+              onClick={() => onOpen(p)}
+              className="min-w-0 text-left"
+            >
+              <div className="line-clamp-1 text-[13px] font-bold text-[var(--pa-ink)]">
+                {title}
+              </div>
+              <div className="text-[11px] text-[var(--pa-faint)]">{p.code}</div>
+            </button>
+            <button
+              type="button"
+              onClick={() => onOpen(p)}
+              className="text-left text-xs text-[var(--pa-muted)]"
+            >
+              {p.tipo}
+            </button>
+            <button
+              type="button"
+              onClick={() => onOpen(p)}
+              className="text-left text-[13px] font-bold text-[var(--pa-navy)]"
+            >
+              {formatPrice(p.precio, p.esArriendo)}
+            </button>
+            <button type="button" onClick={() => onOpen(p)} className="text-left">
+              <PublicationStatusBadge publication={pub} />
+            </button>
+            <button
+              type="button"
+              onClick={() => onOpen(p)}
+              className="text-left text-[11px] text-[var(--pa-muted)]"
+            >
+              {stage === "scheduled" && pub?.scheduledFor
+                ? formatScheduledFor(pub.scheduledFor, pub.timezone)
+                : "—"}
+            </button>
+            <button type="button" onClick={() => onOpen(p)} className="text-left">
+              <ChannelChips channels={p.channels} />
+            </button>
+            <button
+              type="button"
+              onClick={() => onDelete(p)}
+              disabled={deletingId === p.id}
+              className="justify-self-end text-[11px] font-bold text-[var(--pa-danger)] hover:underline disabled:opacity-50"
+            >
+              {deletingId === p.id ? "…" : "Eliminar"}
+            </button>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function EmptyState({
+  onCreate,
+  creating,
+}: {
+  onCreate: () => void;
+  creating?: boolean;
+}) {
+  return (
+    <div className="flex flex-col items-center rounded-[20px] border border-dashed border-[#D7DCE1] bg-[var(--pa-surface)] px-10 py-20 text-center">
+      <div className="mb-5 h-16 w-16 rounded-2xl bg-[var(--pa-bg-alt)]" />
+      <div className="mb-2 text-[17px] font-extrabold text-[var(--pa-ink)]">
+        Aún no tienes propiedades para publicar
+      </div>
+      <div className="mb-6 max-w-[340px] text-[13px] text-[var(--pa-muted)]">
+        Crea una propiedad y publícala en tus canales. Aparecerá también en
+        Inventario.
+      </div>
+      <button
+        type="button"
+        onClick={onCreate}
+        disabled={creating}
+        className="rounded-[10px] bg-[var(--pa-navy)] px-5 py-3 text-[13px] font-bold text-white disabled:opacity-50"
+      >
+        {creating ? "Creando…" : "Registrar el primero"}
+      </button>
     </div>
   );
 }

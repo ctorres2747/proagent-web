@@ -25,6 +25,16 @@ const BASE_NAV: NavItem[] = [
 
 function isActive(pathname: string, href: string): boolean {
   if (href === "/") return pathname === "/";
+  // Detalle /properties/[id] = flujo de publicación (contenido, fotos, canales…)
+  if (href === "/publications") {
+    return (
+      pathname === "/publications" ||
+      /^\/properties\/[^/]+/.test(pathname)
+    );
+  }
+  if (href === "/properties") {
+    return pathname === "/properties";
+  }
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 

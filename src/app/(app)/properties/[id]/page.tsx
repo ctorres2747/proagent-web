@@ -444,7 +444,7 @@ export default function PublishWizardPage() {
         token ?? undefined,
       );
       setPublication(pub);
-      router.push("/properties");
+      router.push("/publications");
     } catch {
       setActionError("No se pudo guardar el borrador.");
     } finally {
@@ -463,10 +463,10 @@ export default function PublishWizardPage() {
     return (
       <div className="px-6 py-10 md:px-10">
         <button
-          onClick={() => router.push("/properties")}
+          onClick={() => router.push("/publications")}
           className="text-sm text-[var(--pa-muted)] hover:underline"
         >
-          ← Propiedades
+          ← Publicación
         </button>
         <p className="mt-4 text-sm text-[var(--pa-danger)]">
           No se pudo cargar la propiedad.
@@ -478,10 +478,10 @@ export default function PublishWizardPage() {
     return (
       <div className="px-6 py-10 md:px-10">
         <button
-          onClick={() => router.push("/properties")}
+          onClick={() => router.push("/publications")}
           className="text-sm text-[var(--pa-muted)] hover:underline"
         >
-          ← Propiedades
+          ← Publicación
         </button>
         <p className="mt-4 text-sm text-[var(--pa-danger)]">
           {draftError ?? "No se pudo crear el borrador de publicación."}
@@ -516,7 +516,7 @@ export default function PublishWizardPage() {
             if (!ok) return;
             try {
               await propertiesService.delete(property.id, token ?? undefined);
-              router.push("/properties");
+              router.push("/publications");
             } catch {
               window.alert("No se pudo eliminar la propiedad.");
             }

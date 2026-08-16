@@ -20,6 +20,12 @@ import {
   buildMunicipioOptions,
   propertyMatchesMunicipio,
 } from "@/lib/municipio";
+import { matchesPropertySearch } from "@/lib/propertySearch";
+import {
+  PropertyListSkeleton,
+  PropertySearchInput,
+  ViewToggle,
+} from "@/components/properties/PropertyListUi";
 
 const FILTER_TYPES = ["Todos", "Apartamento", "Casa", "Local", "Lote", "Oficina", "Finca"];
 const FILTER_ESTADOS = ["Todos", "Incompleto", "Casi listo", "Completo"];
@@ -71,7 +77,6 @@ export default function PropertiesPage() {
   const showPropietarioFilter = isAdmin && propietarioOptions.length > 1;
 
   const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase();
     const municipioKey =
       municipioFilter === "Todos" ? null : municipioFilter;
     return (data ?? []).filter((p) => {
@@ -95,13 +100,7 @@ export default function PropertiesPage() {
       ) {
         return false;
       }
-      if (!q) return true;
-      return (
-        p.titulo.toLowerCase().includes(q) ||
-        p.municipio.toLowerCase().includes(q) ||
-        p.code.toLowerCase().includes(q) ||
-        (p.barrio?.toLowerCase().includes(q) ?? false)
-      );
+      return matchesPropertySearch(p, search);
     });
   }, [
     data,
@@ -171,26 +170,12 @@ export default function PropertiesPage() {
           >
             {createMutation.isPending ? "Creando…" : "Nueva propiedad"}
           </button>
-          <div className="flex rounded-[10px] bg-[var(--pa-bg-alt)] p-[3px]">
-            <SegBtn active={view === "cards"} onClick={() => setView("cards")}>
-              Tarjetas
-            </SegBtn>
-            <SegBtn active={view === "table"} onClick={() => setView("table")}>
-              Tabla
-            </SegBtn>
-          </div>
+          <ViewToggle view={view} onView={setView} />
         </div>
       </div>
 
-      {/* Search + filter chips */}
       <div className="mb-4">
-        <input
-          type="search"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Buscar por título, municipio o código…"
-          className="w-full max-w-md rounded-[10px] border border-[var(--pa-border)] bg-[var(--pa-surface)] px-4 py-2.5 text-[13px] text-[var(--pa-ink)] outline-none focus:border-[var(--pa-navy)]"
-        />
+        <PropertySearchInput value={search} onChange={setSearch} />
       </div>
       <div className="mb-3 flex flex-wrap gap-2">
         <button
@@ -309,7 +294,7 @@ export default function PropertiesPage() {
         </p>
       )}
 
-      {isLoading && <SkeletonGrid />}
+      {isLoading && <PropertyListSkeleton />}
       {isError && (
         <p className="text-sm text-[var(--pa-danger)]">
           No se pudieron cargar las propiedades.
@@ -352,30 +337,6 @@ export default function PropertiesPage() {
         />
       )}
     </div>
-  );
-}
-
-function SegBtn({
-  active,
-  onClick,
-  children,
-}: {
-  active: boolean;
-  onClick: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`rounded-lg px-4 py-2 text-xs transition-colors ${
-        active
-          ? "bg-[var(--pa-surface)] font-bold text-[var(--pa-navy)] shadow-sm"
-          : "font-semibold text-[var(--pa-muted)]"
-      }`}
-    >
-      {children}
-    </button>
   );
 }
 
@@ -507,24 +468,6 @@ function PropertyTable({
           >
             {deletingId === p.id ? "…" : "Eliminar"}
           </button>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function SkeletonGrid() {
-  return (
-    <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-5">
-      {[1, 2, 3, 4, 5, 6].map((i) => (
-        <div
-          key={i}
-          className="rounded-2xl border border-[var(--pa-border)] bg-[var(--pa-surface)] p-4"
-        >
-          <div className="mb-3.5 h-[150px] animate-pulse rounded-xl bg-[var(--pa-border)]" />
-          <div className="mb-2 h-3.5 w-[70%] animate-pulse rounded bg-[var(--pa-border)]" />
-          <div className="mb-3.5 h-3 w-[45%] animate-pulse rounded bg-[var(--pa-border)]" />
-          <div className="h-2 w-full animate-pulse rounded bg-[var(--pa-border)]" />
         </div>
       ))}
     </div>
