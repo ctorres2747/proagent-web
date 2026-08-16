@@ -29,6 +29,11 @@ import {
   scheduleValidationError,
   tomorrowDateString,
 } from "@/lib/schedule";
+import {
+  initialWizardStep,
+  pickCanonicalPublication,
+} from "@/lib/publicationResolve";
+import { ApiError } from "@/services/http/client";
 
 type StepId =
   | "content"
@@ -99,6 +104,11 @@ function contentFormsEqual(a: ContentFormSnapshot, b: ContentFormSnapshot): bool
     a.municipio === b.municipio &&
     a.barrio === b.barrio
   );
+}
+
+function formatActionError(err: unknown, fallback: string): string {
+  if (err instanceof ApiError && err.message) return err.message;
+  return fallback;
 }
 
 export default function PublishWizardPage() {
@@ -185,8 +195,15 @@ export default function PublishWizardPage() {
     setDraftError(null);
 
     publicationsService
-      .createDraft(propId, token ?? undefined)
-      .then((pub) => {
+      .list("all", token ?? undefined)
+      .then(async (all) => {
+        if (cancelled) return;
+        let pub = pickCanonicalPublication(all, propId);
+        if (!pub) {
+          pub = await publicationsService.createDraft(propId, token ?? undefined);
+        } else {
+          pub = await publicationsService.get(pub.id, token ?? undefined);
+        }
         if (cancelled) return;
         setPublication(pub);
         setSharedTitle(pub.sharedTitle || seedTitle || "");
@@ -215,6 +232,7 @@ export default function PublishWizardPage() {
           ) as Record<ChannelId, boolean>;
           setSelectedChannels(toggles);
         }
+        setStep(initialWizardStep(pub));
       })
       .catch(() => {
         if (!cancelled) {
@@ -377,8 +395,10 @@ export default function PublishWizardPage() {
       );
       setPublication(pub);
       setStep("results");
-    } catch {
-      setActionError("No se pudo publicar. Intenta de nuevo.");
+    } catch (err) {
+      setActionError(
+        formatActionError(err, "No se pudo publicar. Intenta de nuevo."),
+      );
     } finally {
       setActionBusy(false);
     }
@@ -406,8 +426,10 @@ export default function PublishWizardPage() {
       );
       setPublication(pub);
       setStep("results");
-    } catch {
-      setActionError("No se pudo programar la publicación. Intenta de nuevo.");
+    } catch (err) {
+      setActionError(
+        formatActionError(err, "No se pudo programar la publicación. Intenta de nuevo."),
+      );
     } finally {
       setActionBusy(false);
     }
