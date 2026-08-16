@@ -69,6 +69,37 @@ function formatPublishedAt(iso: string | null): string {
   }
 }
 
+type ContentFormSnapshot = {
+  titulo: string;
+  descripcion: string;
+  telefonoContacto: string;
+  nombreContacto: string;
+  municipio: string;
+  barrio: string;
+};
+
+function snapshotFromProperty(property: Property): ContentFormSnapshot {
+  return {
+    titulo: property.titulo ?? "",
+    descripcion: property.descripcion ?? "",
+    telefonoContacto: property.telefonoContacto ?? "",
+    nombreContacto: property.nombreContacto ?? "",
+    municipio: property.municipio ?? "",
+    barrio: property.barrio ?? "",
+  };
+}
+
+function contentFormsEqual(a: ContentFormSnapshot, b: ContentFormSnapshot): boolean {
+  return (
+    a.titulo === b.titulo &&
+    a.descripcion === b.descripcion &&
+    a.telefonoContacto === b.telefonoContacto &&
+    a.nombreContacto === b.nombreContacto &&
+    a.municipio === b.municipio &&
+    a.barrio === b.barrio
+  );
+}
+
 export default function PublishWizardPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
@@ -88,6 +119,9 @@ export default function PublishWizardPage() {
   const [nombreContacto, setNombreContacto] = useState("");
   const [municipio, setMunicipio] = useState("");
   const [barrio, setBarrio] = useState("");
+  const [savedContent, setSavedContent] = useState<ContentFormSnapshot | null>(
+    null,
+  );
 
   // Customize form
   const [sharedTitle, setSharedTitle] = useState("");
@@ -125,12 +159,14 @@ export default function PublishWizardPage() {
   // Seed form from property when loaded
   useEffect(() => {
     if (!property) return;
-    setTitulo(property.titulo ?? "");
-    setDescripcion(property.descripcion ?? "");
-    setTelefonoContacto(property.telefonoContacto ?? "");
-    setNombreContacto(property.nombreContacto ?? "");
-    setMunicipio(property.municipio ?? "");
-    setBarrio(property.barrio ?? "");
+    const snapshot = snapshotFromProperty(property);
+    setTitulo(snapshot.titulo);
+    setDescripcion(snapshot.descripcion);
+    setTelefonoContacto(snapshot.telefonoContacto);
+    setNombreContacto(snapshot.nombreContacto);
+    setMunicipio(snapshot.municipio);
+    setBarrio(snapshot.barrio);
+    setSavedContent(snapshot);
   }, [property]);
 
   // Create draft when property id is available; deps omit full property
@@ -206,13 +242,30 @@ export default function PublishWizardPage() {
     return map;
   }, [channelConnections]);
 
+  const currentContent = useMemo<ContentFormSnapshot>(
+    () => ({
+      titulo,
+      descripcion,
+      telefonoContacto,
+      nombreContacto,
+      municipio,
+      barrio,
+    }),
+    [titulo, descripcion, telefonoContacto, nombreContacto, municipio, barrio],
+  );
+
+  const isContentDirty = useMemo(() => {
+    if (!savedContent) return false;
+    return !contentFormsEqual(currentContent, savedContent);
+  }, [currentContent, savedContent]);
+
   const channelSelectable = (id: ChannelId): boolean => {
     const conn = connectionById.get(id);
     if (!conn) return id !== "web";
     return conn.status === "connected" || conn.status === "needs_auth";
   };
 
-  const onContentContinue = async () => {
+  const saveContentChanges = async (options?: { advance?: boolean }) => {
     if (!property || !publication) return;
     setActionBusy(true);
     setActionError(null);
@@ -237,15 +290,20 @@ export default function PublishWizardPage() {
       setPublication(pub);
       setSharedTitle(pub.sharedTitle || titulo);
       setSharedBody(pub.sharedBody || descripcion);
+      setSavedContent(currentContent);
       await queryClient.invalidateQueries({
         queryKey: ["property", params.id],
       });
-      setStep("photos");
+      if (options?.advance) setStep("photos");
     } catch {
       setActionError("No se pudo guardar el contenido.");
     } finally {
       setActionBusy(false);
     }
+  };
+
+  const onContentContinue = async () => {
+    await saveContentChanges({ advance: true });
   };
 
   const onChannelsContinue = async () => {
@@ -386,7 +444,7 @@ export default function PublishWizardPage() {
         token ?? undefined,
       );
       setPublication(pub);
-      router.push("/properties");
+      router.push("/publications");
     } catch {
       setActionError("No se pudo guardar el borrador.");
     } finally {
@@ -405,10 +463,10 @@ export default function PublishWizardPage() {
     return (
       <div className="px-6 py-10 md:px-10">
         <button
-          onClick={() => router.push("/properties")}
+          onClick={() => router.push("/publications")}
           className="text-sm text-[var(--pa-muted)] hover:underline"
         >
-          ← Propiedades
+          ← Publicación
         </button>
         <p className="mt-4 text-sm text-[var(--pa-danger)]">
           No se pudo cargar la propiedad.
@@ -420,10 +478,10 @@ export default function PublishWizardPage() {
     return (
       <div className="px-6 py-10 md:px-10">
         <button
-          onClick={() => router.push("/properties")}
+          onClick={() => router.push("/publications")}
           className="text-sm text-[var(--pa-muted)] hover:underline"
         >
-          ← Propiedades
+          ← Publicación
         </button>
         <p className="mt-4 text-sm text-[var(--pa-danger)]">
           {draftError ?? "No se pudo crear el borrador de publicación."}
@@ -458,7 +516,7 @@ export default function PublishWizardPage() {
             if (!ok) return;
             try {
               await propertiesService.delete(property.id, token ?? undefined);
-              router.push("/properties");
+              router.push("/publications");
             } catch {
               window.alert("No se pudo eliminar la propiedad.");
             }
@@ -511,6 +569,8 @@ export default function PublishWizardPage() {
           onMunicipio={setMunicipio}
           onBarrio={setBarrio}
           busy={actionBusy}
+          isDirty={isContentDirty}
+          onSave={() => void saveContentChanges()}
           onNext={() => void onContentContinue()}
         />
       )}
@@ -728,6 +788,8 @@ function ContentStep({
   onMunicipio,
   onBarrio,
   busy,
+  isDirty,
+  onSave,
   onNext,
 }: {
   property: Property;
@@ -744,6 +806,8 @@ function ContentStep({
   onMunicipio: (v: string) => void;
   onBarrio: (v: string) => void;
   busy: boolean;
+  isDirty: boolean;
+  onSave: () => void;
   onNext: () => void;
 }) {
   const checklist = [
@@ -904,9 +968,19 @@ function ContentStep({
             ))}
           </ul>
         </Card>
-        <PrimaryBlock onClick={onNext} disabled={busy}>
-          {busy ? "Guardando…" : "Continuar a fotos"}
-        </PrimaryBlock>
+        <div className="flex flex-col gap-2">
+          <button
+            type="button"
+            onClick={onSave}
+            disabled={!isDirty || busy}
+            className="rounded-xl border border-[var(--pa-navy)] bg-[var(--pa-surface)] px-6 py-3.5 text-center text-[13px] font-bold text-[var(--pa-navy)] transition-opacity hover:bg-[var(--pa-bg)] disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {busy ? "Guardando…" : "Guardar cambios"}
+          </button>
+          <PrimaryBlock onClick={onNext} disabled={busy}>
+            {busy ? "Guardando…" : "Continuar a fotos"}
+          </PrimaryBlock>
+        </div>
       </div>
     </div>
   );
