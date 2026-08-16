@@ -28,6 +28,7 @@ import {
 import { matchesPropertySearch } from "@/lib/propertySearch";
 import {
   indexPublicationsByProperty,
+  matchesPublicationShortcuts,
   matchesPublicationStageFilter,
   PUBLICATION_FILTER_OPTIONS,
   publicationStage,
@@ -117,27 +118,19 @@ export default function PublicationsPage() {
       if (tipoFilter !== "Todos" && p.tipo !== tipoFilter) return false;
       if (!propertyMatchesMunicipio(p.municipio, municipioKey)) return false;
       if (!matchesPublicationStageFilter(stage, estadoFilter)) return false;
+      if (
+        !matchesPublicationShortcuts(stage, {
+          sinPublicar: shortcutSinPublicar,
+          programadas: shortcutProgramadas,
+          conError: shortcutError,
+        })
+      ) {
+        return false;
+      }
       if (!matchesPriceRange(p.precio, priceRange)) return false;
       if (
         propietarioFilter !== "Todos" &&
         p.ownerAgenteId !== propietarioFilter
-      ) {
-        return false;
-      }
-      if (shortcutSinPublicar && stage !== "none" && stage !== "draft") {
-        return false;
-      }
-      if (
-        shortcutError &&
-        stage !== "failed" &&
-        stage !== "partial"
-      ) {
-        return false;
-      }
-      if (
-        shortcutProgramadas &&
-        stage !== "scheduled" &&
-        stage !== "publishing"
       ) {
         return false;
       }

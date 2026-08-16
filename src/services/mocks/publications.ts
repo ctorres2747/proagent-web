@@ -12,7 +12,7 @@ const now = () => new Date().toISOString();
 const SEED_PUBLICATIONS: Publication[] = [
   {
     id: "pub-seed-draft",
-    propertyId: "1",
+    propertyId: "PI-1042",
     sharedTitle: "Apartamento en Envigado",
     sharedBody: "Borrador pendiente de revisión.",
     platformContent: [],
@@ -26,7 +26,7 @@ const SEED_PUBLICATIONS: Publication[] = [
   },
   {
     id: "pub-seed-scheduled",
-    propertyId: "2",
+    propertyId: "PI-0987",
     sharedTitle: "Casa en Sabaneta",
     sharedBody: "Programada para publicación automática.",
     platformContent: [],
@@ -44,7 +44,7 @@ const SEED_PUBLICATIONS: Publication[] = [
   },
   {
     id: "pub-seed-published",
-    propertyId: "3",
+    propertyId: "PI-1103",
     sharedTitle: "Local en Laureles",
     sharedBody: "Publicada en canales seleccionados.",
     platformContent: [],
@@ -61,7 +61,7 @@ const SEED_PUBLICATIONS: Publication[] = [
   },
   {
     id: "pub-seed-error",
-    propertyId: "4",
+    propertyId: "PI-1187",
     sharedTitle: "Apartamento en Belén",
     sharedBody: "Error en un canal.",
     platformContent: [],
