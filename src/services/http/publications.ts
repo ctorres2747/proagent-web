@@ -150,6 +150,22 @@ export const publicationsService: PublicationsService = {
     return mapResult(raw);
   },
 
+  async removeChannel(id, channelId, token) {
+    const raw = await apiFetch<RawChannelResult>(
+      `${detailPath(id)}/channels/${channelId}`,
+      { method: "DELETE", token },
+    );
+    return mapResult(raw);
+  },
+
+  async republishChannel(id, channelId, token) {
+    const raw = await apiFetch<RawChannelResult>(
+      `${detailPath(id)}/channels/${channelId}/republish`,
+      { method: "POST", token },
+    );
+    return mapResult(raw);
+  },
+
   async aiSuggest(id, action, token) {
     return apiFetch<{ title: string; body: string }>(`${detailPath(id)}/ai`, {
       method: "POST",

@@ -9,6 +9,7 @@ export type PublicationStatus =
   | "failed";
 
 export type ChannelResultStatus =
+  | "waiting"
   | "pending"
   | "publishing"
   | "published"
@@ -78,6 +79,16 @@ export interface PublicationsService {
   ): Promise<Publication>;
   results(id: string, token?: string): Promise<ChannelResult[]>;
   retryChannel(
+    id: string,
+    channelId: ChannelId,
+    token?: string,
+  ): Promise<ChannelResult>;
+  removeChannel(
+    id: string,
+    channelId: ChannelId,
+    token?: string,
+  ): Promise<ChannelResult>;
+  republishChannel(
     id: string,
     channelId: ChannelId,
     token?: string,

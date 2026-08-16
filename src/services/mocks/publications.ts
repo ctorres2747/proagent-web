@@ -234,6 +234,61 @@ export const publicationsService: PublicationsService = {
     return result;
   },
 
+  async removeChannel(id, channelId) {
+    await delay(350 + Math.random() * 400);
+    const current = store.get(id);
+    if (!current) throw new Error(`Publicación ${id} no encontrada`);
+    const existing = current.channelResults.find((r) => r.channelId === channelId);
+    if (!existing || existing.status !== "published") {
+      throw new Error("No hay publicación activa en ese canal");
+    }
+    const result = {
+      channelId,
+      status: "waiting" as const,
+      publishedAt: null,
+      externalRef: null,
+      errorMessage: null,
+      recommendedAction: null,
+    };
+    const others = current.channelResults.filter((r) => r.channelId !== channelId);
+    const next = {
+      ...current,
+      status: others.some((r) => r.status === "published")
+        ? ("partial" as const)
+        : ("draft" as const),
+      channelResults: [...others, result],
+      updatedAt: now(),
+    };
+    store.set(id, next);
+    return result;
+  },
+
+  async republishChannel(id, channelId) {
+    await delay(350 + Math.random() * 400);
+    const current = store.get(id);
+    if (!current) throw new Error(`Publicación ${id} no encontrada`);
+    const existing = current.channelResults.find((r) => r.channelId === channelId);
+    if (!existing || existing.status !== "published") {
+      throw new Error("No hay publicación activa en ese canal");
+    }
+    const result = {
+      channelId,
+      status: "published" as const,
+      publishedAt: now(),
+      externalRef: existing.externalRef ?? `mock-repub-${channelId}`,
+      errorMessage: null,
+      recommendedAction: null,
+    };
+    const others = current.channelResults.filter((r) => r.channelId !== channelId);
+    const next = {
+      ...current,
+      channelResults: [...others, result],
+      updatedAt: now(),
+    };
+    store.set(id, next);
+    return result;
+  },
+
   async aiSuggest(_id, action) {
     await delay(300);
     const variants: Record<string, { title: string; body: string }> = {
