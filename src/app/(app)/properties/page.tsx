@@ -158,7 +158,7 @@ export default function PropertiesPage() {
           <p className="mt-1 text-[13px] text-[var(--pa-muted)]">
             {isLoading
               ? "Cargando inventario…"
-              : `${filtered.length} de ${data?.length ?? 0} inmuebles`}
+              : `${filtered.length} de ${data?.length ?? 0} inmuebles · datos y completitud`}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
