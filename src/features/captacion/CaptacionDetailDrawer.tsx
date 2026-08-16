@@ -1,5 +1,6 @@
 "use client";
 
+import { PortalLogo } from "@/components/PortalLogo";
 import { formatPrice } from "@/lib/format";
 import type { Lead, LeadEstado } from "@/services/interfaces/leads";
 
@@ -65,9 +66,12 @@ export function CaptacionDetailDrawer({
 
         <div className="flex flex-1 flex-col overflow-y-auto p-4">
           <div className="mb-4 border-b border-[var(--pa-border)] pb-4">
-            <p className="text-[11px] font-semibold uppercase tracking-wide text-[var(--pa-faint)]">
-              {lead.portal} · #{lead.id}
-            </p>
+            <div className="flex items-center gap-2">
+              <PortalLogo portal={lead.portal} size={20} showLabel />
+              <span className="text-[11px] font-semibold uppercase tracking-wide text-[var(--pa-faint)]">
+                · #{lead.id}
+              </span>
+            </div>
             <h3 className="mt-1 text-[17px] font-extrabold text-[var(--pa-ink)]">
               {lead.tipoInmueble ?? "Inmueble"}
               {lead.municipio ? ` en ${lead.municipio}` : ""}

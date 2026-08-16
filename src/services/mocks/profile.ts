@@ -1,8 +1,4 @@
-import type {
-  AgentProfile,
-  AgentProfileUpdate,
-  ProfileService,
-} from "@/services/interfaces/profile";
+import type { AgentProfile, ProfileService } from "@/services/interfaces/profile";
 
 let mockProfile: AgentProfile = {
   id: "mock-1",
