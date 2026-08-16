@@ -23,6 +23,7 @@ export interface ChannelResult {
   publishedAt: string | null;
   externalRef: string | null;
   errorMessage: string | null;
+  statusNote?: string | null;
   recommendedAction: string | null;
 }
 

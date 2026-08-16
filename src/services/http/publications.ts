@@ -17,6 +17,7 @@ interface RawChannelResult {
   publishedAt?: string | null;
   externalRef?: string | null;
   errorMessage?: string | null;
+  statusNote?: string | null;
   recommendedAction?: string | null;
 }
 
@@ -47,6 +48,7 @@ function mapResult(raw: RawChannelResult): ChannelResult {
     publishedAt: raw.publishedAt ?? null,
     externalRef: raw.externalRef ?? null,
     errorMessage: raw.errorMessage ?? null,
+    statusNote: raw.statusNote ?? null,
     recommendedAction: raw.recommendedAction ?? null,
   };
 }
