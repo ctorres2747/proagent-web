@@ -20,6 +20,7 @@ import {
   type ChannelStatus,
 } from "@/design-system/channels";
 import { ChannelLogo } from "@/components/ChannelLogo";
+import { DeletePropertyDialog } from "@/components/DeletePropertyDialog";
 import { formatPrice } from "@/lib/format";
 import {
   DEFAULT_TIMEZONE,
@@ -111,6 +112,8 @@ export default function PublishWizardPage() {
   const [draftError, setDraftError] = useState<string | null>(null);
   const [actionBusy, setActionBusy] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deletingProperty, setDeletingProperty] = useState(false);
 
   // Content form
   const [titulo, setTitulo] = useState("");
@@ -509,23 +512,33 @@ export default function PublishWizardPage() {
         </div>
         <button
           type="button"
-          onClick={async () => {
-            const ok = window.confirm(
-              `¿Eliminar «${property.titulo}»? Esta acción no se puede deshacer.`,
-            );
-            if (!ok) return;
-            try {
-              await propertiesService.delete(property.id, token ?? undefined);
-              router.push("/publications");
-            } catch {
-              window.alert("No se pudo eliminar la propiedad.");
-            }
-          }}
+          onClick={() => setDeleteDialogOpen(true)}
           className="text-xs font-bold text-[var(--pa-danger)] hover:underline"
         >
           Eliminar propiedad
         </button>
       </div>
+
+      <DeletePropertyDialog
+        open={deleteDialogOpen}
+        titulo={property.titulo}
+        busy={deletingProperty}
+        onCancel={() => setDeleteDialogOpen(false)}
+        onConfirm={() => {
+          void (async () => {
+            setDeletingProperty(true);
+            try {
+              await propertiesService.delete(property.id, token ?? undefined);
+              router.push("/publications");
+            } catch {
+              window.alert("No se pudo eliminar la propiedad.");
+            } finally {
+              setDeletingProperty(false);
+              setDeleteDialogOpen(false);
+            }
+          })();
+        }}
+      />
 
       {/* Stepper */}
       <div className="mb-7 flex items-center gap-1 overflow-x-auto">
@@ -649,7 +662,6 @@ export default function PublishWizardPage() {
           actionError={actionError}
           onCancelSchedule={() => void onCancelSchedule()}
           onReprogram={() => setStep("preview")}
-          onRepublicar={() => setStep("preview")}
           onResultUpdated={(result) => {
             setPublication((prev) => {
               if (!prev) return prev;
@@ -1633,7 +1645,6 @@ function ResultsStep({
   actionError,
   onCancelSchedule,
   onReprogram,
-  onRepublicar,
   onResultUpdated,
   onPublicationRefresh,
 }: {
@@ -1646,13 +1657,14 @@ function ResultsStep({
   actionError: string | null;
   onCancelSchedule: () => void;
   onReprogram: () => void;
-  onRepublicar: () => void;
   onResultUpdated: (result: ChannelResult) => void;
   onPublicationRefresh: (publication: Publication) => void;
 }) {
   const [retrying, setRetrying] = useState<ChannelId | null>(null);
+  const [republishing, setRepublishing] = useState<ChannelId | null>(null);
   const [removing, setRemoving] = useState<ChannelId | null>(null);
   const [retryError, setRetryError] = useState<string | null>(null);
+  const [republishError, setRepublishError] = useState<string | null>(null);
   const [removeError, setRemoveError] = useState<string | null>(null);
 
   const results = CHANNEL_ORDER.map((id) => {
@@ -1665,11 +1677,11 @@ function ResultsStep({
         error: null as string | null,
         canRetry: false,
         canRemove: false,
+        canRepublish: false,
       };
     }
     const uiStatus = mapResultStatus(found.status);
     const isPublished = found.status === "published";
-    const isPublishing = found.status === "publishing";
     return {
       id,
       status: uiStatus,
@@ -1684,7 +1696,8 @@ function ResultsStep({
               : STATUS_META[uiStatus].label,
       error: found.errorMessage,
       canRetry: found.status === "failed",
-      canRemove: isPublished || isPublishing,
+      canRemove: isPublished,
+      canRepublish: isPublished,
     };
   });
   const publishedCount = results.filter((r) => r.status === "published").length;
@@ -1692,11 +1705,7 @@ function ResultsStep({
     (r) => r.status === "progress" && channelResults.find((c) => c.channelId === r.id)?.status === "scheduled",
   ).length;
   const isScheduled = publication.status === "scheduled";
-  const canRepublicar =
-    !isScheduled &&
-    (publication.status === "published" ||
-      publication.status === "partial" ||
-      publishedCount > 0);
+  const actionBusy = retrying !== null || republishing !== null || removing !== null;
   const pct =
     results.length === 0
       ? 0
@@ -1716,6 +1725,33 @@ function ResultsStep({
       setRetryError("No se pudo reintentar el canal.");
     } finally {
       setRetrying(null);
+    }
+  };
+
+  const onRepublish = async (channelId: ChannelId) => {
+    const name = CHANNEL_META[channelId].name;
+    if (
+      !window.confirm(
+        `¿Republicar en ${name}? Se actualizará el anuncio con el contenido actual.`,
+      )
+    ) {
+      return;
+    }
+    setRepublishing(channelId);
+    setRepublishError(null);
+    try {
+      const result = await publicationsService.republishChannel(
+        publicationId,
+        channelId,
+        token,
+      );
+      onResultUpdated(result);
+      const refreshed = await publicationsService.get(publicationId, token);
+      onPublicationRefresh(refreshed);
+    } catch {
+      setRepublishError("No se pudo republicar en ese canal.");
+    } finally {
+      setRepublishing(null);
     }
   };
 
@@ -1748,18 +1784,6 @@ function ResultsStep({
 
   return (
     <div className="max-w-[760px]">
-      {canRepublicar && (
-        <div className="mb-5 flex flex-wrap gap-3">
-          <button
-            type="button"
-            onClick={onRepublicar}
-            disabled={busy || retrying !== null || removing !== null}
-            className="rounded-[10px] bg-[var(--pa-navy)] px-4 py-2 text-xs font-bold text-white disabled:opacity-50"
-          >
-            Republicar
-          </button>
-        </div>
-      )}
       {isScheduled && (
         <div className="mb-5 rounded-2xl border border-[var(--pa-warning)]/40 bg-[var(--pa-surface)] px-6 py-5">
           <div className="mb-1 text-[13px] font-bold text-[var(--pa-ink)]">
@@ -1814,6 +1838,9 @@ function ResultsStep({
       {removeError && (
         <p className="mb-3 text-sm text-[var(--pa-danger)]">{removeError}</p>
       )}
+      {republishError && (
+        <p className="mb-3 text-sm text-[var(--pa-danger)]">{republishError}</p>
+      )}
       {results.map((r) => (
         <div
           key={r.id}
@@ -1837,17 +1864,27 @@ function ResultsStep({
           {r.canRetry && (
             <button
               type="button"
-              disabled={retrying !== null || removing !== null}
+              disabled={actionBusy}
               onClick={() => void onRetry(r.id)}
               className="whitespace-nowrap rounded-lg border border-[var(--pa-border)] px-3.5 py-1.5 text-[11px] font-bold text-[var(--pa-ink)] disabled:opacity-50"
             >
               {retrying === r.id ? "Reintentando…" : "Reintentar"}
             </button>
           )}
+          {r.canRepublish && (
+            <button
+              type="button"
+              disabled={actionBusy}
+              onClick={() => void onRepublish(r.id)}
+              className="whitespace-nowrap rounded-lg border border-[var(--pa-navy)] px-3.5 py-1.5 text-[11px] font-bold text-[var(--pa-navy)] disabled:opacity-50"
+            >
+              {republishing === r.id ? "Republicando…" : "Republicar"}
+            </button>
+          )}
           {r.canRemove && (
             <button
               type="button"
-              disabled={retrying !== null || removing !== null}
+              disabled={actionBusy}
               onClick={() => void onRemove(r.id)}
               className="whitespace-nowrap rounded-lg border border-[var(--pa-danger)] px-3.5 py-1.5 text-[11px] font-bold text-[var(--pa-danger)] disabled:opacity-50"
             >

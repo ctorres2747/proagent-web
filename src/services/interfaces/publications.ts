@@ -88,6 +88,11 @@ export interface PublicationsService {
     channelId: ChannelId,
     token?: string,
   ): Promise<ChannelResult>;
+  republishChannel(
+    id: string,
+    channelId: ChannelId,
+    token?: string,
+  ): Promise<ChannelResult>;
   aiSuggest(
     id: string,
     action:

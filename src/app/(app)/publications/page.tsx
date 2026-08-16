@@ -38,6 +38,7 @@ import {
   type PublicationFilterLabel,
 } from "@/lib/publicationDisplay";
 import { formatScheduledFor } from "@/lib/schedule";
+import { DeletePropertyDialog } from "@/components/DeletePropertyDialog";
 
 const FILTER_TYPES = [
   "Todos",
@@ -57,6 +58,7 @@ export default function PublicationsPage() {
   const queryClient = useQueryClient();
   const [view, setView] = useState<"table" | "cards">("table");
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Property | null>(null);
   const [search, setSearch] = useState("");
   const [tipoFilter, setTipoFilter] = useState("Todos");
   const [municipioFilter, setMunicipioFilter] = useState("Todos");
@@ -156,7 +158,10 @@ export default function PublicationsPage() {
       void queryClient.invalidateQueries({ queryKey: ["properties"] });
       void queryClient.invalidateQueries({ queryKey: ["publications"] });
     },
-    onSettled: () => setDeletingId(null),
+    onSettled: () => {
+      setDeletingId(null);
+      setDeleteTarget(null);
+    },
   });
 
   const createMutation = useMutation({
@@ -174,12 +179,7 @@ export default function PublicationsPage() {
   const open = (p: Property) => router.push(`/properties/${p.id}`);
 
   const onDelete = (p: Property) => {
-    const ok = window.confirm(
-      `¿Eliminar «${p.titulo}»? Esta acción no se puede deshacer.`,
-    );
-    if (!ok) return;
-    setDeletingId(p.id);
-    deleteMutation.mutate(p.id);
+    setDeleteTarget(p);
   };
 
   return (
@@ -388,6 +388,18 @@ export default function PublicationsPage() {
           deletingId={deletingId}
         />
       )}
+
+      <DeletePropertyDialog
+        open={deleteTarget !== null}
+        titulo={deleteTarget?.titulo ?? ""}
+        busy={deleteMutation.isPending}
+        onCancel={() => setDeleteTarget(null)}
+        onConfirm={() => {
+          if (!deleteTarget) return;
+          setDeletingId(deleteTarget.id);
+          deleteMutation.mutate(deleteTarget.id);
+        }}
+      />
     </div>
   );
 }
