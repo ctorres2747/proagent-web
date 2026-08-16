@@ -1,6 +1,7 @@
 "use client";
 
 import { LeadCoverImage } from "@/components/LeadCoverImage";
+import { PortalLogo } from "@/components/PortalLogo";
 import { formatPrice } from "@/lib/format";
 import type { Lead } from "@/services/interfaces/leads";
 
@@ -31,7 +32,9 @@ export function LeadCard({
         {lead.tipoInmueble ?? "Inmueble"}
         {lead.municipio ? ` · ${lead.municipio}` : ""}
       </div>
-      <div className="mt-0.5 text-[11px] text-[var(--pa-muted)]">{lead.portal}</div>
+      <div className="mt-0.5">
+        <PortalLogo portal={lead.portal} size={16} />
+      </div>
       <div className="mt-1.5 text-[13px] font-extrabold text-[var(--pa-navy)]">
         {lead.precio ?? formatPrice(lead.precioNum, esArriendo)}
       </div>

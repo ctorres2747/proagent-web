@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/features/auth/AuthProvider";
-import { agentInitials, displayName } from "@/lib/agentDisplay";
+import { agentInitials, agentAvatarUrl, displayName } from "@/lib/agentDisplay";
 
 export function UserMenu() {
   const { session, logout } = useAuth();
@@ -27,6 +27,8 @@ export function UserMenu() {
     };
   }, [open]);
 
+  const avatarUrl = agentAvatarUrl(session);
+
   return (
     <div ref={rootRef} className="relative">
       <button
@@ -34,9 +36,21 @@ export function UserMenu() {
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
         aria-haspopup="menu"
-        className="flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-full bg-[var(--pa-bg-alt)] text-[13px] font-bold text-[#45525E]"
+        className="flex h-[38px] w-[38px] shrink-0 items-center justify-center overflow-hidden rounded-full bg-[var(--pa-bg-alt)] text-[13px] font-bold text-[#45525E]"
       >
-        {session ? agentInitials(session) : "PA"}
+        {avatarUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={avatarUrl}
+            alt=""
+            className="h-full w-full object-cover"
+            onError={(e) => {
+              e.currentTarget.style.display = "none";
+            }}
+          />
+        ) : (
+          session ? agentInitials(session) : "PA"
+        )}
       </button>
       {open && (
         <div
@@ -58,7 +72,7 @@ export function UserMenu() {
             role="menuitem"
             onClick={() => {
               setOpen(false);
-              alert("Configuración de cuenta — próximamente.");
+              router.push("/settings");
             }}
             className="block w-full px-4 py-2.5 text-left text-[13px] text-[var(--pa-ink)] hover:bg-[var(--pa-bg)]"
           >

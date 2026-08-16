@@ -24,6 +24,9 @@ interface AuthContextValue {
   login: (username: string, password: string) => Promise<void>;
   /** Persist a login/handoff response (same storage as login). */
   establishSession: (response: LoginResponse) => void;
+  /** Sprint 013 — recargar sesión tras guardar perfil. */
+  refreshSession: () => Promise<void>;
+  updateSession: (patch: Partial<AgentSession>) => void;
   logout: () => void;
 }
 
@@ -90,6 +93,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  const updateSession = useCallback((patch: Partial<AgentSession>) => {
+    setSession((prev) => (prev ? { ...prev, ...patch } : prev));
+  }, []);
+
+  const refreshSession = useCallback(async () => {
+    if (!USE_HTTP_API || !token) return;
+    try {
+      const me = await authService.me(token);
+      setSession(me);
+    } catch {
+      // ignore — caller may show toast
+    }
+  }, [token]);
+
   const login = useCallback(async (username: string, password: string) => {
     setError(null);
     try {
@@ -104,8 +121,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [establishSession]);
 
   const value = useMemo<AuthContextValue>(
-    () => ({ session, token, loading, error, login, establishSession, logout }),
-    [session, token, loading, error, login, establishSession, logout],
+    () => ({
+      session,
+      token,
+      loading,
+      error,
+      login,
+      establishSession,
+      refreshSession,
+      updateSession,
+      logout,
+    }),
+    [
+      session,
+      token,
+      loading,
+      error,
+      login,
+      establishSession,
+      refreshSession,
+      updateSession,
+      logout,
+    ],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

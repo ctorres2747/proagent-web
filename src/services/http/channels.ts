@@ -1,6 +1,7 @@
 import { apiFetch } from "./client";
 import type {
   ChannelConnection,
+  ChannelPatch,
   ChannelsService,
 } from "@/services/interfaces/channels";
 import type { ChannelId } from "@/design-system/channels";
@@ -21,9 +22,39 @@ function mapConnection(raw: RawConnection): ChannelConnection {
   };
 }
 
+function toRawPatch(data: ChannelPatch): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  if (data.status !== undefined) out.status = data.status;
+  if (data.mode !== undefined) out.mode = data.mode;
+  if (data.accountName !== undefined) out.account_name = data.accountName;
+  if (data.credentials) {
+    const c = data.credentials;
+    out.credentials = {
+      wasi_id_company: c.wasiIdCompany ?? undefined,
+      wasi_token: c.wasiToken ?? undefined,
+      wasi_id_user: c.wasiIdUser ?? undefined,
+      instagram_account: c.instagramAccount ?? undefined,
+      catalog_id: c.catalogId ?? undefined,
+    };
+  }
+  return out;
+}
+
 export const channelsService: ChannelsService = {
   async list(token) {
     const raw = await apiFetch<RawConnection[]>("/api/web/channels", { token });
     return Array.isArray(raw) ? raw.map(mapConnection) : [];
+  },
+
+  async patch(channelId, data, token) {
+    const raw = await apiFetch<RawConnection>(
+      `/api/web/me/channels/${channelId}`,
+      {
+        method: "PATCH",
+        token,
+        body: toRawPatch(data),
+      },
+    );
+    return mapConnection(raw);
   },
 };

@@ -27,6 +27,14 @@ export function agentInitials(session: AgentSession | null | undefined): string 
   return parts.map((p) => p[0]?.toUpperCase() ?? "").join("") || "PA";
 }
 
+/** Sprint 013 — URL de avatar si existe en sesión. */
+export function agentAvatarUrl(
+  session: AgentSession | null | undefined,
+): string | null {
+  const url = session?.fotoPerfilUrl?.trim();
+  return url || null;
+}
+
 /** Internal Proinversores staff — may see Captación link (Kanban). */
 export function isProinversoresStaff(
   session: AgentSession | null | undefined,
