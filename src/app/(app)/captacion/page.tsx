@@ -13,6 +13,7 @@ import { ScraperStatusBar } from "@/features/captacion/ScraperStatusBar";
 import { canAccessCaptacion } from "@/lib/agentDisplay";
 import { captacionSubtitle } from "@/lib/captacionSubtitle";
 import { buildMunicipioOptions, leadMatchesMunicipio } from "@/lib/municipio";
+import { buildTipoFilterOptions, leadMatchesTipo } from "@/lib/tipoInmueble";
 import { FilterDropdown } from "@/components/FilterDropdown";
 import {
   isPriceRangeActive,
@@ -138,8 +139,7 @@ export default function CaptacionPage() {
     [leads],
   );
   const tipos = useMemo(
-    () =>
-      [...new Set((leads ?? []).map((l) => l.tipoInmueble).filter(Boolean) as string[])].sort(),
+    () => buildTipoFilterOptions((leads ?? []).map((l) => l.tipoInmueble)),
     [leads],
   );
   const portales = useMemo(
@@ -157,7 +157,7 @@ export default function CaptacionPage() {
       ) {
         return false;
       }
-      if (tipoFilter !== "Todos" && lead.tipoInmueble !== tipoFilter) {
+      if (tipoFilter !== "Todos" && !leadMatchesTipo(lead.tipoInmueble, tipoFilter)) {
         return false;
       }
       if (portalFilter !== "Todos" && lead.portal !== portalFilter) {

@@ -53,6 +53,7 @@ interface RawProperty {
   telefono_contacto?: string | null;
   nombre_contacto?: string | null;
   completeness?: number | null;
+  missing_fields?: string[] | null;
   portada_url?: string | null;
   fotos?: RawPhoto[] | null;
   owner_agente_id?: number | string | null;
@@ -130,6 +131,7 @@ function mapProperty(raw: RawProperty): Property {
       ? raw.nombre_contacto.trim()
       : null,
     completeness: typeof raw.completeness === "number" ? raw.completeness : 0,
+    missingFields: Array.isArray(raw.missing_fields) ? raw.missing_fields : [],
     portadaUrl: raw.portada_url ?? fotos[0]?.url ?? null,
     fotos,
     ownerAgenteId:

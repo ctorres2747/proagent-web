@@ -26,6 +26,11 @@ import { Spinner } from "@/components/Spinner";
 import { DeletePropertyDialog } from "@/components/DeletePropertyDialog";
 import { formatPrice } from "@/lib/format";
 import {
+  COMPLETENESS_CHECKLIST,
+  formatMissingFields,
+  isFieldComplete,
+} from "@/lib/completeness";
+import {
   DEFAULT_TIMEZONE,
   buildScheduleIso,
   formatScheduledFor,
@@ -479,14 +484,9 @@ export default function PublishWizardPage() {
     setActionBusy(true);
     setActionError(null);
     try {
-      await publicationsService.patch(
-        publication.id,
-        { selectedChannels: channels },
-        token ?? undefined,
-      );
       const pub = await publicationsService.publish(
         publication.id,
-        opts,
+        { ...opts, channelIds: channels },
         token ?? undefined,
       );
       setPublication(pub);
@@ -975,15 +975,11 @@ function ContentStep({
   onSave: () => void;
   onNext: () => void;
 }) {
-  const checklist = [
-    { label: "Título y precio", done: Boolean(titulo && property.precio) },
-    { label: "Ubicación", done: Boolean(municipio) },
-    { label: "Fotos", done: property.completeness >= 100 },
-    {
-      label: "Contacto",
-      done: Boolean(telefonoContacto.trim()),
-    },
-  ];
+  const checklist = COMPLETENESS_CHECKLIST.map((item) => ({
+    label: item.label,
+    done: isFieldComplete(item.key, property.missingFields),
+  }));
+  const missingSummary = formatMissingFields(property.missingFields);
   return (
     <div className="grid grid-cols-1 items-start gap-7 lg:grid-cols-[1fr_300px]">
       <div className="flex min-w-0 flex-col gap-6">
@@ -1127,11 +1123,20 @@ function ContentStep({
           </div>
           <ul className="space-y-1 text-xs text-[var(--pa-muted)]">
             {checklist.map((c) => (
-              <li key={c.label}>
-                {c.done ? "✓" : "○"} {c.label}
+              <li key={c.label} className={c.done ? "" : "text-[var(--pa-warning)]"}>
+                {c.done ? "✓" : "Falta"} {c.label}
               </li>
             ))}
           </ul>
+          {missingSummary ? (
+            <p className="mt-3 text-xs font-semibold text-[var(--pa-warning)]">
+              Falta: {missingSummary}
+            </p>
+          ) : (
+            <p className="mt-3 text-xs font-semibold text-[var(--pa-success)]">
+              ✓ Información completa
+            </p>
+          )}
         </Card>
         <div className="flex flex-col gap-2">
           <button

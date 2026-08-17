@@ -54,6 +54,8 @@ export interface Property {
   nombreContacto: string | null;
   /** 0..100 completeness indicator (mirrors mobile). */
   completeness: number;
+  /** Required fields still missing (mobile keys: title, photos, …). */
+  missingFields: string[];
   portadaUrl: string | null;
   fotos: PropertyPhoto[];
   /** Owning agent id (ownership: an agent sees only their own). */

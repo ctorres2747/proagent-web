@@ -1,7 +1,7 @@
 "use client";
 
 import { PortalLogo } from "@/components/PortalLogo";
-import { formatPrice } from "@/lib/format";
+import { formatLeadPrice } from "@/lib/format";
 import type { Lead, LeadEstado } from "@/services/interfaces/leads";
 
 const ESTADO_OPTIONS: LeadEstado[] = [
@@ -77,8 +77,7 @@ export function CaptacionDetailDrawer({
               {lead.municipio ? ` en ${lead.municipio}` : ""}
             </h3>
             <p className="mt-1 text-[14px] font-bold text-[var(--pa-navy)]">
-              {lead.precio ??
-                formatPrice(lead.precioNum, (lead.precioNum ?? 0) < 5_000_000)}
+              {formatLeadPrice(lead)}
             </p>
             <dl className="mt-3 grid grid-cols-2 gap-x-3 gap-y-1 text-[12px]">
               {lead.areaM2 ? (
