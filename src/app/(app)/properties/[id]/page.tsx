@@ -26,7 +26,7 @@ import { Spinner } from "@/components/Spinner";
 import { DeletePropertyDialog } from "@/components/DeletePropertyDialog";
 import { formatPrice } from "@/lib/format";
 import {
-  COMPLETENESS_CHECKLIST,
+  checklistForTipo,
   formatMissingFields,
   isFieldComplete,
 } from "@/lib/completeness";
@@ -975,7 +975,7 @@ function ContentStep({
   onSave: () => void;
   onNext: () => void;
 }) {
-  const checklist = COMPLETENESS_CHECKLIST.map((item) => ({
+  const checklist = checklistForTipo(property.tipo).map((item) => ({
     label: item.label,
     done: isFieldComplete(item.key, property.missingFields),
   }));
