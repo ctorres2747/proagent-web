@@ -136,6 +136,7 @@ export const publicationsService: PublicationsService = {
       body: {
         scheduled_for: opts?.scheduledFor,
         timezone: opts?.timezone,
+        channel_ids: opts?.channelIds,
       },
     });
     return mapPub(raw);

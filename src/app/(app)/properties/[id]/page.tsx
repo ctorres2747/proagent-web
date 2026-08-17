@@ -479,14 +479,9 @@ export default function PublishWizardPage() {
     setActionBusy(true);
     setActionError(null);
     try {
-      await publicationsService.patch(
-        publication.id,
-        { selectedChannels: channels },
-        token ?? undefined,
-      );
       const pub = await publicationsService.publish(
         publication.id,
-        opts,
+        { ...opts, channelIds: channels },
         token ?? undefined,
       );
       setPublication(pub);

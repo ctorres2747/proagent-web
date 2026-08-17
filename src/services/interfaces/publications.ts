@@ -77,7 +77,7 @@ export interface PublicationsService {
   ): Promise<Publication>;
   publish(
     id: string,
-    opts?: { scheduledFor?: string; timezone?: string },
+    opts?: { scheduledFor?: string; timezone?: string; channelIds?: ChannelId[] },
     token?: string,
   ): Promise<Publication>;
   results(id: string, token?: string): Promise<ChannelResult[]>;
