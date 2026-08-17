@@ -68,3 +68,9 @@ export function isFieldComplete(
 ): boolean {
   return !missingFields.includes(key);
 }
+
+export const WASI_PUBLISH_HINT = "Falta datos para publicar en WASI";
+
+export function isWasiPublishReady(missingFields: string[]): boolean {
+  return missingFields.length === 0;
+}
