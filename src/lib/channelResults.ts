@@ -10,6 +10,15 @@ function elapsedSecondsFromStart(startedAt: string): number {
   );
 }
 
+function durationSecondsBetween(startedAt: string, finishedAt: string): number {
+  return Math.max(
+    0,
+    Math.floor(
+      (new Date(finishedAt).getTime() - new Date(startedAt).getTime()) / 1000,
+    ),
+  );
+}
+
 export function formatChannelDurationLine(result: ChannelResult): string | null {
   const inFlight =
     result.status === "publishing" || result.status === "pending";
@@ -19,6 +28,14 @@ export function formatChannelDurationLine(result: ChannelResult): string | null 
   let seconds = result.durationSeconds ?? null;
   if (seconds == null && result.startedAt && inFlight) {
     seconds = elapsedSecondsFromStart(result.startedAt);
+  }
+  if (
+    seconds == null &&
+    finished &&
+    result.startedAt &&
+    result.publishedAt
+  ) {
+    seconds = durationSecondsBetween(result.startedAt, result.publishedAt);
   }
   if (seconds == null) {
     return null;
