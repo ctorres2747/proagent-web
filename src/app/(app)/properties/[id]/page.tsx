@@ -68,8 +68,21 @@ const input =
 function mapResultStatus(status: ChannelResultStatus): ChannelStatus {
   if (status === "published") return "published";
   if (status === "failed") return "error";
-  if (status === "unavailable") return "none";
-  return "progress";
+  if (status === "publishing" || status === "pending") return "progress";
+  if (status === "scheduled") return "progress";
+  if (status === "waiting" || status === "unavailable") return "none";
+  return "none";
+}
+
+function channelResultChipLabel(
+  apiStatus: ChannelResultStatus,
+  uiStatus: ChannelStatus,
+): string {
+  if (apiStatus === "scheduled") return "Programado";
+  if (apiStatus === "publishing" || apiStatus === "pending") {
+    return "En proceso";
+  }
+  return STATUS_META[uiStatus].label;
 }
 
 type ContentFormSnapshot = {
@@ -1952,6 +1965,7 @@ function ResultsStep({
         canRemove: false,
         canRepublish: false,
         inFlight: false,
+        apiStatus: null as ChannelResultStatus | null,
       };
     }
     const uiStatus = mapResultStatus(found.status);
@@ -1962,6 +1976,7 @@ function ResultsStep({
     return {
       id,
       status: uiStatus,
+      apiStatus: found.status,
       inFlight,
       meta: formatChannelResultMeta(found, {
         republished: republishedChannelIds.has(id),
@@ -2149,7 +2164,9 @@ function ResultsStep({
               ? "Reintentando…"
               : republishing === r.id
                 ? "Republicando…"
-                : STATUS_META[r.status].label}
+                : r.apiStatus
+                  ? channelResultChipLabel(r.apiStatus, r.status)
+                  : STATUS_META[r.status].label}
           </span>
           {r.canRetry && (
             <button
