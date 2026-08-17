@@ -1,6 +1,38 @@
 import type { ChannelResult } from "@/services/interfaces/publications";
+import { formatDurationHms } from "@/lib/duration";
 
 export const BOGOTA_TIMEZONE = "America/Bogota";
+
+function elapsedSecondsFromStart(startedAt: string): number {
+  return Math.max(
+    0,
+    Math.floor((Date.now() - new Date(startedAt).getTime()) / 1000),
+  );
+}
+
+export function formatChannelDurationLine(result: ChannelResult): string | null {
+  const inFlight =
+    result.status === "publishing" || result.status === "pending";
+  const finished =
+    result.status === "published" || result.status === "failed";
+
+  let seconds = result.durationSeconds ?? null;
+  if (seconds == null && result.startedAt && inFlight) {
+    seconds = elapsedSecondsFromStart(result.startedAt);
+  }
+  if (seconds == null) {
+    return null;
+  }
+
+  const formatted = formatDurationHms(seconds);
+  if (inFlight) {
+    return `En proceso · ${formatted}`;
+  }
+  if (finished) {
+    return `Tiempo de publicación ${formatted}`;
+  }
+  return null;
+}
 
 export function formatChannelPublishedMeta(
   publishedAt: string,

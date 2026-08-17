@@ -15,6 +15,8 @@ interface RawChannelResult {
   channelId: string;
   status: string;
   publishedAt?: string | null;
+  startedAt?: string | null;
+  durationSeconds?: number | null;
   externalRef?: string | null;
   errorMessage?: string | null;
   statusNote?: string | null;
@@ -46,6 +48,8 @@ function mapResult(raw: RawChannelResult): ChannelResult {
     channelId: raw.channelId as ChannelId,
     status: raw.status as ChannelResult["status"],
     publishedAt: raw.publishedAt ?? null,
+    startedAt: raw.startedAt ?? null,
+    durationSeconds: raw.durationSeconds ?? null,
     externalRef: raw.externalRef ?? null,
     errorMessage: raw.errorMessage ?? null,
     statusNote: raw.statusNote ?? null,

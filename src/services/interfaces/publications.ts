@@ -21,6 +21,8 @@ export interface ChannelResult {
   channelId: ChannelId;
   status: ChannelResultStatus;
   publishedAt: string | null;
+  startedAt?: string | null;
+  durationSeconds?: number | null;
   externalRef: string | null;
   errorMessage: string | null;
   statusNote?: string | null;
