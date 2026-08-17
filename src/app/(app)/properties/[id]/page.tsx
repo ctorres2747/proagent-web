@@ -37,7 +37,7 @@ import {
   pickCanonicalPublication,
 } from "@/lib/publicationResolve";
 import { ApiError } from "@/services/http/client";
-import { formatChannelResultMeta } from "@/lib/channelResults";
+import { formatChannelDurationLine, formatChannelResultMeta } from "@/lib/channelResults";
 import {
   isChannelPersonalized,
   platformContentForChannel,
@@ -1966,6 +1966,7 @@ function ResultsStep({
         canRepublish: false,
         inFlight: false,
         apiStatus: null as ChannelResultStatus | null,
+        durationLine: null as string | null,
       };
     }
     const uiStatus = mapResultStatus(found.status);
@@ -1987,6 +1988,7 @@ function ResultsStep({
       canRetry: found.status === "failed",
       canRemove: isPublished,
       canRepublish: isPublished,
+      durationLine: formatChannelDurationLine(found),
     };
   });
   const publishedCount = results.filter((r) => r.status === "published").length;
@@ -2144,6 +2146,9 @@ function ResultsStep({
               {CHANNEL_META[r.id].name}
             </div>
             <div className="text-[11px] text-[var(--pa-faint)]">{r.meta}</div>
+            {r.durationLine ? (
+              <div className="text-[10px] text-[var(--pa-muted)]">{r.durationLine}</div>
+            ) : null}
             {r.personalized ? (
               <div className="mt-1 inline-block rounded-md bg-[var(--pa-info-bg)] px-2 py-0.5 text-[10px] font-bold text-[#47586A]">
                 Publicación personalizada
