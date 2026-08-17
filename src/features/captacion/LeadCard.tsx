@@ -2,7 +2,7 @@
 
 import { LeadCoverImage } from "@/components/LeadCoverImage";
 import { PortalLogo } from "@/components/PortalLogo";
-import { formatPrice } from "@/lib/format";
+import { formatLeadPrice } from "@/lib/format";
 import type { Lead } from "@/services/interfaces/leads";
 
 /** Lead card compacta — cabe en 4 columnas dentro del max-w compartido del shell. */
@@ -15,8 +15,6 @@ export function LeadCard({
   active: boolean;
   onClick: () => void;
 }) {
-  const esArriendo = (lead.precioNum ?? 0) < 5_000_000;
-
   return (
     <button
       type="button"
@@ -36,7 +34,7 @@ export function LeadCard({
         <PortalLogo portal={lead.portal} size={16} />
       </div>
       <div className="mt-1.5 text-[13px] font-extrabold text-[var(--pa-navy)]">
-        {lead.precio ?? formatPrice(lead.precioNum, esArriendo)}
+        {formatLeadPrice(lead)}
       </div>
     </button>
   );

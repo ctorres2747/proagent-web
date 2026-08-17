@@ -16,6 +16,7 @@ import {
   type PriceRange,
 } from "@/components/PriceRangeFilter";
 import { formatPrice } from "@/lib/format";
+import { formatMissingFields } from "@/lib/completeness";
 import {
   buildMunicipioOptions,
   propertyMatchesMunicipio,
@@ -388,6 +389,11 @@ function PropertyCard({
         </div>
         <div className="mb-3">
           <CompletenessBar value={p.completeness} />
+          {p.missingFields.length > 0 ? (
+            <p className="mt-1 line-clamp-2 text-[11px] text-[var(--pa-warning)]">
+              Falta: {formatMissingFields(p.missingFields)}
+            </p>
+          ) : null}
         </div>
         <ChannelChips channels={p.channels} />
       </button>
@@ -468,6 +474,11 @@ function PropertyTable({
             <span className="text-[11px] font-bold text-[var(--pa-muted)]">
               {p.completeness}%
             </span>
+            {p.missingFields.length > 0 ? (
+              <p className="mt-0.5 line-clamp-2 text-[10px] text-[var(--pa-warning)]">
+                Falta: {formatMissingFields(p.missingFields)}
+              </p>
+            ) : null}
           </button>
           <button type="button" onClick={() => onOpen(p)} className="text-left">
             <ChannelChips channels={p.channels} />
