@@ -22,6 +22,7 @@ import {
 } from "@/design-system/channels";
 import { ChannelLogo } from "@/components/ChannelLogo";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
+import { Spinner } from "@/components/Spinner";
 import { DeletePropertyDialog } from "@/components/DeletePropertyDialog";
 import { formatPrice } from "@/lib/format";
 import {
@@ -41,6 +42,7 @@ import {
   isChannelPersonalized,
   platformContentForChannel,
 } from "@/lib/publicationContent";
+import { usePublicationPoll } from "@/hooks/usePublicationPoll";
 
 type StepId =
   | "content"
@@ -1742,7 +1744,8 @@ function PreviewStep({
                       </div>
                     ) : null}
                     {busy && on ? (
-                      <div className="text-[10px] font-semibold text-[var(--pa-warning-ink)]">
+                      <div className="flex items-center gap-1.5 text-[10px] font-semibold text-[var(--pa-warning-ink)]">
+                        <Spinner size={12} />
                         Publicando…
                       </div>
                     ) : null}
@@ -1811,7 +1814,14 @@ function PreviewStep({
               onClick={() => onPublishNow(activeChannels)}
               disabled={busy || activeChannels.length === 0}
             >
-              {busy ? "Publicando…" : "Publicar ahora"}
+              {busy ? (
+                <span className="inline-flex items-center justify-center gap-2">
+                  <Spinner size={14} className="text-white" />
+                  Publicando…
+                </span>
+              ) : (
+                "Publicar ahora"
+              )}
             </PrimaryBlock>
             <button
               type="button"
@@ -1917,6 +1927,13 @@ function ResultsStep({
     channelId: ChannelId;
   } | null>(null);
 
+  const { pollTimedOut } = usePublicationPoll(
+    publicationId,
+    publication,
+    onPublicationRefresh,
+    token,
+  );
+
   const pendingChannelName = pendingConfirm
     ? CHANNEL_META[pendingConfirm.channelId].name
     : "";
@@ -1934,14 +1951,18 @@ function ResultsStep({
         canRetry: false,
         canRemove: false,
         canRepublish: false,
+        inFlight: false,
       };
     }
     const uiStatus = mapResultStatus(found.status);
     const isPublished = found.status === "published";
+    const inFlight =
+      found.status === "publishing" || found.status === "pending";
     const channelPc = platformContentForChannel(platformContent, id);
     return {
       id,
       status: uiStatus,
+      inFlight,
       meta: formatChannelResultMeta(found, {
         republished: republishedChannelIds.has(id),
       }),
@@ -1974,6 +1995,8 @@ function ResultsStep({
         token,
       );
       onResultUpdated(result);
+      const refreshed = await publicationsService.get(publicationId, token);
+      onPublicationRefresh(refreshed);
     } catch {
       setRetryError(
         `No se pudo reintentar la publicación de ${CHANNEL_META[channelId].name}.`,
@@ -2089,6 +2112,12 @@ function ResultsStep({
       {republishError && (
         <p className="mb-3 text-sm text-[var(--pa-danger)]">{republishError}</p>
       )}
+      {pollTimedOut && (
+        <p className="mb-3 text-sm text-[var(--pa-muted)]">
+          La publicación sigue en proceso. Puedes esperar un poco más o refrescar
+          la página para ver el resultado.
+        </p>
+      )}
       {results.map((r) => (
         <div
           key={r.id}
@@ -2113,9 +2142,14 @@ function ResultsStep({
             ) : null}
           </div>
           <span
-            className={`whitespace-nowrap rounded-md px-2.5 py-1 text-[10px] font-bold ${STATUS_META[r.status].chip}`}
+            className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-md px-2.5 py-1 text-[10px] font-bold ${STATUS_META[r.status].chip}`}
           >
-            {STATUS_META[r.status].label}
+            {r.inFlight ? <Spinner size={10} /> : null}
+            {retrying === r.id
+              ? "Reintentando…"
+              : republishing === r.id
+                ? "Republicando…"
+                : STATUS_META[r.status].label}
           </span>
           {r.canRetry && (
             <button
