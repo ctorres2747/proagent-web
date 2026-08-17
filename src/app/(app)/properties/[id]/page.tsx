@@ -26,9 +26,11 @@ import { Spinner } from "@/components/Spinner";
 import { DeletePropertyDialog } from "@/components/DeletePropertyDialog";
 import { formatPrice } from "@/lib/format";
 import {
-  COMPLETENESS_CHECKLIST,
+  checklistForTipo,
   formatMissingFields,
   isFieldComplete,
+  isWasiPublishReady,
+  WASI_PUBLISH_HINT,
 } from "@/lib/completeness";
 import {
   DEFAULT_TIMEZONE,
@@ -242,8 +244,9 @@ export default function PublishWizardPage() {
         }
         setPlatformContent(contentMap);
         if (pub.selectedChannels.length === 0) {
+          const wasiReady = isWasiPublishReady(property.missingFields);
           setSelectedChannels({
-            wasi: true,
+            wasi: wasiReady,
             facebook: true,
             instagram: true,
             whatsapp: false,
@@ -256,6 +259,9 @@ export default function PublishWizardPage() {
               pub.selectedChannels.includes(id),
             ]),
           ) as Record<ChannelId, boolean>;
+          if (!isWasiPublishReady(property.missingFields)) {
+            toggles.wasi = false;
+          }
           setSelectedChannels(toggles);
           setSavedSelectedChannels(toggles);
           setSavedCustomizeSnapshot({
@@ -352,11 +358,31 @@ export default function PublishWizardPage() {
     sharedTitle,
   ]);
 
+  const wasiPublishReady = property
+    ? isWasiPublishReady(property.missingFields)
+    : true;
+
   const channelSelectable = (id: ChannelId): boolean => {
+    if (id === "wasi" && !wasiPublishReady) return false;
     const conn = connectionById.get(id);
     if (!conn) return id !== "web";
     return conn.status === "connected" || conn.status === "needs_auth";
   };
+
+  const channelToggleHint = (id: ChannelId): string | undefined => {
+    if (id === "wasi" && !wasiPublishReady) return WASI_PUBLISH_HINT;
+    const conn = connectionById.get(id);
+    if (!channelSelectable(id) && conn?.issue) return conn.issue;
+    return undefined;
+  };
+
+  useEffect(() => {
+    if (!property || wasiPublishReady) return;
+    setSelectedChannels((prev) => {
+      if (!prev.wasi) return prev;
+      return { ...prev, wasi: false };
+    });
+  }, [property?.id, wasiPublishReady]);
 
   const saveContentChanges = async (options?: { advance?: boolean }) => {
     if (!property || !publication) return;
@@ -735,6 +761,7 @@ export default function PublishWizardPage() {
           toggles={selectedChannels}
           connections={channelConnections ?? []}
           channelSelectable={channelSelectable}
+          channelToggleHint={channelToggleHint}
           onToggle={(id) => {
             if (!channelSelectable(id)) return;
             setSelectedChannels((t) => ({ ...t, [id]: !t[id] }));
@@ -780,6 +807,7 @@ export default function PublishWizardPage() {
           publication={publication}
           connections={channelConnections ?? []}
           channelSelectable={channelSelectable}
+          channelToggleHint={channelToggleHint}
           selectedChannels={selectedChannels}
           onToggleChannel={(id) => {
             if (!channelSelectable(id)) return;
@@ -975,7 +1003,7 @@ function ContentStep({
   onSave: () => void;
   onNext: () => void;
 }) {
-  const checklist = COMPLETENESS_CHECKLIST.map((item) => ({
+  const checklist = checklistForTipo(property.tipo).map((item) => ({
     label: item.label,
     done: isFieldComplete(item.key, property.missingFields),
   }));
@@ -1345,6 +1373,7 @@ function ChannelsStep({
   toggles,
   connections,
   channelSelectable,
+  channelToggleHint,
   onToggle,
   publicationId,
   token,
@@ -1357,6 +1386,7 @@ function ChannelsStep({
   toggles: Record<ChannelId, boolean>;
   connections: ChannelConnection[];
   channelSelectable: (id: ChannelId) => boolean;
+  channelToggleHint: (id: ChannelId) => string | undefined;
   onToggle: (id: ChannelId) => void;
   publicationId: string;
   token?: string;
@@ -1413,6 +1443,7 @@ function ChannelsStep({
           const conn = connections.find((c) => c.channelId === id);
           const badge = connectionBadge(conn);
           const selectable = channelSelectable(id);
+          const toggleHint = channelToggleHint(id);
           return (
             <div
               key={id}
@@ -1457,6 +1488,11 @@ function ChannelsStep({
                   {badge.hint}
                 </p>
               )}
+              {toggleHint ? (
+                <p className="mt-2 text-[11px] leading-snug text-[var(--pa-muted)]">
+                  {toggleHint}
+                </p>
+              ) : null}
             </div>
           );
         })}
@@ -1665,6 +1701,7 @@ function PreviewStep({
   publication,
   connections,
   channelSelectable,
+  channelToggleHint,
   selectedChannels,
   onToggleChannel,
   busy,
@@ -1678,6 +1715,7 @@ function PreviewStep({
   publication: Publication;
   connections: ChannelConnection[];
   channelSelectable: (id: ChannelId) => boolean;
+  channelToggleHint: (id: ChannelId) => string | undefined;
   selectedChannels: Record<ChannelId, boolean>;
   onToggleChannel: (id: ChannelId) => void;
   busy: boolean;
@@ -1743,6 +1781,7 @@ function PreviewStep({
               const meta = CHANNEL_META[id];
               const conn = connections.find((c) => c.channelId === id);
               const selectable = channelSelectable(id);
+              const toggleHint = channelToggleHint(id);
               const on = selectedChannels[id];
               return (
                 <div
@@ -1756,9 +1795,9 @@ function PreviewStep({
                     <div className="text-[13px] font-bold text-[var(--pa-ink)]">
                       {meta.name}
                     </div>
-                    {!selectable && conn?.issue ? (
+                    {!selectable && toggleHint ? (
                       <div className="text-[10px] text-[var(--pa-muted)]">
-                        {conn.issue}
+                        {toggleHint}
                       </div>
                     ) : null}
                     {busy && on ? (
