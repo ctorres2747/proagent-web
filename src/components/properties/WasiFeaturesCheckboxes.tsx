@@ -1,8 +1,44 @@
 "use client";
 
-import type { WasiFeaturesCatalog } from "@/services/interfaces/wasiFeatures";
+import { useMemo, useState } from "react";
 
-function FeatureList({
+import type { WasiFeaturesCatalog } from "@/services/interfaces/wasiFeatures";
+import {
+  filterWasiFeatures,
+  formatWasiSelectionSummary,
+} from "@/lib/wasiFeaturesUi";
+
+function FeatureChip({
+  id,
+  nombre,
+  checked,
+  onToggle,
+}: {
+  id: number;
+  nombre: string;
+  checked: boolean;
+  onToggle: (id: number) => void;
+}) {
+  return (
+    <label
+      className={`inline-flex cursor-pointer items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
+        checked
+          ? "border-[var(--pa-navy)] bg-[var(--pa-navy)] text-white"
+          : "border-[var(--pa-border)] bg-[var(--pa-bg)] text-[#45525E] hover:border-[var(--pa-navy)]"
+      }`}
+    >
+      <input
+        type="checkbox"
+        checked={checked}
+        onChange={() => onToggle(id)}
+        className="sr-only"
+      />
+      {nombre}
+    </label>
+  );
+}
+
+function CollapsibleGroup({
   title,
   items,
   selectedIds,
@@ -13,31 +49,34 @@ function FeatureList({
   selectedIds: number[];
   onToggle: (id: number) => void;
 }) {
+  const [open, setOpen] = useState(true);
   if (items.length === 0) return null;
+
   return (
-    <div>
-      <div className="mb-1.5 text-xs font-bold uppercase tracking-wide text-[var(--pa-muted)]">
-        {title}
-      </div>
-      <div className="max-h-[180px] overflow-y-auto rounded-lg border border-[var(--pa-border)] bg-[var(--pa-bg)] p-2">
-        {items.map((feat) => {
-          const checked = selectedIds.includes(feat.id);
-          return (
-            <label
+    <div className="rounded-xl border border-[var(--pa-border)] bg-[var(--pa-surface)]">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="flex w-full items-center justify-between px-3.5 py-2.5 text-left text-xs font-bold uppercase tracking-wide text-[var(--pa-ink)]"
+      >
+        <span>
+          {title} ({items.length})
+        </span>
+        <span className="text-[var(--pa-muted)]">{open ? "▾" : "▸"}</span>
+      </button>
+      {open ? (
+        <div className="flex flex-wrap gap-2 border-t border-[var(--pa-border)] p-3">
+          {items.map((feat) => (
+            <FeatureChip
               key={feat.id}
-              className="mb-1 flex cursor-pointer items-center gap-2 text-xs text-[#45525E] last:mb-0"
-            >
-              <input
-                type="checkbox"
-                checked={checked}
-                onChange={() => onToggle(feat.id)}
-                className="h-3.5 w-3.5 accent-[var(--pa-navy)]"
-              />
-              {feat.nombre}
-            </label>
-          );
-        })}
-      </div>
+              id={feat.id}
+              nombre={feat.nombre}
+              checked={selectedIds.includes(feat.id)}
+              onToggle={onToggle}
+            />
+          ))}
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -55,50 +94,92 @@ export function WasiFeaturesCheckboxes({
   loading?: boolean;
   error?: string | null;
 }) {
+  const [query, setQuery] = useState("");
+
   const toggle = (id: number) => {
-    const next = selectedIds.includes(id)
-      ? selectedIds.filter((x) => x !== id)
-      : [...selectedIds, id];
-    onChange(next);
+    onChange(
+      selectedIds.includes(id)
+        ? selectedIds.filter((x) => x !== id)
+        : [...selectedIds, id],
+    );
   };
+
+  const filtered = useMemo(() => {
+    if (!catalog) return { internal: [], external: [] };
+    return {
+      internal: filterWasiFeatures(catalog.internal, query),
+      external: filterWasiFeatures(catalog.external, query),
+    };
+  }, [catalog, query]);
+
+  const summary = formatWasiSelectionSummary(selectedIds, catalog);
 
   if (loading) {
     return (
-      <p className="text-xs text-[var(--pa-muted)]">Cargando catálogo WASI…</p>
+      <p className="text-sm text-[var(--pa-muted)]">Cargando catálogo WASI…</p>
     );
   }
 
   if (error) {
-    return <p className="text-xs text-[var(--pa-warning)]">{error}</p>;
+    return (
+      <p className="text-sm font-medium text-[var(--pa-warning)]">{error}</p>
+    );
   }
 
   if (!catalog) return null;
 
-  const hasItems =
+  const hasCatalog =
     catalog.internal.length > 0 || catalog.external.length > 0;
 
-  if (!hasItems) {
+  if (!hasCatalog) {
     return (
-      <p className="text-xs text-[var(--pa-muted)]">
+      <p className="text-sm text-[var(--pa-muted)]">
         No hay características disponibles (WASI no configurado).
       </p>
     );
   }
 
+  const hasMatches =
+    filtered.internal.length > 0 || filtered.external.length > 0;
+
   return (
-    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-      <FeatureList
-        title="Internas"
-        items={catalog.internal}
-        selectedIds={selectedIds}
-        onToggle={toggle}
-      />
-      <FeatureList
-        title="Externas"
-        items={catalog.external}
-        selectedIds={selectedIds}
-        onToggle={toggle}
-      />
+    <div className="flex flex-col gap-3">
+      <p className="text-xs font-semibold text-[var(--pa-ink)]">{summary}</p>
+      <div>
+        <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-[var(--pa-muted)]">
+          Filtrar características
+        </label>
+        <input
+          type="search"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Filtrar características…"
+          className="w-full rounded-xl border border-[var(--pa-border)] bg-[var(--pa-bg)] px-3.5 py-2.5 text-sm text-[var(--pa-ink)] outline-none focus:border-[var(--pa-navy)]"
+        />
+      </div>
+      <p className="text-xs text-[var(--pa-muted)]">
+        Se envían a WASI al publicar (y de ahí a portales asociados).
+      </p>
+      {hasMatches ? (
+        <div className="flex flex-col gap-3">
+          <CollapsibleGroup
+            title="Internas"
+            items={filtered.internal}
+            selectedIds={selectedIds}
+            onToggle={toggle}
+          />
+          <CollapsibleGroup
+            title="Externas"
+            items={filtered.external}
+            selectedIds={selectedIds}
+            onToggle={toggle}
+          />
+        </div>
+      ) : (
+        <p className="text-sm text-[var(--pa-muted)]">
+          Ninguna característica coincide con el filtro.
+        </p>
+      )}
     </div>
   );
 }
