@@ -47,6 +47,8 @@ export interface Property {
   administracion: number | null;
   anioConstruccion: number | null;
   condicion: Condition | null;
+  /** WASI feature IDs (`fichas.features_ids`). */
+  featureIds: number[];
   features: string[];
   descripcion: string | null;
   /** Teléfono de contacto del propietario (persistido en ficha). */
@@ -91,6 +93,7 @@ export interface PropertiesService {
         | "administracion"
         | "anioConstruccion"
         | "condicion"
+        | "featureIds"
         | "telefonoContacto"
         | "nombreContacto"
       >
@@ -121,6 +124,7 @@ export interface PropertiesService {
         | "administracion"
         | "anioConstruccion"
         | "condicion"
+        | "featureIds"
         | "telefonoContacto"
         | "nombreContacto"
       >
