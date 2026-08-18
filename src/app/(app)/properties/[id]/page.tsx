@@ -11,6 +11,10 @@ import type {
   Property,
 } from "@/services/interfaces/properties";
 import { applyIntentToTitle } from "@/lib/intent";
+import {
+  applyToggleRepublishDefaults,
+  publishedOptInChannelsFromProperty,
+} from "@/lib/channelRepublishDefaults";
 import type {
   ChannelResult,
   ChannelResultStatus,
@@ -349,20 +353,28 @@ export default function PublishWizardPage() {
         setPlatformContent(contentMap);
         if (pub.selectedChannels.length === 0) {
           const wasiReady = isWasiPublishReady(property.missingFields);
-          setSelectedChannels({
-            wasi: wasiReady,
-            facebook: true,
-            instagram: true,
-            whatsapp: false,
-            web: false,
-          });
+          const toggles = applyToggleRepublishDefaults(
+            {
+              wasi: wasiReady,
+              facebook: true,
+              instagram: true,
+              whatsapp: false,
+              web: false,
+            },
+            publishedOptInChannelsFromProperty(property),
+          );
+          setSelectedChannels(toggles);
+          setSavedSelectedChannels(toggles);
         } else {
-          const toggles = Object.fromEntries(
-            CHANNEL_ORDER.map((id) => [
-              id,
-              pub.selectedChannels.includes(id),
-            ]),
-          ) as Record<ChannelId, boolean>;
+          const toggles = applyToggleRepublishDefaults(
+            Object.fromEntries(
+              CHANNEL_ORDER.map((id) => [
+                id,
+                pub.selectedChannels.includes(id),
+              ]),
+            ) as Record<ChannelId, boolean>,
+            publishedOptInChannelsFromProperty(property),
+          );
           if (!isWasiPublishReady(property.missingFields)) {
             toggles.wasi = false;
           }
