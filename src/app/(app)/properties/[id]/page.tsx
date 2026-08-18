@@ -5,7 +5,12 @@ import { useParams, useRouter } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/features/auth/AuthProvider";
 import { propertiesService, publicationsService, channelsService } from "@/services";
-import type { Property } from "@/services/interfaces/properties";
+import type {
+  Condition,
+  Intent,
+  Property,
+} from "@/services/interfaces/properties";
+import { applyIntentToTitle } from "@/lib/intent";
 import type {
   ChannelResult,
   ChannelResultStatus,
@@ -101,6 +106,8 @@ type ContentFormSnapshot = {
   municipio: string;
   barrio: string;
   tipo: string;
+  intent: Intent;
+  condicion: Condition | null;
   precio: string;
   alcobas: string;
   banos: string;
@@ -119,6 +126,8 @@ function emptyContentForm(): ContentFormSnapshot {
     municipio: "",
     barrio: "",
     tipo: "",
+    intent: "Venta",
+    condicion: null,
     precio: "",
     alcobas: "",
     banos: "",
@@ -138,6 +147,8 @@ function snapshotFromProperty(property: Property): ContentFormSnapshot {
     municipio: property.municipio ?? "",
     barrio: property.barrio ?? "",
     tipo: property.tipo ?? "",
+    intent: property.intent,
+    condicion: property.condicion,
     precio: property.precio != null ? String(property.precio) : "",
     alcobas: property.alcobas != null ? String(property.alcobas) : "",
     banos: property.banos != null ? String(property.banos) : "",
@@ -172,6 +183,8 @@ function contentFormsEqual(a: ContentFormSnapshot, b: ContentFormSnapshot): bool
     a.municipio === b.municipio &&
     a.barrio === b.barrio &&
     a.tipo === b.tipo &&
+    a.intent === b.intent &&
+    a.condicion === b.condicion &&
     a.precio === b.precio &&
     a.alcobas === b.alcobas &&
     a.banos === b.banos &&
@@ -443,6 +456,7 @@ export default function PublishWizardPage() {
           municipio: contentForm.municipio,
           barrio: contentForm.barrio || null,
           tipo: contentForm.tipo || undefined,
+          condicion: contentForm.condicion ?? undefined,
           precio: parsePrecioInput(contentForm.precio),
           alcobas: parseIntInput(contentForm.alcobas),
           banos: parseIntInput(contentForm.banos),
@@ -701,6 +715,8 @@ export default function PublishWizardPage() {
     municipio: contentForm.municipio || property.municipio,
     barrio: contentForm.barrio || property.barrio,
     tipo: contentForm.tipo || property.tipo,
+    intent: contentForm.intent,
+    condicion: contentForm.condicion ?? property.condicion,
     precio: parsePrecioInput(contentForm.precio) ?? property.precio,
     alcobas: parseIntInput(contentForm.alcobas) ?? property.alcobas,
     banos: parseIntInput(contentForm.banos) ?? property.banos,
@@ -1017,8 +1033,13 @@ function PrimaryBlock({
 }
 
 const PROPERTY_TYPES = ["Apartamento", "Casa", "Apartaestudio", "Oficina", "Local"];
-const INTENTS = ["Venta", "Arriendo"];
-const CONDITIONS = ["Nuevo", "Usado", "Proyecto", "En construcción"];
+const INTENTS = ["Venta", "Arriendo"] as const satisfies readonly Intent[];
+const CONDITIONS = [
+  "Nuevo",
+  "Usado",
+  "Proyecto",
+  "En construcción",
+] as const satisfies readonly Condition[];
 const ALL_FEATURES = [
   "Balcón",
   "Parqueadero visitantes",
@@ -1051,6 +1072,7 @@ function ContentStep({
     titulo: form.titulo,
     descripcion: form.descripcion,
     tipo: form.tipo,
+    intent: form.intent,
     precio: form.precio,
     municipio: form.municipio,
     barrio: form.barrio,
@@ -1109,7 +1131,16 @@ function ContentStep({
                 <div className={label}>Intención</div>
                 <div className="flex gap-1.5">
                   {INTENTS.map((it) => (
-                    <Chip key={it} active={it === property.intent}>
+                    <Chip
+                      key={it}
+                      active={it === form.intent}
+                      onClick={() =>
+                        onPatch({
+                          intent: it,
+                          titulo: applyIntentToTitle(form.titulo, it),
+                        })
+                      }
+                    >
                       {it}
                     </Chip>
                   ))}
@@ -1187,7 +1218,11 @@ function ContentStep({
               <div className={label}>Estado</div>
               <div className="flex flex-wrap gap-1.5">
                 {CONDITIONS.map((c) => (
-                  <Chip key={c} active={c === property.condicion}>
+                  <Chip
+                    key={c}
+                    active={c === form.condicion}
+                    onClick={() => onPatch({ condicion: c })}
+                  >
                     {c}
                   </Chip>
                 ))}
@@ -1212,6 +1247,10 @@ function ContentStep({
         </Card>
 
         <Card title="Características">
+          <p className="mb-3 text-xs text-[var(--pa-muted)]">
+            Próximamente — el catálogo de características aún no se guarda en el
+            inventario.
+          </p>
           <div className="flex flex-wrap gap-2">
             {ALL_FEATURES.map((f) => (
               <Chip key={f} active={property.features.includes(f)}>
