@@ -74,3 +74,50 @@ export const WASI_PUBLISH_HINT = "Falta datos para publicar en WASI";
 export function isWasiPublishReady(missingFields: string[]): boolean {
   return missingFields.length === 0;
 }
+
+function parseDraftNumber(value: string | null | undefined): number | null {
+  const raw = String(value ?? "").trim();
+  if (!raw) return null;
+  const n = Number(raw.replace(/[^\d.-]/g, ""));
+  return Number.isFinite(n) ? n : null;
+}
+
+/** Live missing fields while editing (aligned with backend/completeness.py). */
+export function missingFieldsFromDraft(input: {
+  titulo: string;
+  descripcion: string;
+  tipo: string;
+  precio: string;
+  municipio: string;
+  barrio: string;
+  telefonoContacto: string;
+  alcobas: string;
+  banos: string;
+  areaM2: string;
+  anioConstruccion: string;
+  photoCount: number;
+}): string[] {
+  const missing: string[] = [];
+  const precio = parseDraftNumber(
+    input.precio.replace(/\./g, "").replace(/,/g, ""),
+  );
+  const tipo = input.tipo;
+
+  if (!input.titulo.trim()) missing.push("title");
+  if (!input.descripcion.trim()) missing.push("description");
+  if (!tipo.trim()) missing.push("type");
+  if (precio == null || precio <= 0) missing.push("price");
+  if (!input.municipio.trim()) missing.push("city");
+  if (!input.barrio.trim()) missing.push("neighborhood");
+  if (!input.telefonoContacto.trim()) missing.push("contactPhone");
+  if (input.photoCount <= 0) missing.push("photos");
+  const year = parseDraftNumber(input.anioConstruccion);
+  if (year == null || year <= 0) missing.push("buildingYear");
+  const area = parseDraftNumber(input.areaM2);
+  if (area == null || area <= 0) missing.push("areaM2");
+  if (isResidentialTipo(tipo)) {
+    if (parseDraftNumber(input.alcobas) == null) missing.push("bedrooms");
+    if (parseDraftNumber(input.banos) == null) missing.push("bathrooms");
+  }
+  return missing;
+}
