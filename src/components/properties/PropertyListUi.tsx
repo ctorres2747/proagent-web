@@ -78,3 +78,25 @@ export function PropertyListSkeleton() {
     </div>
   );
 }
+
+export function formatTableRowTotal(shown: number, total: number): string {
+  const noun = shown === 1 ? "fila" : "filas";
+  if (shown !== total) {
+    return `${shown} de ${total} ${noun} (filtro activo)`;
+  }
+  return `${shown} ${noun}`;
+}
+
+export function PropertyTableFooter({
+  shown,
+  total,
+}: {
+  shown: number;
+  total: number;
+}) {
+  return (
+    <div className="border-t border-[var(--pa-border)] bg-[var(--pa-bg)] px-5 py-2.5 text-right text-[12px] font-semibold text-[var(--pa-muted)]">
+      Total: {formatTableRowTotal(shown, total)}
+    </div>
+  );
+}
