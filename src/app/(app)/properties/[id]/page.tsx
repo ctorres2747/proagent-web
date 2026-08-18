@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/features/auth/AuthProvider";
-import { propertiesService, publicationsService, channelsService } from "@/services";
+import { propertiesService, publicationsService, channelsService, wasiFeaturesService } from "@/services";
 import type {
   Condition,
   Intent,
@@ -28,6 +28,7 @@ import {
 import { ChannelLogo } from "@/components/ChannelLogo";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { Spinner } from "@/components/Spinner";
+import { WasiFeaturesCheckboxes } from "@/components/properties/WasiFeaturesCheckboxes";
 import { DeletePropertyDialog } from "@/components/DeletePropertyDialog";
 import { formatPrice } from "@/lib/format";
 import {
@@ -111,10 +112,17 @@ type ContentFormSnapshot = {
   precio: string;
   alcobas: string;
   banos: string;
+  parqueaderos: string;
+  estrato: string;
+  piso: string;
   areaM2: string;
+  areaPrivada: string;
+  areaConstruida: string;
+  administracion: string;
   anioConstruccion: string;
   direccion: string;
   codigoPostal: string;
+  featureIds: number[];
 };
 
 function emptyContentForm(): ContentFormSnapshot {
@@ -131,10 +139,17 @@ function emptyContentForm(): ContentFormSnapshot {
     precio: "",
     alcobas: "",
     banos: "",
+    parqueaderos: "",
+    estrato: "",
+    piso: "",
     areaM2: "",
+    areaPrivada: "",
+    areaConstruida: "",
+    administracion: "",
     anioConstruccion: "",
     direccion: "",
     codigoPostal: "",
+    featureIds: [],
   };
 }
 
@@ -152,11 +167,22 @@ function snapshotFromProperty(property: Property): ContentFormSnapshot {
     precio: property.precio != null ? String(property.precio) : "",
     alcobas: property.alcobas != null ? String(property.alcobas) : "",
     banos: property.banos != null ? String(property.banos) : "",
+    parqueaderos:
+      property.parqueaderos != null ? String(property.parqueaderos) : "",
+    estrato: property.estrato != null ? String(property.estrato) : "",
+    piso: property.piso != null ? String(property.piso) : "",
     areaM2: property.areaM2 != null ? String(property.areaM2) : "",
+    areaPrivada:
+      property.areaPrivada != null ? String(property.areaPrivada) : "",
+    areaConstruida:
+      property.areaConstruida != null ? String(property.areaConstruida) : "",
+    administracion:
+      property.administracion != null ? String(property.administracion) : "",
     anioConstruccion:
       property.anioConstruccion != null ? String(property.anioConstruccion) : "",
     direccion: property.direccion ?? "",
     codigoPostal: property.codigoPostal ?? "",
+    featureIds: [...(property.featureIds ?? [])],
   };
 }
 
@@ -174,6 +200,13 @@ function parseIntInput(v: string): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
+function featureIdsEqual(a: number[], b: number[]): boolean {
+  if (a.length !== b.length) return false;
+  const sa = [...a].sort((x, y) => x - y);
+  const sb = [...b].sort((x, y) => x - y);
+  return sa.every((v, i) => v === sb[i]);
+}
+
 function contentFormsEqual(a: ContentFormSnapshot, b: ContentFormSnapshot): boolean {
   return (
     a.titulo === b.titulo &&
@@ -188,10 +221,17 @@ function contentFormsEqual(a: ContentFormSnapshot, b: ContentFormSnapshot): bool
     a.precio === b.precio &&
     a.alcobas === b.alcobas &&
     a.banos === b.banos &&
+    a.parqueaderos === b.parqueaderos &&
+    a.estrato === b.estrato &&
+    a.piso === b.piso &&
     a.areaM2 === b.areaM2 &&
+    a.areaPrivada === b.areaPrivada &&
+    a.areaConstruida === b.areaConstruida &&
+    a.administracion === b.administracion &&
     a.anioConstruccion === b.anioConstruccion &&
     a.direccion === b.direccion &&
-    a.codigoPostal === b.codigoPostal
+    a.codigoPostal === b.codigoPostal &&
+    featureIdsEqual(a.featureIds, b.featureIds)
   );
 }
 
@@ -460,10 +500,17 @@ export default function PublishWizardPage() {
           precio: parsePrecioInput(contentForm.precio),
           alcobas: parseIntInput(contentForm.alcobas),
           banos: parseIntInput(contentForm.banos),
+          parqueaderos: parseIntInput(contentForm.parqueaderos),
+          estrato: parseIntInput(contentForm.estrato),
+          piso: parseIntInput(contentForm.piso),
           areaM2: parseIntInput(contentForm.areaM2),
+          areaPrivada: parseIntInput(contentForm.areaPrivada),
+          areaConstruida: parseIntInput(contentForm.areaConstruida),
+          administracion: parsePrecioInput(contentForm.administracion),
           anioConstruccion: parseIntInput(contentForm.anioConstruccion),
           direccion: contentForm.direccion || null,
           codigoPostal: contentForm.codigoPostal || null,
+          featureIds: contentForm.featureIds,
         },
         token ?? undefined,
       );
@@ -720,11 +767,21 @@ export default function PublishWizardPage() {
     precio: parsePrecioInput(contentForm.precio) ?? property.precio,
     alcobas: parseIntInput(contentForm.alcobas) ?? property.alcobas,
     banos: parseIntInput(contentForm.banos) ?? property.banos,
+    parqueaderos:
+      parseIntInput(contentForm.parqueaderos) ?? property.parqueaderos,
+    estrato: parseIntInput(contentForm.estrato) ?? property.estrato,
+    piso: parseIntInput(contentForm.piso) ?? property.piso,
     areaM2: parseIntInput(contentForm.areaM2) ?? property.areaM2,
+    areaPrivada: parseIntInput(contentForm.areaPrivada) ?? property.areaPrivada,
+    areaConstruida:
+      parseIntInput(contentForm.areaConstruida) ?? property.areaConstruida,
+    administracion:
+      parsePrecioInput(contentForm.administracion) ?? property.administracion,
     anioConstruccion:
       parseIntInput(contentForm.anioConstruccion) ?? property.anioConstruccion,
     direccion: contentForm.direccion || property.direccion,
     codigoPostal: contentForm.codigoPostal || property.codigoPostal,
+    featureIds: contentForm.featureIds,
   };
 
   return (
@@ -808,6 +865,7 @@ export default function PublishWizardPage() {
           property={property}
           form={contentForm}
           onPatch={patchContent}
+          token={token ?? undefined}
           busy={actionBusy}
           isDirty={isContentDirty}
           onSave={() => void saveContentChanges()}
@@ -1040,21 +1098,12 @@ const CONDITIONS = [
   "Proyecto",
   "En construcción",
 ] as const satisfies readonly Condition[];
-const ALL_FEATURES = [
-  "Balcón",
-  "Parqueadero visitantes",
-  "Piscina",
-  "Gimnasio",
-  "Zona BBQ",
-  "Vigilancia 24h",
-  "Ascensor",
-  "Depósito",
-];
 
 function ContentStep({
   property,
   form,
   onPatch,
+  token,
   busy,
   isDirty,
   onSave,
@@ -1063,11 +1112,20 @@ function ContentStep({
   property: Property;
   form: ContentFormSnapshot;
   onPatch: (patch: Partial<ContentFormSnapshot>) => void;
+  token?: string;
   busy: boolean;
   isDirty: boolean;
   onSave: () => void;
   onNext: () => void;
 }) {
+  const {
+    data: wasiCatalog,
+    isLoading: wasiCatalogLoading,
+    isError: wasiCatalogError,
+  } = useQuery({
+    queryKey: ["wasi-features"],
+    queryFn: () => wasiFeaturesService.list(token),
+  });
   const liveMissing = missingFieldsFromDraft({
     titulo: form.titulo,
     descripcion: form.descripcion,
@@ -1110,7 +1168,11 @@ function ContentStep({
                 className={`${input} min-h-[88px] font-normal leading-relaxed text-[#45525E]`}
                 value={form.descripcion}
                 onChange={(e) => onPatch({ descripcion: e.target.value })}
+                placeholder="Usa líneas que empiecen con «- » para viñetas en WASI"
               />
+              <p className="mt-1 text-[11px] text-[var(--pa-muted)]">
+                Tip: cada línea con «- » se convierte en viñeta al publicar en WASI.
+              </p>
             </div>
             <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-3">
               <div>
@@ -1192,22 +1254,40 @@ function ContentStep({
               value={form.banos}
               onChange={(v) => onPatch({ banos: v })}
             />
-            <ReadOnlyField label="Parqueaderos" value={property.parqueaderos} />
-            <ReadOnlyField label="Estrato" value={property.estrato} />
-            <ReadOnlyField label="Piso" value={property.piso} />
+            <ControlledField
+              label="Parqueaderos"
+              value={form.parqueaderos}
+              onChange={(v) => onPatch({ parqueaderos: v })}
+            />
+            <ControlledField
+              label="Estrato"
+              value={form.estrato}
+              onChange={(v) => onPatch({ estrato: v })}
+            />
+            <ControlledField
+              label="Piso"
+              value={form.piso}
+              onChange={(v) => onPatch({ piso: v })}
+            />
             <ControlledField
               label="Área (m²)"
               value={form.areaM2}
               onChange={(v) => onPatch({ areaM2: v })}
             />
-            <ReadOnlyField label="Área privada" value={property.areaPrivada} />
-            <ReadOnlyField
-              label="Área construida"
-              value={property.areaConstruida}
+            <ControlledField
+              label="Área privada"
+              value={form.areaPrivada}
+              onChange={(v) => onPatch({ areaPrivada: v })}
             />
-            <ReadOnlyField
+            <ControlledField
+              label="Área construida"
+              value={form.areaConstruida}
+              onChange={(v) => onPatch({ areaConstruida: v })}
+            />
+            <ControlledField
               label="Administración (COP)"
-              value={property.administracion}
+              value={form.administracion}
+              onChange={(v) => onPatch({ administracion: v })}
             />
             <ControlledField
               label="Año de construcción"
@@ -1246,18 +1326,23 @@ function ContentStep({
           </div>
         </Card>
 
-        <Card title="Características">
+        <Card title="Características WASI">
           <p className="mb-3 text-xs text-[var(--pa-muted)]">
-            Próximamente — el catálogo de características aún no se guarda en el
-            inventario.
+            Se envían a WASI al publicar (y de ahí a portales asociados). Internas
+            = cocina, closets…; externas = piscina, terraza… ({form.featureIds.length}{" "}
+            seleccionadas)
           </p>
-          <div className="flex flex-wrap gap-2">
-            {ALL_FEATURES.map((f) => (
-              <Chip key={f} active={property.features.includes(f)}>
-                {f}
-              </Chip>
-            ))}
-          </div>
+          <WasiFeaturesCheckboxes
+            catalog={wasiCatalog ?? null}
+            selectedIds={form.featureIds}
+            onChange={(featureIds) => onPatch({ featureIds })}
+            loading={wasiCatalogLoading}
+            error={
+              wasiCatalogError
+                ? "No se pudo cargar el catálogo WASI."
+                : null
+            }
+          />
         </Card>
       </div>
 
@@ -1370,7 +1455,8 @@ function PhotosStep({
   return (
     <div className="max-w-[920px]">
       <div className="mb-4 text-[13px] text-[var(--pa-muted)]">
-        La primera foto es la portada. Usa las flechas para reordenar.
+        La primera foto es la portada. Usa las flechas para reordenar. Facebook
+        Marketplace e Instagram usan como máximo 10 fotos por publicación.
       </div>
       {error && (
         <p className="mb-3 text-sm text-[var(--pa-danger)]">{error}</p>

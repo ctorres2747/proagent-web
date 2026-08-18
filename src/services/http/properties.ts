@@ -48,6 +48,7 @@ interface RawProperty {
   administracion?: number | string | null;
   anio_construccion?: number | string | null;
   condicion?: string | null;
+  feature_ids?: number[] | null;
   features?: string[] | null;
   descripcion?: string | null;
   telefono_contacto?: string | null;
@@ -122,6 +123,9 @@ function mapProperty(raw: RawProperty): Property {
       raw.condicion === "En construcción"
         ? raw.condicion
         : null,
+    featureIds: Array.isArray(raw.feature_ids)
+      ? raw.feature_ids.map((x) => Number(x)).filter((n) => Number.isFinite(n))
+      : [],
     features: Array.isArray(raw.features) ? raw.features : [],
     descripcion: raw.descripcion ?? null,
     telefonoContacto: raw.telefono_contacto?.trim()
@@ -170,6 +174,7 @@ function toWriteBody(
     body.anio_construccion = data.anioConstruccion;
   }
   if (data.condicion !== undefined) body.condicion = data.condicion;
+  if (data.featureIds !== undefined) body.feature_ids = data.featureIds;
   if (data.telefonoContacto !== undefined) {
     body.telefono_contacto = data.telefonoContacto;
   }

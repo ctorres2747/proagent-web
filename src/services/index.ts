@@ -16,6 +16,7 @@ import { profileService as mockProfile } from "./mocks/profile";
 import { propertiesService as mockProperties } from "./mocks/properties";
 import { publicationsService as mockPublications } from "./mocks/publications";
 import { scraperService as mockScraper } from "./mocks/scraper";
+import { wasiFeaturesService as mockWasiFeatures } from "./mocks/wasiFeatures";
 import { authService as httpAuth } from "./http/auth";
 import { channelsService as httpChannels } from "./http/channels";
 import { criteriosService as httpCriterios } from "./http/criterios";
@@ -25,6 +26,7 @@ import { profileService as httpProfile } from "./http/profile";
 import { propertiesService as httpProperties } from "./http/properties";
 import { publicationsService as httpPublications } from "./http/publications";
 import { scraperService as httpScraper } from "./http/scraper";
+import { wasiFeaturesService as httpWasiFeatures } from "./http/wasiFeatures";
 
 import type { AuthService } from "./interfaces/auth";
 import type { ChannelsService } from "./interfaces/channels";
@@ -58,6 +60,9 @@ export const publicationsService: PublicationsService = USE_HTTP_API
 export const scraperService: ScraperService = USE_HTTP_API
   ? httpScraper
   : mockScraper;
+export const wasiFeaturesService = USE_HTTP_API
+  ? httpWasiFeatures
+  : mockWasiFeatures;
 
 export type { AuthService } from "./interfaces/auth";
 export type { ChannelsService, ChannelConnection, ChannelPatch } from "./interfaces/channels";
