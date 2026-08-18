@@ -87,6 +87,7 @@ export function missingFieldsFromDraft(input: {
   titulo: string;
   descripcion: string;
   tipo: string;
+  intent?: string;
   precio: string;
   municipio: string;
   barrio: string;
@@ -106,6 +107,7 @@ export function missingFieldsFromDraft(input: {
   if (!input.titulo.trim()) missing.push("title");
   if (!input.descripcion.trim()) missing.push("description");
   if (!tipo.trim()) missing.push("type");
+  if (!input.intent?.trim()) missing.push("intent");
   if (precio == null || precio <= 0) missing.push("price");
   if (!input.municipio.trim()) missing.push("city");
   if (!input.barrio.trim()) missing.push("neighborhood");
