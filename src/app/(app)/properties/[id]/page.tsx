@@ -1339,11 +1339,6 @@ function ContentStep({
         </Card>
 
         <Card title="Características WASI">
-          <p className="mb-3 text-xs text-[var(--pa-muted)]">
-            Se envían a WASI al publicar (y de ahí a portales asociados). Internas
-            = cocina, closets…; externas = piscina, terraza… ({form.featureIds.length}{" "}
-            seleccionadas)
-          </p>
           <WasiFeaturesCheckboxes
             catalog={wasiCatalog ?? null}
             selectedIds={form.featureIds}
