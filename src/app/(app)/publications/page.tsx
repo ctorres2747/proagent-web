@@ -13,6 +13,7 @@ import { FilterDropdown } from "@/components/FilterDropdown";
 import {
   PropertyListSkeleton,
   PropertySearchInput,
+  PropertyTableFooter,
   ViewToggle,
 } from "@/components/properties/PropertyListUi";
 import {
@@ -382,6 +383,7 @@ export default function PublicationsPage() {
       {filtered.length > 0 && view === "table" && (
         <PublicationTable
           properties={filtered}
+          totalCount={properties?.length ?? 0}
           pubByPropertyId={pubByPropertyId}
           onOpen={open}
           onDelete={onDelete}
@@ -493,24 +495,27 @@ function PublicationCard({
 
 function PublicationTable({
   properties,
+  totalCount,
   pubByPropertyId,
   onOpen,
   onDelete,
   deletingId,
 }: {
   properties: Property[];
+  totalCount: number;
   pubByPropertyId: Map<string, Publication>;
   onOpen: (p: Property) => void;
   onDelete: (p: Property) => void;
   deletingId: string | null;
 }) {
   const cols =
-    "grid-cols-[64px_2fr_1fr_1fr_1.1fr_1.2fr_1.4fr_72px]";
+    "grid-cols-[36px_64px_2fr_1fr_1fr_1.1fr_1.2fr_1.4fr_72px]";
   return (
     <div className="overflow-hidden rounded-2xl border border-[var(--pa-border)] bg-[var(--pa-surface)]">
       <div
         className={`grid ${cols} gap-3 border-b border-[var(--pa-border)] bg-[var(--pa-bg)] px-5 py-3.5 text-[11px] font-bold uppercase tracking-wide text-[var(--pa-muted)]`}
       >
+        <div>#</div>
         <div />
         <div>Título</div>
         <div>Tipo</div>
@@ -520,7 +525,7 @@ function PublicationTable({
         <div>Canales</div>
         <div />
       </div>
-      {properties.map((p) => {
+      {properties.map((p, index) => {
         const pub = pubByPropertyId.get(p.id);
         const title = publicationTitle(p, pub);
         const stage = publicationStage(pub);
@@ -529,6 +534,9 @@ function PublicationTable({
             key={p.id}
             className={`grid w-full ${cols} items-center gap-3 border-b border-[var(--pa-bg-alt)] px-5 py-3 last:border-b-0 hover:bg-[var(--pa-bg)]`}
           >
+            <div className="text-[12px] font-bold tabular-nums text-[var(--pa-faint)]">
+              {index + 1}
+            </div>
             <button
               type="button"
               onClick={() => onOpen(p)}
@@ -592,6 +600,7 @@ function PublicationTable({
           </div>
         );
       })}
+      <PropertyTableFooter shown={properties.length} total={totalCount} />
     </div>
   );
 }

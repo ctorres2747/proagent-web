@@ -30,6 +30,7 @@ import {
   formatMissingFields,
   isFieldComplete,
   isWasiPublishReady,
+  missingFieldsFromDraft,
   WASI_PUBLISH_HINT,
 } from "@/lib/completeness";
 import {
@@ -99,7 +100,34 @@ type ContentFormSnapshot = {
   nombreContacto: string;
   municipio: string;
   barrio: string;
+  tipo: string;
+  precio: string;
+  alcobas: string;
+  banos: string;
+  areaM2: string;
+  anioConstruccion: string;
+  direccion: string;
+  codigoPostal: string;
 };
+
+function emptyContentForm(): ContentFormSnapshot {
+  return {
+    titulo: "",
+    descripcion: "",
+    telefonoContacto: "",
+    nombreContacto: "",
+    municipio: "",
+    barrio: "",
+    tipo: "",
+    precio: "",
+    alcobas: "",
+    banos: "",
+    areaM2: "",
+    anioConstruccion: "",
+    direccion: "",
+    codigoPostal: "",
+  };
+}
 
 function snapshotFromProperty(property: Property): ContentFormSnapshot {
   return {
@@ -109,7 +137,30 @@ function snapshotFromProperty(property: Property): ContentFormSnapshot {
     nombreContacto: property.nombreContacto ?? "",
     municipio: property.municipio ?? "",
     barrio: property.barrio ?? "",
+    tipo: property.tipo ?? "",
+    precio: property.precio != null ? String(property.precio) : "",
+    alcobas: property.alcobas != null ? String(property.alcobas) : "",
+    banos: property.banos != null ? String(property.banos) : "",
+    areaM2: property.areaM2 != null ? String(property.areaM2) : "",
+    anioConstruccion:
+      property.anioConstruccion != null ? String(property.anioConstruccion) : "",
+    direccion: property.direccion ?? "",
+    codigoPostal: property.codigoPostal ?? "",
   };
+}
+
+function parsePrecioInput(v: string): number | null {
+  const t = v.replace(/\./g, "").replace(/,/g, "").trim();
+  if (!t) return null;
+  const n = Number(t);
+  return Number.isFinite(n) ? n : null;
+}
+
+function parseIntInput(v: string): number | null {
+  const t = v.trim();
+  if (!t) return null;
+  const n = Number(t.replace(/[^\d]/g, ""));
+  return Number.isFinite(n) ? n : null;
 }
 
 function contentFormsEqual(a: ContentFormSnapshot, b: ContentFormSnapshot): boolean {
@@ -119,7 +170,15 @@ function contentFormsEqual(a: ContentFormSnapshot, b: ContentFormSnapshot): bool
     a.telefonoContacto === b.telefonoContacto &&
     a.nombreContacto === b.nombreContacto &&
     a.municipio === b.municipio &&
-    a.barrio === b.barrio
+    a.barrio === b.barrio &&
+    a.tipo === b.tipo &&
+    a.precio === b.precio &&
+    a.alcobas === b.alcobas &&
+    a.banos === b.banos &&
+    a.areaM2 === b.areaM2 &&
+    a.anioConstruccion === b.anioConstruccion &&
+    a.direccion === b.direccion &&
+    a.codigoPostal === b.codigoPostal
   );
 }
 
@@ -143,12 +202,9 @@ export default function PublishWizardPage() {
   const [deletingProperty, setDeletingProperty] = useState(false);
 
   // Content form
-  const [titulo, setTitulo] = useState("");
-  const [descripcion, setDescripcion] = useState("");
-  const [telefonoContacto, setTelefonoContacto] = useState("");
-  const [nombreContacto, setNombreContacto] = useState("");
-  const [municipio, setMunicipio] = useState("");
-  const [barrio, setBarrio] = useState("");
+  const [contentForm, setContentForm] = useState<ContentFormSnapshot>(emptyContentForm);
+  const patchContent = (patch: Partial<ContentFormSnapshot>) =>
+    setContentForm((prev) => ({ ...prev, ...patch }));
   const [savedContent, setSavedContent] = useState<ContentFormSnapshot | null>(
     null,
   );
@@ -201,12 +257,7 @@ export default function PublishWizardPage() {
   useEffect(() => {
     if (!property) return;
     const snapshot = snapshotFromProperty(property);
-    setTitulo(snapshot.titulo);
-    setDescripcion(snapshot.descripcion);
-    setTelefonoContacto(snapshot.telefonoContacto);
-    setNombreContacto(snapshot.nombreContacto);
-    setMunicipio(snapshot.municipio);
-    setBarrio(snapshot.barrio);
+    setContentForm(snapshot);
     setSavedContent(snapshot);
   }, [property]);
 
@@ -302,15 +353,8 @@ export default function PublishWizardPage() {
   }, [channelConnections]);
 
   const currentContent = useMemo<ContentFormSnapshot>(
-    () => ({
-      titulo,
-      descripcion,
-      telefonoContacto,
-      nombreContacto,
-      municipio,
-      barrio,
-    }),
-    [titulo, descripcion, telefonoContacto, nombreContacto, municipio, barrio],
+    () => contentForm,
+    [contentForm],
   );
 
   const isContentDirty = useMemo(() => {
@@ -392,23 +436,34 @@ export default function PublishWizardPage() {
       await propertiesService.update(
         property.id,
         {
-          titulo,
-          descripcion,
-          telefonoContacto,
-          nombreContacto,
-          municipio,
-          barrio: barrio || null,
+          titulo: contentForm.titulo,
+          descripcion: contentForm.descripcion,
+          telefonoContacto: contentForm.telefonoContacto,
+          nombreContacto: contentForm.nombreContacto,
+          municipio: contentForm.municipio,
+          barrio: contentForm.barrio || null,
+          tipo: contentForm.tipo || undefined,
+          precio: parsePrecioInput(contentForm.precio),
+          alcobas: parseIntInput(contentForm.alcobas),
+          banos: parseIntInput(contentForm.banos),
+          areaM2: parseIntInput(contentForm.areaM2),
+          anioConstruccion: parseIntInput(contentForm.anioConstruccion),
+          direccion: contentForm.direccion || null,
+          codigoPostal: contentForm.codigoPostal || null,
         },
         token ?? undefined,
       );
       const pub = await publicationsService.patch(
         publication.id,
-        { sharedTitle: titulo, sharedBody: descripcion },
+        {
+          sharedTitle: contentForm.titulo,
+          sharedBody: contentForm.descripcion,
+        },
         token ?? undefined,
       );
       setPublication(pub);
-      setSharedTitle(pub.sharedTitle || titulo);
-      setSharedBody(pub.sharedBody || descripcion);
+      setSharedTitle(pub.sharedTitle || contentForm.titulo);
+      setSharedBody(pub.sharedBody || contentForm.descripcion);
       setSavedContent(currentContent);
       await queryClient.invalidateQueries({
         queryKey: ["property", params.id],
@@ -639,12 +694,21 @@ export default function PublishWizardPage() {
   // Display property with local edits overlaid for preview
   const displayProperty: Property = {
     ...property,
-    titulo: sharedTitle || titulo || property.titulo,
-    descripcion: sharedBody || descripcion || property.descripcion,
-    telefonoContacto,
-    nombreContacto,
-    municipio: municipio || property.municipio,
-    barrio: barrio || property.barrio,
+    titulo: sharedTitle || contentForm.titulo || property.titulo,
+    descripcion: sharedBody || contentForm.descripcion || property.descripcion,
+    telefonoContacto: contentForm.telefonoContacto || property.telefonoContacto,
+    nombreContacto: contentForm.nombreContacto || property.nombreContacto,
+    municipio: contentForm.municipio || property.municipio,
+    barrio: contentForm.barrio || property.barrio,
+    tipo: contentForm.tipo || property.tipo,
+    precio: parsePrecioInput(contentForm.precio) ?? property.precio,
+    alcobas: parseIntInput(contentForm.alcobas) ?? property.alcobas,
+    banos: parseIntInput(contentForm.banos) ?? property.banos,
+    areaM2: parseIntInput(contentForm.areaM2) ?? property.areaM2,
+    anioConstruccion:
+      parseIntInput(contentForm.anioConstruccion) ?? property.anioConstruccion,
+    direccion: contentForm.direccion || property.direccion,
+    codigoPostal: contentForm.codigoPostal || property.codigoPostal,
   };
 
   return (
@@ -726,18 +790,8 @@ export default function PublishWizardPage() {
       {step === "content" && (
         <ContentStep
           property={property}
-          titulo={titulo}
-          descripcion={descripcion}
-          telefonoContacto={telefonoContacto}
-          nombreContacto={nombreContacto}
-          municipio={municipio}
-          barrio={barrio}
-          onTitulo={setTitulo}
-          onDescripcion={setDescripcion}
-          onTelefono={setTelefonoContacto}
-          onNombre={setNombreContacto}
-          onMunicipio={setMunicipio}
-          onBarrio={setBarrio}
+          form={contentForm}
+          onPatch={patchContent}
           busy={actionBusy}
           isDirty={isContentDirty}
           onSave={() => void saveContentChanges()}
@@ -879,18 +933,28 @@ function Card({
   );
 }
 
-function Chip({ active, children }: { active: boolean; children: React.ReactNode }) {
-  return (
-    <span
-      className={`rounded-full px-3.5 py-2 text-xs font-semibold ${
-        active
-          ? "bg-[var(--pa-navy)] text-white"
-          : "border border-[var(--pa-border)] bg-[var(--pa-bg)] text-[#45525E]"
-      }`}
-    >
-      {children}
-    </span>
-  );
+function Chip({
+  active,
+  children,
+  onClick,
+}: {
+  active: boolean;
+  children: React.ReactNode;
+  onClick?: () => void;
+}) {
+  const className = `rounded-full px-3.5 py-2 text-xs font-semibold ${
+    active
+      ? "bg-[var(--pa-navy)] text-white"
+      : "border border-[var(--pa-border)] bg-[var(--pa-bg)] text-[#45525E]"
+  }`;
+  if (onClick) {
+    return (
+      <button type="button" onClick={onClick} className={className}>
+        {children}
+      </button>
+    );
+  }
+  return <span className={className}>{children}</span>;
 }
 
 function ControlledField({
@@ -968,46 +1032,46 @@ const ALL_FEATURES = [
 
 function ContentStep({
   property,
-  titulo,
-  descripcion,
-  telefonoContacto,
-  nombreContacto,
-  municipio,
-  barrio,
-  onTitulo,
-  onDescripcion,
-  onTelefono,
-  onNombre,
-  onMunicipio,
-  onBarrio,
+  form,
+  onPatch,
   busy,
   isDirty,
   onSave,
   onNext,
 }: {
   property: Property;
-  titulo: string;
-  descripcion: string;
-  telefonoContacto: string;
-  nombreContacto: string;
-  municipio: string;
-  barrio: string;
-  onTitulo: (v: string) => void;
-  onDescripcion: (v: string) => void;
-  onTelefono: (v: string) => void;
-  onNombre: (v: string) => void;
-  onMunicipio: (v: string) => void;
-  onBarrio: (v: string) => void;
+  form: ContentFormSnapshot;
+  onPatch: (patch: Partial<ContentFormSnapshot>) => void;
   busy: boolean;
   isDirty: boolean;
   onSave: () => void;
   onNext: () => void;
 }) {
-  const checklist = checklistForTipo(property.tipo).map((item) => ({
+  const liveMissing = missingFieldsFromDraft({
+    titulo: form.titulo,
+    descripcion: form.descripcion,
+    tipo: form.tipo,
+    precio: form.precio,
+    municipio: form.municipio,
+    barrio: form.barrio,
+    telefonoContacto: form.telefonoContacto,
+    alcobas: form.alcobas,
+    banos: form.banos,
+    areaM2: form.areaM2,
+    anioConstruccion: form.anioConstruccion,
+    photoCount: property.fotos.length,
+  });
+  const checklist = checklistForTipo(form.tipo || property.tipo).map((item) => ({
     label: item.label,
-    done: isFieldComplete(item.key, property.missingFields),
+    done: isFieldComplete(item.key, liveMissing),
   }));
-  const missingSummary = formatMissingFields(property.missingFields);
+  const missingSummary = formatMissingFields(liveMissing);
+  const completenessPct =
+    checklist.length > 0
+      ? Math.round(
+          (checklist.filter((c) => c.done).length / checklist.length) * 100,
+        )
+      : 0;
   return (
     <div className="grid grid-cols-1 items-start gap-7 lg:grid-cols-[1fr_300px]">
       <div className="flex min-w-0 flex-col gap-6">
@@ -1015,15 +1079,15 @@ function ContentStep({
           <div className="grid gap-4">
             <ControlledField
               label="Título *"
-              value={titulo}
-              onChange={onTitulo}
+              value={form.titulo}
+              onChange={(v) => onPatch({ titulo: v })}
             />
             <div>
               <div className={label}>Descripción</div>
               <textarea
                 className={`${input} min-h-[88px] font-normal leading-relaxed text-[#45525E]`}
-                value={descripcion}
-                onChange={(e) => onDescripcion(e.target.value)}
+                value={form.descripcion}
+                onChange={(e) => onPatch({ descripcion: e.target.value })}
               />
             </div>
             <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-3">
@@ -1031,7 +1095,11 @@ function ContentStep({
                 <div className={label}>Tipo</div>
                 <div className="flex flex-wrap gap-1.5">
                   {PROPERTY_TYPES.map((t) => (
-                    <Chip key={t} active={t === property.tipo}>
+                    <Chip
+                      key={t}
+                      active={t === (form.tipo || property.tipo)}
+                      onClick={() => onPatch({ tipo: t })}
+                    >
                       {t}
                     </Chip>
                   ))}
@@ -1047,9 +1115,10 @@ function ContentStep({
                   ))}
                 </div>
               </div>
-              <ReadOnlyField
+              <ControlledField
                 label="Precio (COP) *"
-                value={formatPrice(property.precio, property.esArriendo)}
+                value={form.precio}
+                onChange={(v) => onPatch({ precio: v })}
               />
             </div>
           </div>
@@ -1059,30 +1128,47 @@ function ContentStep({
           <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
             <ControlledField
               label="Ciudad"
-              value={municipio}
-              onChange={onMunicipio}
+              value={form.municipio}
+              onChange={(v) => onPatch({ municipio: v })}
             />
             <ControlledField
               label="Barrio / zona"
-              value={barrio}
-              onChange={onBarrio}
+              value={form.barrio}
+              onChange={(v) => onPatch({ barrio: v })}
             />
-            <ReadOnlyField label="Dirección" value={property.direccion} />
-            <ReadOnlyField
+            <ControlledField
+              label="Dirección"
+              value={form.direccion}
+              onChange={(v) => onPatch({ direccion: v })}
+            />
+            <ControlledField
               label="Código postal"
-              value={property.codigoPostal}
+              value={form.codigoPostal}
+              onChange={(v) => onPatch({ codigoPostal: v })}
             />
           </div>
         </Card>
 
         <Card title="Detalles">
           <div className="grid grid-cols-2 gap-3.5 sm:grid-cols-4">
-            <ReadOnlyField label="Alcobas" value={property.alcobas} />
-            <ReadOnlyField label="Baños" value={property.banos} />
+            <ControlledField
+              label="Alcobas"
+              value={form.alcobas}
+              onChange={(v) => onPatch({ alcobas: v })}
+            />
+            <ControlledField
+              label="Baños"
+              value={form.banos}
+              onChange={(v) => onPatch({ banos: v })}
+            />
             <ReadOnlyField label="Parqueaderos" value={property.parqueaderos} />
             <ReadOnlyField label="Estrato" value={property.estrato} />
             <ReadOnlyField label="Piso" value={property.piso} />
-            <ReadOnlyField label="Área (m²)" value={property.areaM2} />
+            <ControlledField
+              label="Área (m²)"
+              value={form.areaM2}
+              onChange={(v) => onPatch({ areaM2: v })}
+            />
             <ReadOnlyField label="Área privada" value={property.areaPrivada} />
             <ReadOnlyField
               label="Área construida"
@@ -1092,9 +1178,10 @@ function ContentStep({
               label="Administración (COP)"
               value={property.administracion}
             />
-            <ReadOnlyField
+            <ControlledField
               label="Año de construcción"
-              value={property.anioConstruccion}
+              value={form.anioConstruccion}
+              onChange={(v) => onPatch({ anioConstruccion: v })}
             />
             <div className="col-span-2">
               <div className={label}>Estado</div>
@@ -1113,13 +1200,13 @@ function ContentStep({
           <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
             <ControlledField
               label="Nombre"
-              value={nombreContacto}
-              onChange={onNombre}
+              value={form.nombreContacto}
+              onChange={(v) => onPatch({ nombreContacto: v })}
             />
             <ControlledField
               label="Teléfono *"
-              value={telefonoContacto}
-              onChange={onTelefono}
+              value={form.telefonoContacto}
+              onChange={(v) => onPatch({ telefonoContacto: v })}
             />
           </div>
         </Card>
@@ -1141,12 +1228,12 @@ function ContentStep({
             Completitud
           </div>
           <div className="mb-2.5 text-[28px] font-extrabold text-[var(--pa-navy)]">
-            {property.completeness}%
+            {completenessPct}%
           </div>
           <div className="mb-3.5 h-2 overflow-hidden rounded bg-[var(--pa-bg-alt)]">
             <div
               className="h-full rounded bg-[var(--pa-accent)]"
-              style={{ width: `${property.completeness}%` }}
+              style={{ width: `${completenessPct}%` }}
             />
           </div>
           <ul className="space-y-1 text-xs text-[var(--pa-muted)]">
