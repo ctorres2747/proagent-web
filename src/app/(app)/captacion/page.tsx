@@ -63,6 +63,7 @@ export default function CaptacionPage() {
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [publishError, setPublishError] = useState<string | null>(null);
+  const [estadoBlocked, setEstadoBlocked] = useState(false);
   const [toast, setToast] = useState<{ message: string; type?: "error" } | null>(
     null,
   );
@@ -127,6 +128,7 @@ export default function CaptacionPage() {
     });
     setSaveError(null);
     setPublishError(null);
+    setEstadoBlocked(false);
   }, [selected]);
 
   const municipioOptions = useMemo(
@@ -259,6 +261,7 @@ export default function CaptacionPage() {
 
   const handleSave = () => {
     if (!selectedId) return;
+    setEstadoBlocked(false);
     updateMutation.mutate({
       estado: draft.estado,
       telefono: draft.telefono || null,
@@ -266,6 +269,34 @@ export default function CaptacionPage() {
       notas: draft.notas || null,
       fechaRecontacto: draft.fechaRecontacto || null,
     });
+  };
+
+  // Cambiar el estado desde el selector mueve la tarjeta al instante, sin
+  // esperar a "Guardar cambios" — mismo criterio que el Kanban HTML (PR #74).
+  // Única excepción: pasar a Captado exige nombre + teléfono ya cargados (el
+  // backend rechaza el cambio si el lead quedara sin contacto); si faltan,
+  // se deja el estado elegido en el draft pero no se guarda todavía — el
+  // asesor completa el contacto y usa "Guardar cambios" para captar.
+  const handleEstadoChange = (nuevoEstado: LeadEstado) => {
+    if (!selectedId) return;
+    setDraft((d) => ({ ...d, estado: nuevoEstado }));
+    if (nuevoEstado === "Captado") {
+      const tieneContacto =
+        Boolean(draft.telefono.trim()) && Boolean(draft.nombrePublicador.trim());
+      if (!tieneContacto) {
+        setEstadoBlocked(true);
+        return;
+      }
+      setEstadoBlocked(false);
+      updateMutation.mutate({
+        estado: nuevoEstado,
+        telefono: draft.telefono,
+        nombrePublicador: draft.nombrePublicador,
+      });
+      return;
+    }
+    setEstadoBlocked(false);
+    updateMutation.mutate({ estado: nuevoEstado });
   };
 
   const canPublish =
@@ -473,6 +504,12 @@ export default function CaptacionPage() {
           lead={selected}
           draft={draft}
           onDraftChange={(patch) => setDraft((d) => ({ ...d, ...patch }))}
+          onEstadoChange={handleEstadoChange}
+          estadoBlockedMessage={
+            estadoBlocked
+              ? "Para captar el lead completa el nombre y el teléfono del propietario."
+              : null
+          }
           onClose={() => setSelectedId(null)}
           onSave={handleSave}
           onPublish={() => publishMutation.mutate()}
