@@ -24,6 +24,8 @@ export function CaptacionDetailDrawer({
   lead,
   draft,
   onDraftChange,
+  onEstadoChange,
+  estadoBlockedMessage,
   onClose,
   onSave,
   onPublish,
@@ -36,6 +38,8 @@ export function CaptacionDetailDrawer({
   lead: Lead;
   draft: CaptacionDraft;
   onDraftChange: (patch: Partial<CaptacionDraft>) => void;
+  onEstadoChange: (estado: LeadEstado) => void;
+  estadoBlockedMessage: string | null;
   onClose: () => void;
   onSave: () => void;
   onPublish: () => void;
@@ -125,7 +129,7 @@ export function CaptacionDetailDrawer({
               <select
                 value={draft.estado}
                 onChange={(e) =>
-                  onDraftChange({ estado: e.target.value as LeadEstado })
+                  onEstadoChange(e.target.value as LeadEstado)
                 }
                 className="w-full rounded-[10px] border border-[var(--pa-border)] bg-[var(--pa-bg)] px-3 py-2 text-[13px]"
               >
@@ -135,6 +139,11 @@ export function CaptacionDetailDrawer({
                   </option>
                 ))}
               </select>
+              {estadoBlockedMessage ? (
+                <p className="mt-1.5 text-[12px] text-[var(--pa-danger)]">
+                  {estadoBlockedMessage}
+                </p>
+              ) : null}
             </label>
 
             <label className="block">
@@ -145,7 +154,11 @@ export function CaptacionDetailDrawer({
                 type="tel"
                 value={draft.telefono}
                 onChange={(e) => onDraftChange({ telefono: e.target.value })}
-                className="w-full rounded-[10px] border border-[var(--pa-border)] bg-[var(--pa-bg)] px-3 py-2 text-[13px]"
+                className={`w-full rounded-[10px] border bg-[var(--pa-bg)] px-3 py-2 text-[13px] ${
+                  estadoBlockedMessage && !draft.telefono.trim()
+                    ? "border-[var(--pa-danger)]"
+                    : "border-[var(--pa-border)]"
+                }`}
                 placeholder="300 123 4567"
               />
             </label>
@@ -160,7 +173,11 @@ export function CaptacionDetailDrawer({
                 onChange={(e) =>
                   onDraftChange({ nombrePublicador: e.target.value })
                 }
-                className="w-full rounded-[10px] border border-[var(--pa-border)] bg-[var(--pa-bg)] px-3 py-2 text-[13px]"
+                className={`w-full rounded-[10px] border bg-[var(--pa-bg)] px-3 py-2 text-[13px] ${
+                  estadoBlockedMessage && !draft.nombrePublicador.trim()
+                    ? "border-[var(--pa-danger)]"
+                    : "border-[var(--pa-border)]"
+                }`}
               />
             </label>
 
