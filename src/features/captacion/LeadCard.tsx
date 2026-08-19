@@ -3,6 +3,7 @@
 import { LeadCoverImage } from "@/components/LeadCoverImage";
 import { PortalLogo } from "@/components/PortalLogo";
 import { formatLeadPrice } from "@/lib/format";
+import { capturedAtLabel } from "@/lib/formatCapturedAt";
 import type { Lead } from "@/services/interfaces/leads";
 
 /** Lead card compacta — cabe en 4 columnas dentro del max-w compartido del shell. */
@@ -36,6 +37,11 @@ export function LeadCard({
       <div className="mt-1.5 text-[13px] font-extrabold text-[var(--pa-navy)]">
         {formatLeadPrice(lead)}
       </div>
+      {capturedAtLabel(lead.fechaCaptura) ? (
+        <div className="mt-1 text-[10px] text-[var(--pa-muted)]">
+          {capturedAtLabel(lead.fechaCaptura)}
+        </div>
+      ) : null}
     </button>
   );
 }

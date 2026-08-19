@@ -2,6 +2,7 @@
 
 import { PortalLogo } from "@/components/PortalLogo";
 import { formatLeadPrice } from "@/lib/format";
+import { capturedAtLabel } from "@/lib/formatCapturedAt";
 import type { Lead, LeadEstado } from "@/services/interfaces/leads";
 
 const ESTADO_OPTIONS: LeadEstado[] = [
@@ -79,6 +80,11 @@ export function CaptacionDetailDrawer({
             <p className="mt-1 text-[14px] font-bold text-[var(--pa-navy)]">
               {formatLeadPrice(lead)}
             </p>
+            {capturedAtLabel(lead.fechaCaptura) ? (
+              <p className="mt-1 text-[12px] text-[var(--pa-muted)]">
+                {capturedAtLabel(lead.fechaCaptura)}
+              </p>
+            ) : null}
             <dl className="mt-3 grid grid-cols-2 gap-x-3 gap-y-1 text-[12px]">
               {lead.areaM2 ? (
                 <>

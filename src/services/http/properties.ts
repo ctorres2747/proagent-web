@@ -60,6 +60,7 @@ interface RawProperty {
   owner_agente_id?: number | string | null;
   owner_agente_nombre?: string | null;
   channels?: { id: string; status: string }[] | null;
+  captured_at?: string | null;
 }
 
 function num(v: number | string | null | undefined): number | null {
@@ -146,6 +147,7 @@ function mapProperty(raw: RawProperty): Property {
       ? raw.owner_agente_nombre.trim()
       : null,
     channels: mapChannels(raw.channels),
+    capturedAt: raw.captured_at ?? null,
   };
 }
 
