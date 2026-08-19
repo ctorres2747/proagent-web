@@ -35,6 +35,7 @@ import { Spinner } from "@/components/Spinner";
 import { WasiFeaturesCheckboxes } from "@/components/properties/WasiFeaturesCheckboxes";
 import { DeletePropertyDialog } from "@/components/DeletePropertyDialog";
 import { formatPrice } from "@/lib/format";
+import { capturedAtLabel } from "@/lib/formatCapturedAt";
 import {
   checklistForTipo,
   formatMissingFields,
@@ -799,8 +800,15 @@ export default function PublishWizardPage() {
   return (
     <div className="px-6 py-8 md:px-10">
       <div className="mb-1.5 flex flex-wrap items-center justify-between gap-3">
-        <div className="text-[13px] font-semibold text-[var(--pa-faint)]">
-          {property.titulo} · {property.code}
+        <div>
+          <div className="text-[13px] font-semibold text-[var(--pa-faint)]">
+            {property.titulo} · {property.code}
+          </div>
+          {capturedAtLabel(property.capturedAt) ? (
+            <div className="mt-0.5 text-[12px] text-[var(--pa-muted)]">
+              {capturedAtLabel(property.capturedAt)}
+            </div>
+          ) : null}
         </div>
         <button
           type="button"

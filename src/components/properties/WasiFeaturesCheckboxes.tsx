@@ -8,7 +8,7 @@ import {
   formatWasiSelectionSummary,
 } from "@/lib/wasiFeaturesUi";
 
-function FeatureChip({
+function FeatureRow({
   id,
   nombre,
   checked,
@@ -20,20 +20,14 @@ function FeatureChip({
   onToggle: (id: number) => void;
 }) {
   return (
-    <label
-      className={`inline-flex cursor-pointer items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
-        checked
-          ? "border-[var(--pa-navy)] bg-[var(--pa-navy)] text-white"
-          : "border-[var(--pa-border)] bg-[var(--pa-bg)] text-[#45525E] hover:border-[var(--pa-navy)]"
-      }`}
-    >
+    <label className="flex cursor-pointer items-center gap-2.5 rounded-lg px-2 py-1.5 hover:bg-[var(--pa-bg)]">
       <input
         type="checkbox"
         checked={checked}
         onChange={() => onToggle(id)}
-        className="sr-only"
+        className="h-4 w-4 shrink-0 rounded border-[var(--pa-border)] text-[var(--pa-navy)] focus:ring-[var(--pa-navy)]"
       />
-      {nombre}
+      <span className="text-sm text-[var(--pa-ink)]">{nombre}</span>
     </label>
   );
 }
@@ -65,9 +59,9 @@ function CollapsibleGroup({
         <span className="text-[var(--pa-muted)]">{open ? "▾" : "▸"}</span>
       </button>
       {open ? (
-        <div className="flex flex-wrap gap-2 border-t border-[var(--pa-border)] p-3">
+        <div className="grid grid-cols-1 gap-0.5 border-t border-[var(--pa-border)] p-2 sm:grid-cols-2">
           {items.map((feat) => (
-            <FeatureChip
+            <FeatureRow
               key={feat.id}
               id={feat.id}
               nombre={feat.nombre}

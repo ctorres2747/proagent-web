@@ -16,6 +16,7 @@ import {
   type PriceRange,
 } from "@/components/PriceRangeFilter";
 import { formatPrice } from "@/lib/format";
+import { capturedAtLabel } from "@/lib/formatCapturedAt";
 import { formatMissingFields } from "@/lib/completeness";
 import {
   buildMunicipioOptions,
@@ -386,6 +387,11 @@ function PropertyCard({
         <div className="mb-2.5 text-xs text-[var(--pa-muted)]">
           {p.tipo} · {p.intent} · {p.municipio}
         </div>
+        {capturedAtLabel(p.capturedAt) ? (
+          <div className="mb-2 text-[11px] text-[var(--pa-muted)]">
+            {capturedAtLabel(p.capturedAt)}
+          </div>
+        ) : null}
         <div className="mb-3 text-[15px] font-extrabold text-[var(--pa-navy)]">
           {formatPrice(p.precio, p.esArriendo)}
         </div>
@@ -467,6 +473,11 @@ function PropertyTable({
               {p.titulo}
             </div>
             <div className="text-[11px] text-[var(--pa-faint)]">{p.code}</div>
+            {capturedAtLabel(p.capturedAt) ? (
+              <div className="text-[10px] text-[var(--pa-muted)]">
+                {capturedAtLabel(p.capturedAt)}
+              </div>
+            ) : null}
           </button>
           <button type="button" onClick={() => onOpen(p)} className="text-left text-xs text-[var(--pa-muted)]">
             {p.tipo} · {p.intent}

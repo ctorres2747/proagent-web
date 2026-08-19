@@ -65,6 +65,8 @@ export interface Property {
   /** Display name of owning agent (admin inventory filter). */
   ownerAgenteNombre: string | null;
   channels: PropertyChannel[];
+  /** ISO datetime when linked lead was captured by scraper; null for manual alta. */
+  capturedAt?: string | null;
 }
 
 export interface PropertiesService {
