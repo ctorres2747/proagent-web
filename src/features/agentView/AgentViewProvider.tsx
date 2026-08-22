@@ -6,6 +6,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -43,14 +44,35 @@ export function AgentViewProvider({
     if (stored) setViewAgenteIdState(stored);
   }, []);
 
-  // Un asesor normal nunca debe quedar "viendo como" otro — y al cerrar
-  // sesión, el próximo login (admin u otro) arranca en vista combinada.
+  // Un asesor normal nunca debe quedar "viendo como" otro.
   useEffect(() => {
     if (!isAdmin) {
       setViewAgenteIdState(null);
       if (typeof window !== "undefined") sessionStorage.removeItem(STORAGE_KEY);
     }
   }, [isAdmin]);
+
+  // Bug real 2026-08-22: cambiar de sesión (ej. Andreina -> Nataly) sin
+  // recargar la página dejaba esta selección "viendo como" pegada del
+  // agente anterior — solo se limpiaba por el efecto de arriba si el nuevo
+  // agente no era admin. Este efecto cubre TODO cambio de identidad real
+  // (incluido admin -> otro admin distinto), comparando contra el último
+  // id de sesión visto; ignora las transiciones por `null` (logout/carga
+  // inicial) para no perder la selección restaurada en un simple F5 del
+  // mismo agente.
+  const lastSeenAgentId = useRef<string | null>(null);
+  useEffect(() => {
+    const currentId = session?.id ?? null;
+    if (currentId === null) return;
+    if (
+      lastSeenAgentId.current !== null &&
+      lastSeenAgentId.current !== currentId
+    ) {
+      setViewAgenteIdState(null);
+      if (typeof window !== "undefined") sessionStorage.removeItem(STORAGE_KEY);
+    }
+    lastSeenAgentId.current = currentId;
+  }, [session?.id]);
 
   const setViewAgenteId = useCallback((id: string | null) => {
     setViewAgenteIdState(id);

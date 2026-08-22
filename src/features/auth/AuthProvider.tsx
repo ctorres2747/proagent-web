@@ -8,6 +8,7 @@ import {
   useMemo,
   useState,
 } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { USE_HTTP_API } from "@/config/env";
 import { authService } from "@/services";
 import { ApiError } from "@/services/http/client";
@@ -33,6 +34,7 @@ interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const queryClient = useQueryClient();
   const [session, setSession] = useState<AgentSession | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -43,7 +45,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setToken(null);
     setError(null);
     if (typeof window !== "undefined") localStorage.removeItem(TOKEN_KEY);
-  }, []);
+    // Bug real 2026-08-22: sin esto, cerrar sesión de un agente y entrar con
+    // otro (misma pestaña, sin recargar) seguía mostrando los datos
+    // cacheados del agente anterior — todo React Query vive en un único
+    // QueryClient con claves que no distinguen identidad (["leads"],
+    // ["properties"], etc.). Limpiar el cache entero al cambiar de sesión
+    // es el patrón estándar (mismo que recomienda la doc de React Query
+    // para logout) — más robusto y escalable que namespacear cada clave.
+    queryClient.clear();
+  }, [queryClient]);
 
   // Bootstrap: in mock mode auto-authenticate as admin (no login gate).
   // In HTTP mode, restore token from localStorage and hydrate via /me.
@@ -86,12 +96,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const establishSession = useCallback((response: LoginResponse) => {
     setError(null);
+    // Defensa en profundidad: si se establece una sesión sin pasar por
+    // logout() antes (ej. handoff directo desde otra app), igual se limpia
+    // el cache — nunca debe sobrevivir data de un agente distinto al actual.
+    queryClient.clear();
     setSession(response.agent);
     setToken(response.access_token);
     if (typeof window !== "undefined") {
       localStorage.setItem(TOKEN_KEY, response.access_token);
     }
-  }, []);
+  }, [queryClient]);
 
   const updateSession = useCallback((patch: Partial<AgentSession>) => {
     setSession((prev) => (prev ? { ...prev, ...patch } : prev));
