@@ -6,6 +6,7 @@ export interface WasiFeature {
 export interface WasiFeaturesCatalog {
   internal: WasiFeature[];
   external: WasiFeature[];
+  popularIds?: number[];
 }
 
 export interface WasiFeaturesService {
