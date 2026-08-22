@@ -20,14 +20,14 @@ function FeatureRow({
   onToggle: (id: number) => void;
 }) {
   return (
-    <label className="flex cursor-pointer items-center gap-2.5 rounded-lg px-2 py-1.5 hover:bg-[var(--pa-bg)]">
+    <label className="flex min-w-0 cursor-pointer items-start gap-2 rounded-lg px-1.5 py-1.5 hover:bg-[var(--pa-bg)]">
       <input
         type="checkbox"
         checked={checked}
         onChange={() => onToggle(id)}
-        className="h-4 w-4 shrink-0 rounded border-[var(--pa-border)] text-[var(--pa-navy)] focus:ring-[var(--pa-navy)]"
+        className="mt-0.5 h-4 w-4 shrink-0 rounded border-[var(--pa-border)] text-[var(--pa-navy)] focus:ring-[var(--pa-navy)]"
       />
-      <span className="text-sm text-[var(--pa-ink)]">{nombre}</span>
+      <span className="text-xs leading-snug text-[var(--pa-ink)]">{nombre}</span>
     </label>
   );
 }
@@ -59,7 +59,7 @@ function CollapsibleGroup({
         <span className="text-[var(--pa-muted)]">{open ? "▾" : "▸"}</span>
       </button>
       {open ? (
-        <div className="grid grid-cols-1 gap-0.5 border-t border-[var(--pa-border)] p-2 sm:grid-cols-2">
+        <div className="grid grid-cols-2 gap-x-2 gap-y-0.5 border-t border-[var(--pa-border)] p-2 sm:grid-cols-3 lg:grid-cols-4">
           {items.map((feat) => (
             <FeatureRow
               key={feat.id}
