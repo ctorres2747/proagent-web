@@ -21,6 +21,17 @@ export interface ScraperStatus {
   queueStatus: string | null;
 }
 
+export interface ScraperRunOptions {
+  /** Correr solo la zona de este asesor en vez de la unión de todas. */
+  agenteId?: number;
+}
+
+export interface ScraperRunResult {
+  message: string;
+  running: boolean;
+}
+
 export interface ScraperService {
   status(token?: string): Promise<ScraperStatus>;
+  run(options: ScraperRunOptions, token?: string): Promise<ScraperRunResult>;
 }
