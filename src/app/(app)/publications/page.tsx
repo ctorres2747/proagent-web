@@ -365,6 +365,20 @@ export default function PublicationsPage() {
         </p>
       )}
 
+      {filtered.length > 0 && (
+        <div className="mb-4 overflow-hidden rounded-2xl border border-[var(--pa-border)]">
+          <PaginationBar
+            page={page}
+            totalPages={totalPages}
+            onPageChange={setPage}
+            pageSize={pageSize}
+            onPageSizeChange={setPageSize}
+            pageSizeOptions={PAGE_SIZE_OPTIONS}
+            total={filtered.length}
+          />
+        </div>
+      )}
+
       {filtered.length > 0 && view === "cards" && (
         <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-5">
           {pageItems.map((p) => (
