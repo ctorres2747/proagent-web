@@ -54,7 +54,6 @@ export default function PropertiesPage() {
   const [priceRange, setPriceRange] = useState<PriceRange>({ min: "", max: "" });
   const [openFilter, setOpenFilter] = useState<FilterKey | null>(null);
   const [shortcutFaltanDatos, setShortcutFaltanDatos] = useState(false);
-  const [shortcutErrorCanales, setShortcutErrorCanales] = useState(false);
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ["properties"],
@@ -79,12 +78,6 @@ export default function PropertiesPage() {
       if (!matchesPriceRange(p.precio, priceRange)) return false;
       if (viewAgenteId && p.ownerAgenteId !== viewAgenteId) return false;
       if (shortcutFaltanDatos && p.completeness >= 100) return false;
-      if (
-        shortcutErrorCanales &&
-        !p.channels.some((c) => c.status === "error")
-      ) {
-        return false;
-      }
       return matchesPropertySearch(p, search);
     });
   }, [
@@ -96,7 +89,6 @@ export default function PropertiesPage() {
     priceRange,
     viewAgenteId,
     shortcutFaltanDatos,
-    shortcutErrorCanales,
   ]);
 
   // Menor completitud primero — son las que más urge completar.
@@ -118,8 +110,7 @@ export default function PropertiesPage() {
     estadoFilter !== "Todos" ||
     isPriceRangeActive(priceRange) ||
     search.trim().length > 0 ||
-    shortcutFaltanDatos ||
-    shortcutErrorCanales;
+    shortcutFaltanDatos;
 
   const clearFilters = () => {
     setTipoFilter("Todos");
@@ -128,7 +119,6 @@ export default function PropertiesPage() {
     setPriceRange({ min: "", max: "" });
     setSearch("");
     setShortcutFaltanDatos(false);
-    setShortcutErrorCanales(false);
     setOpenFilter(null);
   };
 
@@ -193,7 +183,7 @@ export default function PropertiesPage() {
       <div className="mb-4">
         <PropertySearchInput value={search} onChange={setSearch} />
       </div>
-      <div className="mb-3 flex flex-wrap gap-2">
+      <div className="mb-6 flex flex-wrap items-center gap-2.5">
         <button
           type="button"
           onClick={() => setShortcutFaltanDatos((v) => !v)}
@@ -205,19 +195,6 @@ export default function PropertiesPage() {
         >
           Faltan datos
         </button>
-        <button
-          type="button"
-          onClick={() => setShortcutErrorCanales((v) => !v)}
-          className={`rounded-full px-4 py-2 text-[13px] font-semibold transition-colors ${
-            shortcutErrorCanales
-              ? "bg-[var(--pa-danger)] text-white"
-              : "border border-[var(--pa-border)] bg-[var(--pa-surface)] text-[#45525E] hover:border-[var(--pa-danger)]"
-          }`}
-        >
-          Error en canales
-        </button>
-      </div>
-      <div className="mb-6 flex flex-wrap gap-2.5">
         <FilterDropdown
           label={`Tipo${tipoFilter !== "Todos" ? `: ${tipoFilter}` : ""}`}
           active={tipoFilter !== "Todos"}
