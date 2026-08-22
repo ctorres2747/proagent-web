@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useAgentView } from "@/features/agentView/AgentViewProvider";
 import { useAuth } from "@/features/auth/AuthProvider";
 import { propertiesService } from "@/services";
 import type { Property } from "@/services/interfaces/properties";
@@ -11,6 +12,7 @@ import { CompletenessBar } from "@/components/CompletenessBar";
 import { CoverImage } from "@/components/CoverImage";
 import { FilterDropdown } from "@/components/FilterDropdown";
 import {
+  isPriceRangeActive,
   matchesPriceRange,
   PriceRangeFilter,
   type PriceRange,
@@ -34,10 +36,11 @@ import { DeletePropertyDialog } from "@/components/DeletePropertyDialog";
 const FILTER_TYPES = ["Todos", "Apartamento", "Casa", "Local", "Lote", "Oficina", "Finca"];
 const FILTER_ESTADOS = ["Todos", "Incompleto", "Casi listo", "Completo"];
 
-type FilterKey = "tipo" | "municipio" | "estado" | "precio" | "propietario";
+type FilterKey = "tipo" | "municipio" | "estado" | "precio";
 
 export default function PropertiesPage() {
-  const { session, token } = useAuth();
+  const { token } = useAuth();
+  const { viewAgenteId } = useAgentView();
   const router = useRouter();
   const queryClient = useQueryClient();
   const [view, setView] = useState<"table" | "cards">("table");
@@ -48,12 +51,9 @@ export default function PropertiesPage() {
   const [municipioFilter, setMunicipioFilter] = useState("Todos");
   const [estadoFilter, setEstadoFilter] = useState("Todos");
   const [priceRange, setPriceRange] = useState<PriceRange>({ min: "", max: "" });
-  const [propietarioFilter, setPropietarioFilter] = useState("Todos");
   const [openFilter, setOpenFilter] = useState<FilterKey | null>(null);
   const [shortcutFaltanDatos, setShortcutFaltanDatos] = useState(false);
   const [shortcutErrorCanales, setShortcutErrorCanales] = useState(false);
-
-  const isAdmin = session?.role === "admin";
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ["properties"],
@@ -64,22 +64,6 @@ export default function PropertiesPage() {
     () => buildMunicipioOptions((data ?? []).map((p) => p.municipio)),
     [data],
   );
-
-  const propietarioOptions = useMemo(() => {
-    const map = new Map<string, string>();
-    for (const p of data ?? []) {
-      if (!p.ownerAgenteId) continue;
-      map.set(
-        p.ownerAgenteId,
-        p.ownerAgenteNombre ?? `Agente ${p.ownerAgenteId}`,
-      );
-    }
-    return Array.from(map.entries())
-      .map(([id, label]) => ({ id, label }))
-      .sort((a, b) => a.label.localeCompare(b.label, "es"));
-  }, [data]);
-
-  const showPropietarioFilter = isAdmin && propietarioOptions.length > 1;
 
   const filtered = useMemo(() => {
     const municipioKey =
@@ -92,12 +76,7 @@ export default function PropertiesPage() {
         return false;
       if (estadoFilter === "Completo" && p.completeness < 100) return false;
       if (!matchesPriceRange(p.precio, priceRange)) return false;
-      if (
-        propietarioFilter !== "Todos" &&
-        p.ownerAgenteId !== propietarioFilter
-      ) {
-        return false;
-      }
+      if (viewAgenteId && p.ownerAgenteId !== viewAgenteId) return false;
       if (shortcutFaltanDatos && p.completeness >= 100) return false;
       if (
         shortcutErrorCanales &&
@@ -114,10 +93,30 @@ export default function PropertiesPage() {
     municipioFilter,
     estadoFilter,
     priceRange,
-    propietarioFilter,
+    viewAgenteId,
     shortcutFaltanDatos,
     shortcutErrorCanales,
   ]);
+
+  const hasActiveFilters =
+    tipoFilter !== "Todos" ||
+    municipioFilter !== "Todos" ||
+    estadoFilter !== "Todos" ||
+    isPriceRangeActive(priceRange) ||
+    search.trim().length > 0 ||
+    shortcutFaltanDatos ||
+    shortcutErrorCanales;
+
+  const clearFilters = () => {
+    setTipoFilter("Todos");
+    setMunicipioFilter("Todos");
+    setEstadoFilter("Todos");
+    setPriceRange({ min: "", max: "" });
+    setSearch("");
+    setShortcutFaltanDatos(false);
+    setShortcutErrorCanales(false);
+    setOpenFilter(null);
+  };
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => propertiesService.delete(id, token ?? undefined),
@@ -260,30 +259,15 @@ export default function PropertiesPage() {
           }
           onClose={() => setOpenFilter(null)}
         />
-        {showPropietarioFilter && (
-          <FilterDropdown
-            label={`Propietario${
-              propietarioFilter !== "Todos"
-                ? `: ${propietarioOptions.find((o) => o.id === propietarioFilter)?.label ?? ""}`
-                : ""
-            }`}
-            active={propietarioFilter !== "Todos"}
-            open={openFilter === "propietario"}
-            onToggle={() =>
-              setOpenFilter((f) => (f === "propietario" ? null : "propietario"))
-            }
-            onClose={() => setOpenFilter(null)}
-            options={[
-              { value: "Todos", label: "Todos" },
-              ...propietarioOptions.map((o) => ({
-                value: o.id,
-                label: o.label,
-              })),
-            ]}
-            selected={propietarioFilter}
-            onSelect={setPropietarioFilter}
-          />
-        )}
+        {hasActiveFilters ? (
+          <button
+            type="button"
+            onClick={clearFilters}
+            className="text-[13px] font-semibold text-[var(--pa-navy)] underline"
+          >
+            Limpiar filtros
+          </button>
+        ) : null}
       </div>
 
       {deleteMutation.isError && (

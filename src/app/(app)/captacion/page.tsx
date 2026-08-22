@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useAgentView } from "@/features/agentView/AgentViewProvider";
 import { useAuth } from "@/features/auth/AuthProvider";
 import { CAPTACION_NATIVE, CAPTACION_URL } from "@/config/env";
 import { CaptacionDetailDrawer } from "@/features/captacion/CaptacionDetailDrawer";
@@ -22,7 +23,7 @@ import {
   type PriceRange,
 } from "@/components/PriceRangeFilter";
 import { Toast } from "@/components/Toast";
-import { agentesService, fichasService, leadsService, scraperService } from "@/services";
+import { fichasService, leadsService, scraperService } from "@/services";
 import type { Lead, LeadEstado } from "@/services/interfaces/leads";
 
 const COLUMNS: LeadEstado[] = [
@@ -32,7 +33,7 @@ const COLUMNS: LeadEstado[] = [
   "Descartado",
 ];
 
-type FilterKey = "municipio" | "tipo" | "portal" | "estado" | "asesor" | "precio";
+type FilterKey = "municipio" | "tipo" | "portal" | "estado" | "precio";
 
 function columnCount(leads: Lead[], estado: LeadEstado): number {
   return leads.filter((l) => l.estado === estado).length;
@@ -58,6 +59,7 @@ function KpiCard({ value, label }: { value: number; label: string }) {
 
 export default function CaptacionPage() {
   const { session, token } = useAuth();
+  const { viewAgenteId, agentesList } = useAgentView();
   const router = useRouter();
   const queryClient = useQueryClient();
   const [selectedId, setSelectedId] = useState<number | null>(null);
@@ -76,10 +78,6 @@ export default function CaptacionPage() {
   const [ownerSearch, setOwnerSearch] = useState("");
   const [openFilter, setOpenFilter] = useState<FilterKey | null>(null);
   const [criteriosOpen, setCriteriosOpen] = useState(false);
-  // Admin: "ver como asesor" — filtra el Kanban a la zona de ese asesor Y
-  // acota el disparo del scraper a esa misma zona (mismo doble propósito
-  // que el filtro "Asesor" del Kanban legacy — un solo selector, no dos).
-  const [agenteFilter, setAgenteFilter] = useState("");
 
   const staff = canAccessCaptacion(session);
   const isAdmin = session?.role === "admin";
@@ -109,16 +107,10 @@ export default function CaptacionPage() {
       q.state.data?.running || q.state.data?.queueStatus ? 5000 : 60000,
   });
 
-  const { data: agentesList } = useQuery({
-    queryKey: ["agentes"],
-    queryFn: () => agentesService.list(token ?? undefined),
-    enabled: staff && CAPTACION_NATIVE && isAdmin,
-  });
-
   const runScraperMutation = useMutation({
     mutationFn: () =>
       scraperService.run(
-        { agenteId: agenteFilter ? Number(agenteFilter) : undefined },
+        { agenteId: viewAgenteId ? Number(viewAgenteId) : undefined },
         token ?? undefined,
       ),
     onSuccess: (result) => {
@@ -197,11 +189,7 @@ export default function CaptacionPage() {
       if (estadoFilter !== "Todos" && lead.estado !== estadoFilter) {
         return false;
       }
-      if (
-        isAdmin &&
-        agenteFilter &&
-        lead.ownerAgenteId !== Number(agenteFilter)
-      ) {
+      if (viewAgenteId && lead.ownerAgenteId !== Number(viewAgenteId)) {
         return false;
       }
       if (!matchesPriceRange(lead.precioNum, priceRange)) return false;
@@ -214,8 +202,7 @@ export default function CaptacionPage() {
     tipoFilter,
     portalFilter,
     estadoFilter,
-    isAdmin,
-    agenteFilter,
+    viewAgenteId,
     priceRange,
     ownerSearch,
   ]);
@@ -225,7 +212,6 @@ export default function CaptacionPage() {
     tipoFilter !== "Todos" ||
     portalFilter !== "Todos" ||
     estadoFilter !== "Todos" ||
-    Boolean(agenteFilter) ||
     isPriceRangeActive(priceRange) ||
     ownerSearch.trim().length > 0;
 
@@ -234,7 +220,6 @@ export default function CaptacionPage() {
     setTipoFilter("Todos");
     setPortalFilter("Todos");
     setEstadoFilter("Todos");
-    setAgenteFilter("");
     setPriceRange({ min: "", max: "" });
     setOwnerSearch("");
     setOpenFilter(null);
@@ -441,33 +426,6 @@ export default function CaptacionPage() {
           selected={estadoFilter}
           onSelect={setEstadoFilter}
         />
-        {isAdmin ? (
-          <FilterDropdown
-            label={`Asesor${
-              agenteFilter
-                ? `: ${
-                    agentesList?.find((a) => String(a.id) === agenteFilter)
-                      ?.nombrePreferido ?? "elegido"
-                  }`
-                : ""
-            }`}
-            active={Boolean(agenteFilter)}
-            open={openFilter === "asesor"}
-            onToggle={() =>
-              setOpenFilter((k) => (k === "asesor" ? null : "asesor"))
-            }
-            onClose={() => setOpenFilter(null)}
-            options={[
-              { value: "", label: "Todos (vista combinada)" },
-              ...(agentesList ?? []).map((a) => ({
-                value: String(a.id),
-                label: a.nombrePreferido || a.nombre || `Asesor ${a.id}`,
-              })),
-            ]}
-            selected={agenteFilter}
-            onSelect={setAgenteFilter}
-          />
-        ) : null}
         <PriceRangeFilter
           range={priceRange}
           onChange={setPriceRange}
@@ -506,8 +464,8 @@ export default function CaptacionPage() {
               Boolean(scraperStatus?.queueStatus)
             }
             title={
-              agenteFilter
-                ? 'Corre el scraper SOLO para la zona del asesor elegido en el filtro "Asesor"'
+              viewAgenteId
+                ? 'Corre el scraper SOLO para la zona del asesor elegido en "Viendo como"'
                 : 'Corre el scraper para todas las zonas combinadas'
             }
             className="rounded-[10px] bg-[var(--pa-navy)] px-4 py-2 text-[13px] font-bold text-white hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
@@ -516,9 +474,9 @@ export default function CaptacionPage() {
             scraperStatus?.running ||
             scraperStatus?.queueStatus
               ? "⏳ Scrapeando…"
-              : agenteFilter
+              : viewAgenteId
                 ? `▶ Ejecutar scraper (${
-                    agentesList?.find((a) => String(a.id) === agenteFilter)
+                    agentesList.find((a) => String(a.id) === viewAgenteId)
                       ?.nombrePreferido ?? "asesor"
                   })`
                 : "▶ Ejecutar scraper"}
