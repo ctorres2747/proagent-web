@@ -1,19 +1,27 @@
 "use client";
 
+import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useAgentView } from "@/features/agentView/AgentViewProvider";
 import { useAuth } from "@/features/auth/AuthProvider";
 import { propertiesService } from "@/services";
 import { displayName } from "@/lib/agentDisplay";
 
 export default function DashboardPage() {
   const { session, token } = useAuth();
+  const { viewAgenteId, viewAgenteLabel } = useAgentView();
   const { data, isLoading } = useQuery({
     queryKey: ["properties"],
     queryFn: () => propertiesService.list(token ?? undefined),
   });
 
-  const total = data?.length ?? 0;
-  const completas = data?.filter((p) => p.completeness >= 100).length ?? 0;
+  const scoped = useMemo(() => {
+    if (!viewAgenteId) return data ?? [];
+    return (data ?? []).filter((p) => p.ownerAgenteId === viewAgenteId);
+  }, [data, viewAgenteId]);
+
+  const total = scoped.length;
+  const completas = scoped.filter((p) => p.completeness >= 100).length;
 
   return (
     <div className="px-6 py-8 md:px-10">
@@ -23,6 +31,7 @@ export default function DashboardPage() {
       <p className="mt-1 text-sm text-[var(--pa-muted)]">
         Panel de {session?.role === "admin" ? "administrador" : "agente"} ·
         ProAgent Web
+        {viewAgenteId ? ` · Viendo como ${viewAgenteLabel}` : ""}
       </p>
 
       <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-3">

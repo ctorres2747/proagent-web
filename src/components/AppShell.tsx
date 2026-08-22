@@ -3,9 +3,11 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useAgentView } from "@/features/agentView/AgentViewProvider";
 import { useAuth } from "@/features/auth/AuthProvider";
 import { CAPTACION_NATIVE, CAPTACION_URL } from "@/config/env";
 import { canAccessCaptacion } from "@/lib/agentDisplay";
+import { FilterDropdown } from "@/components/FilterDropdown";
 import { UserMenu } from "@/components/UserMenu";
 
 interface NavItem {
@@ -42,8 +44,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const { session } = useAuth();
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
+  const [agenteFilterOpen, setAgenteFilterOpen] = useState(false);
 
   const staff = canAccessCaptacion(session);
+  const isAdmin = session?.role === "admin";
+  const { viewAgenteId, setViewAgenteId, agentesList } = useAgentView();
   const captacionHref = CAPTACION_NATIVE ? "/captacion" : CAPTACION_URL;
   const captacionExternal = !CAPTACION_NATIVE;
 
@@ -162,9 +167,29 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             Buscar propiedad, cliente o código…
           </div>
           <div className="flex-1" />
-          <div className="hidden text-[13px] font-semibold text-[var(--pa-muted)] sm:block">
-            Medellín, Antioquia
-          </div>
+          {isAdmin ? (
+            <FilterDropdown
+              label={`Viendo como: ${
+                viewAgenteId
+                  ? agentesList.find((a) => String(a.id) === viewAgenteId)
+                      ?.nombrePreferido ?? "asesor"
+                  : "Todos"
+              }`}
+              active={Boolean(viewAgenteId)}
+              open={agenteFilterOpen}
+              onToggle={() => setAgenteFilterOpen((v) => !v)}
+              onClose={() => setAgenteFilterOpen(false)}
+              options={[
+                { value: "", label: "Todos (vista combinada)" },
+                ...agentesList.map((a) => ({
+                  value: String(a.id),
+                  label: a.nombrePreferido || a.nombre || `Asesor ${a.id}`,
+                })),
+              ]}
+              selected={viewAgenteId ?? ""}
+              onSelect={(v) => setViewAgenteId(v || null)}
+            />
+          ) : null}
           <Link
             href="/publications"
             className="whitespace-nowrap rounded-[10px] bg-[var(--pa-navy)] px-4 py-2.5 text-[13px] font-bold text-white transition-opacity hover:opacity-90"

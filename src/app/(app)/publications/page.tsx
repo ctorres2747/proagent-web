@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useAgentView } from "@/features/agentView/AgentViewProvider";
 import { useAuth } from "@/features/auth/AuthProvider";
 import { propertiesService, publicationsService } from "@/services";
 import type { Property } from "@/services/interfaces/properties";
@@ -17,6 +18,7 @@ import {
   ViewToggle,
 } from "@/components/properties/PropertyListUi";
 import {
+  isPriceRangeActive,
   matchesPriceRange,
   PriceRangeFilter,
   type PriceRange,
@@ -51,10 +53,11 @@ const FILTER_TYPES = [
   "Finca",
 ];
 
-type FilterKey = "tipo" | "municipio" | "estado" | "precio" | "propietario";
+type FilterKey = "tipo" | "municipio" | "estado" | "precio";
 
 export default function PublicationsPage() {
-  const { session, token } = useAuth();
+  const { token } = useAuth();
+  const { viewAgenteId } = useAgentView();
   const router = useRouter();
   const queryClient = useQueryClient();
   const [view, setView] = useState<"table" | "cards">("table");
@@ -67,13 +70,10 @@ export default function PublicationsPage() {
     "Todos",
   );
   const [priceRange, setPriceRange] = useState<PriceRange>({ min: "", max: "" });
-  const [propietarioFilter, setPropietarioFilter] = useState("Todos");
   const [openFilter, setOpenFilter] = useState<FilterKey | null>(null);
   const [shortcutSinPublicar, setShortcutSinPublicar] = useState(false);
   const [shortcutError, setShortcutError] = useState(false);
   const [shortcutProgramadas, setShortcutProgramadas] = useState(false);
-
-  const isAdmin = session?.role === "admin";
 
   const { data: properties, isLoading, isError } = useQuery({
     queryKey: ["properties"],
@@ -95,22 +95,6 @@ export default function PublicationsPage() {
     [properties],
   );
 
-  const propietarioOptions = useMemo(() => {
-    const map = new Map<string, string>();
-    for (const p of properties ?? []) {
-      if (!p.ownerAgenteId) continue;
-      map.set(
-        p.ownerAgenteId,
-        p.ownerAgenteNombre ?? `Agente ${p.ownerAgenteId}`,
-      );
-    }
-    return Array.from(map.entries())
-      .map(([id, label]) => ({ id, label }))
-      .sort((a, b) => a.label.localeCompare(b.label, "es"));
-  }, [properties]);
-
-  const showPropietarioFilter = isAdmin && propietarioOptions.length > 1;
-
   const filtered = useMemo(() => {
     const municipioKey =
       municipioFilter === "Todos" ? null : municipioFilter;
@@ -131,12 +115,7 @@ export default function PublicationsPage() {
         return false;
       }
       if (!matchesPriceRange(p.precio, priceRange)) return false;
-      if (
-        propietarioFilter !== "Todos" &&
-        p.ownerAgenteId !== propietarioFilter
-      ) {
-        return false;
-      }
+      if (viewAgenteId && p.ownerAgenteId !== viewAgenteId) return false;
       return matchesPropertySearch(p, search);
     });
   }, [
@@ -147,11 +126,33 @@ export default function PublicationsPage() {
     municipioFilter,
     estadoFilter,
     priceRange,
-    propietarioFilter,
+    viewAgenteId,
     shortcutSinPublicar,
     shortcutError,
     shortcutProgramadas,
   ]);
+
+  const hasActiveFilters =
+    tipoFilter !== "Todos" ||
+    municipioFilter !== "Todos" ||
+    estadoFilter !== "Todos" ||
+    isPriceRangeActive(priceRange) ||
+    search.trim().length > 0 ||
+    shortcutSinPublicar ||
+    shortcutError ||
+    shortcutProgramadas;
+
+  const clearFilters = () => {
+    setTipoFilter("Todos");
+    setMunicipioFilter("Todos");
+    setEstadoFilter("Todos");
+    setPriceRange({ min: "", max: "" });
+    setSearch("");
+    setShortcutSinPublicar(false);
+    setShortcutError(false);
+    setShortcutProgramadas(false);
+    setOpenFilter(null);
+  };
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => propertiesService.delete(id, token ?? undefined),
@@ -308,30 +309,15 @@ export default function PublicationsPage() {
           }
           onClose={() => setOpenFilter(null)}
         />
-        {showPropietarioFilter && (
-          <FilterDropdown
-            label={`Propietario${
-              propietarioFilter !== "Todos"
-                ? `: ${propietarioOptions.find((o) => o.id === propietarioFilter)?.label ?? ""}`
-                : ""
-            }`}
-            active={propietarioFilter !== "Todos"}
-            open={openFilter === "propietario"}
-            onToggle={() =>
-              setOpenFilter((f) => (f === "propietario" ? null : "propietario"))
-            }
-            onClose={() => setOpenFilter(null)}
-            options={[
-              { value: "Todos", label: "Todos" },
-              ...propietarioOptions.map((o) => ({
-                value: o.id,
-                label: o.label,
-              })),
-            ]}
-            selected={propietarioFilter}
-            onSelect={setPropietarioFilter}
-          />
-        )}
+        {hasActiveFilters ? (
+          <button
+            type="button"
+            onClick={clearFilters}
+            className="text-[13px] font-semibold text-[var(--pa-navy)] underline"
+          >
+            Limpiar filtros
+          </button>
+        ) : null}
       </div>
 
       {deleteMutation.isError && (
