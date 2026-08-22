@@ -210,7 +210,7 @@ function ProfileTab({
         </label>
         <label className="block">
           <span className="mb-1 block text-[12px] font-semibold text-[var(--pa-muted)]">
-            Instagram (perfil público)
+            Instagram (también se usa para conectar el canal de Instagram)
           </span>
           <input
             value={form.instagramHandle}
@@ -250,11 +250,15 @@ function ProfileTab({
 function ChannelRow({
   connection,
   token,
+  instagramHandle,
+  onGoToProfile,
   onSaved,
   onError,
 }: {
   connection: ChannelConnection;
   token?: string;
+  instagramHandle: string;
+  onGoToProfile: () => void;
   onSaved: (message: string) => void;
   onError: (message: string) => void;
 }) {
@@ -265,7 +269,6 @@ function ChannelRow({
   const [wasiCompany, setWasiCompany] = useState("");
   const [wasiToken, setWasiToken] = useState("");
   const [wasiUser, setWasiUser] = useState("");
-  const [instagramAccount, setInstagramAccount] = useState("");
   const [catalogId, setCatalogId] = useState("");
   const [expanded, setExpanded] = useState(false);
 
@@ -300,6 +303,10 @@ function ChannelRow({
   };
 
   const connectOwn = () => {
+    if (id === "instagram" && !instagramHandle.trim()) {
+      onError("Agrega tu Instagram en la pestaña Perfil antes de conectar este canal");
+      return;
+    }
     const credentials: NonNullable<Parameters<typeof channelsService.patch>[1]["credentials"]> =
       {};
     if (id === "wasi") {
@@ -307,7 +314,7 @@ function ChannelRow({
       credentials.wasiToken = wasiToken || null;
       credentials.wasiIdUser = wasiUser || null;
     } else if (id === "instagram") {
-      credentials.instagramAccount = instagramAccount || null;
+      credentials.instagramAccount = instagramHandle.trim() || null;
     } else if (id === "whatsapp") {
       credentials.catalogId = catalogId || null;
     }
@@ -431,12 +438,32 @@ function ChannelRow({
           ) : null}
 
           {id === "instagram" && mode === "own" ? (
-            <input
-              placeholder="Cuenta Instagram (@usuario)"
-              value={instagramAccount}
-              onChange={(e) => setInstagramAccount(e.target.value)}
-              className="w-full rounded-lg border border-[var(--pa-border)] px-2 py-1.5 text-[13px]"
-            />
+            instagramHandle.trim() ? (
+              <p className="text-[13px] text-[var(--pa-muted)]">
+                Se usará tu Instagram de perfil:{" "}
+                <span className="font-semibold text-[var(--pa-ink)]">{instagramHandle}</span>
+                {" · "}
+                <button
+                  type="button"
+                  onClick={onGoToProfile}
+                  className="font-semibold text-[var(--pa-navy)] underline underline-offset-2"
+                >
+                  cambiarlo en Perfil
+                </button>
+              </p>
+            ) : (
+              <p className="text-[13px] text-[var(--pa-warning-ink)]">
+                No tienes Instagram en tu perfil.{" "}
+                <button
+                  type="button"
+                  onClick={onGoToProfile}
+                  className="font-semibold underline underline-offset-2"
+                >
+                  Agrégalo en Perfil
+                </button>{" "}
+                para conectar este canal.
+              </p>
+            )
           ) : null}
 
           {id === "whatsapp" && mode === "own" ? (
@@ -476,10 +503,12 @@ function ChannelRow({
 
 function ChannelsTab({
   token,
+  onGoToProfile,
   onSaved,
   onError,
 }: {
   token?: string;
+  onGoToProfile: () => void;
   onSaved: (message: string) => void;
   onError: (message: string) => void;
 }) {
@@ -487,6 +516,13 @@ function ChannelsTab({
     queryKey: ["channel-connections"],
     queryFn: () => channelsService.list(token),
   });
+  // Mismo query key que ProfileTab — React Query lo cachea/comparte, así que
+  // entrar directo a la pestaña Canales no duplica el fetch de perfil.
+  const { data: profile } = useQuery({
+    queryKey: ["agent-profile"],
+    queryFn: () => profileService.get(token),
+  });
+  const instagramHandle = profile?.instagramHandle ?? "";
 
   if (isLoading) {
     return <p className="text-[13px] text-[var(--pa-muted)]">Cargando canales…</p>;
@@ -515,6 +551,8 @@ function ChannelsTab({
             key={id}
             connection={conn}
             token={token}
+            instagramHandle={instagramHandle}
+            onGoToProfile={onGoToProfile}
             onSaved={onSaved}
             onError={onError}
           />
@@ -574,6 +612,7 @@ export default function SettingsPage() {
         ) : (
           <ChannelsTab
             token={token ?? undefined}
+            onGoToProfile={() => setTab("perfil")}
             onSaved={(message) => setToast({ message })}
             onError={(message) => setToast({ message, type: "error" })}
           />
