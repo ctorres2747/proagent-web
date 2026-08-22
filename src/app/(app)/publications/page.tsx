@@ -38,6 +38,7 @@ import {
   publicationStage,
   publicationTitle,
   PUBLICATION_STAGE_CLASS,
+  PUBLICATION_STAGE_SORT_ORDER,
   stageLabel,
   type PublicationFilterLabel,
 } from "@/lib/publicationDisplay";
@@ -134,10 +135,19 @@ export default function PublicationsPage() {
   ]);
 
   // Menor completitud primero — son las que más urge completar.
-  const sorted = useMemo(
-    () => [...filtered].sort((a, b) => a.completeness - b.completeness),
-    [filtered],
-  );
+  // Primero lo que hay que trabajar (borrador, sin publicar), luego lo que
+  // necesita atención (error/parcial), programadas, y publicadas al final.
+  // Dentro de una misma etapa, menor completitud primero.
+  const sorted = useMemo(() => {
+    return [...filtered].sort((a, b) => {
+      const stageA = publicationStage(pubByPropertyId.get(a.id));
+      const stageB = publicationStage(pubByPropertyId.get(b.id));
+      const stageDiff =
+        PUBLICATION_STAGE_SORT_ORDER[stageA] - PUBLICATION_STAGE_SORT_ORDER[stageB];
+      if (stageDiff !== 0) return stageDiff;
+      return a.completeness - b.completeness;
+    });
+  }, [filtered, pubByPropertyId]);
 
   const { page, setPage, totalPages, pageSize, setPageSize, offset } =
     usePagination(sorted.length, "proagent.publications.pageSize");
@@ -228,7 +238,7 @@ export default function PublicationsPage() {
         <PropertySearchInput value={search} onChange={setSearch} />
       </div>
 
-      <div className="mb-3 flex flex-wrap gap-2">
+      <div className="mb-6 flex flex-wrap items-center gap-2.5">
         <button
           type="button"
           onClick={() => setShortcutSinPublicar((v) => !v)}
@@ -262,9 +272,6 @@ export default function PublicationsPage() {
         >
           Con error
         </button>
-      </div>
-
-      <div className="mb-6 flex flex-wrap gap-2.5">
         <FilterDropdown
           label={`Tipo${tipoFilter !== "Todos" ? `: ${tipoFilter}` : ""}`}
           active={tipoFilter !== "Todos"}

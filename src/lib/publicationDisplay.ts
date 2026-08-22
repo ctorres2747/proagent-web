@@ -21,13 +21,26 @@ export const PUBLICATION_STAGE_LABEL: Record<PublicationStage, string> = {
 };
 
 export const PUBLICATION_STAGE_CLASS: Record<PublicationStage, string> = {
-  none: "bg-[var(--pa-bg-alt)] text-[var(--pa-muted)]",
-  draft: "bg-[var(--pa-bg-alt)] text-[var(--pa-muted)]",
+  none: "bg-[#F1EAFB] text-[#6D28D9]",
+  draft: "bg-[var(--pa-info-bg)] text-[var(--pa-navy)]",
   scheduled: "bg-[#FEF3E2] text-[#B45309]",
   publishing: "bg-[#FEF3E2] text-[#B45309]",
   published: "bg-[#E6F4EE] text-[var(--pa-accent)]",
   partial: "bg-[#FEF3E2] text-[#B45309]",
   failed: "bg-[#FCEAEA] text-[var(--pa-danger)]",
+};
+
+// Orden de la lista de Publicación: primero lo que hay que trabajar (borrador,
+// sin publicar), luego lo que necesita atención (error/parcial), luego lo que
+// ya está en curso (programada), y al final lo que ya quedó resuelto.
+export const PUBLICATION_STAGE_SORT_ORDER: Record<PublicationStage, number> = {
+  draft: 0,
+  none: 1,
+  failed: 2,
+  partial: 3,
+  scheduled: 4,
+  publishing: 5,
+  published: 6,
 };
 
 export const PUBLICATION_FILTER_OPTIONS = [
