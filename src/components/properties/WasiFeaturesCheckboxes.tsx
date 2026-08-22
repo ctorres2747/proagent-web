@@ -6,6 +6,7 @@ import type { WasiFeaturesCatalog } from "@/services/interfaces/wasiFeatures";
 import {
   filterWasiFeatures,
   formatWasiSelectionSummary,
+  resolvePopularFeatures,
 } from "@/lib/wasiFeaturesUi";
 
 function FeatureRow({
@@ -29,6 +30,48 @@ function FeatureRow({
       />
       <span className="text-xs leading-snug text-[var(--pa-ink)]">{nombre}</span>
     </label>
+  );
+}
+
+function PopularFeatures({
+  items,
+  selectedIds,
+  onToggle,
+}: {
+  items: { id: number; nombre: string }[];
+  selectedIds: number[];
+  onToggle: (id: number) => void;
+}) {
+  if (items.length === 0) return null;
+  return (
+    <div className="flex flex-col gap-2">
+      <p className="text-xs font-bold uppercase tracking-wide text-[var(--pa-muted)]">
+        Más usadas
+      </p>
+      <div className="flex flex-wrap gap-2">
+        {items.map((feat) => {
+          const checked = selectedIds.includes(feat.id);
+          return (
+            <label
+              key={feat.id}
+              className={`inline-flex cursor-pointer items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
+                checked
+                  ? "border-[var(--pa-navy)] bg-[var(--pa-navy)] text-white"
+                  : "border-[var(--pa-border)] bg-[var(--pa-bg)] text-[#45525E] hover:border-[var(--pa-navy)]"
+              }`}
+            >
+              <input
+                type="checkbox"
+                checked={checked}
+                onChange={() => onToggle(feat.id)}
+                className="sr-only"
+              />
+              {feat.nombre}
+            </label>
+          );
+        })}
+      </div>
+    </div>
   );
 }
 
@@ -108,6 +151,12 @@ export function WasiFeaturesCheckboxes({
 
   const summary = formatWasiSelectionSummary(selectedIds, catalog);
 
+  const popularItems = useMemo(() => {
+    if (!catalog) return [];
+    const items = resolvePopularFeatures(catalog, catalog.popularIds ?? []);
+    return filterWasiFeatures(items, query);
+  }, [catalog, query]);
+
   if (loading) {
     return (
       <p className="text-sm text-[var(--pa-muted)]">Cargando catálogo WASI…</p>
@@ -156,6 +205,11 @@ export function WasiFeaturesCheckboxes({
       </p>
       {hasMatches ? (
         <div className="flex flex-col gap-3">
+          <PopularFeatures
+            items={popularItems}
+            selectedIds={selectedIds}
+            onToggle={toggle}
+          />
           <CollapsibleGroup
             title="Internas"
             items={filtered.internal}

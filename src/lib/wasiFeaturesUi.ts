@@ -42,3 +42,16 @@ export function filterWasiFeatures(
   if (!q) return items;
   return items.filter((feat) => feat.nombre.toLowerCase().includes(q));
 }
+
+export function resolvePopularFeatures(
+  catalog: WasiFeaturesCatalog,
+  popularIds: number[],
+): WasiFeature[] {
+  const byId = new Map<number, WasiFeature>();
+  for (const feat of [...catalog.internal, ...catalog.external]) {
+    byId.set(feat.id, feat);
+  }
+  return popularIds
+    .map((id) => byId.get(id))
+    .filter((feat): feat is WasiFeature => Boolean(feat));
+}

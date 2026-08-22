@@ -12,6 +12,7 @@ export const wasiFeaturesService: WasiFeaturesService = {
         { id: 26, nombre: "Piscina" },
         { id: 30, nombre: "Terraza" },
       ],
+      popularIds: [2, 26, 4],
     };
   },
 };
