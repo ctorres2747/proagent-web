@@ -87,16 +87,68 @@ export function formatTableRowTotal(shown: number, total: number): string {
   return `${shown} ${noun}`;
 }
 
-export function PropertyTableFooter({
-  shown,
+export function PaginationBar({
+  page,
+  totalPages,
+  onPageChange,
+  pageSize,
+  onPageSizeChange,
+  pageSizeOptions,
   total,
 }: {
-  shown: number;
+  page: number;
+  totalPages: number;
+  onPageChange: (page: number) => void;
+  pageSize: number;
+  onPageSizeChange: (size: number) => void;
+  pageSizeOptions: readonly number[];
   total: number;
 }) {
+  const start = total === 0 ? 0 : (page - 1) * pageSize + 1;
+  const end = Math.min(page * pageSize, total);
   return (
-    <div className="border-t border-[var(--pa-border)] bg-[var(--pa-bg)] px-5 py-2.5 text-right text-[12px] font-semibold text-[var(--pa-muted)]">
-      Total: {formatTableRowTotal(shown, total)}
+    <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[var(--pa-border)] bg-[var(--pa-bg)] px-5 py-3 text-[12px] font-semibold text-[var(--pa-muted)]">
+      <div className="flex items-center gap-2">
+        <span>Mostrar</span>
+        <select
+          value={pageSize}
+          onChange={(e) => onPageSizeChange(Number(e.target.value))}
+          className="rounded-lg border border-[var(--pa-border)] bg-[var(--pa-surface)] px-2 py-1 text-[12px] font-semibold text-[var(--pa-ink)]"
+        >
+          {pageSizeOptions.map((n) => (
+            <option key={n} value={n}>
+              {n}
+            </option>
+          ))}
+        </select>
+        <span>por página</span>
+      </div>
+      <div className="flex items-center gap-3">
+        <span>{total === 0 ? "0 resultados" : `${start}–${end} de ${total}`}</span>
+        <div className="flex items-center gap-1.5">
+          <button
+            type="button"
+            onClick={() => onPageChange(page - 1)}
+            disabled={page <= 1}
+            aria-label="Página anterior"
+            className="rounded-lg border border-[var(--pa-border)] bg-[var(--pa-surface)] px-3 py-1.5 text-[var(--pa-ink)] disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            ‹
+          </button>
+          <span className="px-1">
+            Página {page} de {totalPages}
+          </span>
+          <button
+            type="button"
+            onClick={() => onPageChange(page + 1)}
+            disabled={page >= totalPages}
+            aria-label="Página siguiente"
+            className="rounded-lg border border-[var(--pa-border)] bg-[var(--pa-surface)] px-3 py-1.5 text-[var(--pa-ink)] disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            ›
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

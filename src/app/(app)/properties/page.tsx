@@ -26,12 +26,13 @@ import {
 } from "@/lib/municipio";
 import { matchesPropertySearch } from "@/lib/propertySearch";
 import {
+  PaginationBar,
   PropertyListSkeleton,
   PropertySearchInput,
-  PropertyTableFooter,
   ViewToggle,
 } from "@/components/properties/PropertyListUi";
 import { DeletePropertyDialog } from "@/components/DeletePropertyDialog";
+import { PAGE_SIZE_OPTIONS, usePagination } from "@/hooks/usePagination";
 
 const FILTER_TYPES = ["Todos", "Apartamento", "Casa", "Local", "Lote", "Oficina", "Finca"];
 const FILTER_ESTADOS = ["Todos", "Incompleto", "Casi listo", "Completo"];
@@ -97,6 +98,19 @@ export default function PropertiesPage() {
     shortcutFaltanDatos,
     shortcutErrorCanales,
   ]);
+
+  // Menor completitud primero — son las que más urge completar.
+  const sorted = useMemo(
+    () => [...filtered].sort((a, b) => a.completeness - b.completeness),
+    [filtered],
+  );
+
+  const { page, setPage, totalPages, pageSize, setPageSize, offset } =
+    usePagination(sorted.length, "proagent.properties.pageSize");
+  const pageItems = useMemo(
+    () => sorted.slice(offset, offset + pageSize),
+    [sorted, offset, pageSize],
+  );
 
   const hasActiveFilters =
     tipoFilter !== "Todos" ||
@@ -303,7 +317,7 @@ export default function PropertiesPage() {
 
       {filtered.length > 0 && view === "cards" && (
         <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-5">
-          {filtered.map((p) => (
+          {pageItems.map((p) => (
             <PropertyCard
               key={p.id}
               p={p}
@@ -317,12 +331,26 @@ export default function PropertiesPage() {
 
       {filtered.length > 0 && view === "table" && (
         <PropertyTable
-          properties={filtered}
-          totalCount={data?.length ?? 0}
+          properties={pageItems}
+          startIndex={offset}
           onOpen={open}
           onDelete={onDelete}
           deletingId={deletingId}
         />
+      )}
+
+      {filtered.length > 0 && (
+        <div className="mt-4 overflow-hidden rounded-2xl border border-[var(--pa-border)]">
+          <PaginationBar
+            page={page}
+            totalPages={totalPages}
+            onPageChange={setPage}
+            pageSize={pageSize}
+            onPageSizeChange={setPageSize}
+            pageSizeOptions={PAGE_SIZE_OPTIONS}
+            total={filtered.length}
+          />
+        </div>
       )}
 
       <DeletePropertyDialog
@@ -403,13 +431,13 @@ function PropertyCard({
 
 function PropertyTable({
   properties,
-  totalCount,
+  startIndex = 0,
   onOpen,
   onDelete,
   deletingId,
 }: {
   properties: Property[];
-  totalCount: number;
+  startIndex?: number;
   onOpen: (p: Property) => void;
   onDelete: (p: Property) => void;
   deletingId: string | null;
@@ -437,7 +465,7 @@ function PropertyTable({
           className={`grid w-full ${cols} items-center gap-3 border-b border-[var(--pa-bg-alt)] px-5 py-3 last:border-b-0 hover:bg-[var(--pa-bg)]`}
         >
           <div className="text-[12px] font-bold tabular-nums text-[var(--pa-faint)]">
-            {index + 1}
+            {startIndex + index + 1}
           </div>
           <button
             type="button"
@@ -496,7 +524,6 @@ function PropertyTable({
           </button>
         </div>
       ))}
-      <PropertyTableFooter shown={properties.length} total={totalCount} />
     </div>
   );
 }
