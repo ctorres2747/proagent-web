@@ -265,7 +265,10 @@ function ChannelRow({
   const queryClient = useQueryClient();
   const id = connection.channelId;
   const meta = CHANNEL_META[id];
-  const [mode, setMode] = useState<"own" | "pool">("pool");
+  // WASI: credenciales propias es el camino principal (Sprint 035 — pool
+  // queda como opción legacy/secundaria); el resto arranca en pool porque
+  // "own" en Instagram/WhatsApp todavía no tiene token real (ver B3).
+  const [mode, setMode] = useState<"own" | "pool">(id === "wasi" ? "own" : "pool");
   const [wasiCompany, setWasiCompany] = useState("");
   const [wasiToken, setWasiToken] = useState("");
   const [wasiUser, setWasiUser] = useState("");
@@ -536,6 +539,7 @@ function ChannelsTab({
   }
 
   const byId = new Map((data ?? []).map((c) => [c.channelId, c]));
+  const conectados = (data ?? []).filter((c) => c.status === "connected").length;
 
   return (
     <div className="space-y-3">
@@ -543,6 +547,13 @@ function ChannelsTab({
         Conecta solo los canales que usarás al publicar. Por defecto todos están
         apagados hasta que los actives.
       </p>
+      {conectados === 0 ? (
+        <div className="rounded-xl border border-[var(--pa-warning-ink)]/30 bg-[var(--pa-warning-bg)] px-4 py-3 text-[13px] text-[var(--pa-warning-ink)]">
+          Todavía no tienes ningún canal conectado — no vas a poder publicar
+          hasta que conectes al menos uno. Recomendado: conecta{" "}
+          <strong>WASI</strong> con tus propias credenciales.
+        </div>
+      ) : null}
       {CHANNEL_ORDER.map((id: ChannelId) => {
         const conn = byId.get(id);
         if (!conn) return null;
