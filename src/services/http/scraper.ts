@@ -20,4 +20,12 @@ export const scraperService: ScraperService = {
       queueStatus: raw.queue_status ?? null,
     };
   },
+
+  async run({ agenteId }, token) {
+    return apiFetch("/api/scraper/run", {
+      method: "POST",
+      token,
+      query: { agente_id: agenteId },
+    });
+  },
 };

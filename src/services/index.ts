@@ -8,6 +8,7 @@
  */
 import { USE_HTTP_API } from "@/config/env";
 
+import { agentesService as mockAgentes } from "./mocks/agentes";
 import { authService as mockAuth } from "./mocks/auth";
 import { channelsService as mockChannels } from "./mocks/channels";
 import { criteriosService as mockCriterios } from "./mocks/criterios";
@@ -17,6 +18,7 @@ import { propertiesService as mockProperties } from "./mocks/properties";
 import { publicationsService as mockPublications } from "./mocks/publications";
 import { scraperService as mockScraper } from "./mocks/scraper";
 import { wasiFeaturesService as mockWasiFeatures } from "./mocks/wasiFeatures";
+import { agentesService as httpAgentes } from "./http/agentes";
 import { authService as httpAuth } from "./http/auth";
 import { channelsService as httpChannels } from "./http/channels";
 import { criteriosService as httpCriterios } from "./http/criterios";
@@ -28,6 +30,7 @@ import { publicationsService as httpPublications } from "./http/publications";
 import { scraperService as httpScraper } from "./http/scraper";
 import { wasiFeaturesService as httpWasiFeatures } from "./http/wasiFeatures";
 
+import type { AgentesService } from "./interfaces/agentes";
 import type { AuthService } from "./interfaces/auth";
 import type { ChannelsService } from "./interfaces/channels";
 import type { CriteriosService } from "./interfaces/criterios";
@@ -37,6 +40,9 @@ import type { PropertiesService } from "./interfaces/properties";
 import type { PublicationsService } from "./interfaces/publications";
 import type { ScraperService } from "./interfaces/scraper";
 
+export const agentesService: AgentesService = USE_HTTP_API
+  ? httpAgentes
+  : mockAgentes;
 export const authService: AuthService = USE_HTTP_API ? httpAuth : mockAuth;
 export const channelsService: ChannelsService = USE_HTTP_API
   ? httpChannels
@@ -64,6 +70,7 @@ export const wasiFeaturesService = USE_HTTP_API
   ? httpWasiFeatures
   : mockWasiFeatures;
 
+export type { AgenteResumen, AgentesService } from "./interfaces/agentes";
 export type { AuthService } from "./interfaces/auth";
 export type { ChannelsService, ChannelConnection, ChannelPatch } from "./interfaces/channels";
 export type {
@@ -92,4 +99,9 @@ export type {
   PublicationFilter,
   ChannelResult,
 } from "./interfaces/publications";
-export type { ScraperService, ScraperStatus } from "./interfaces/scraper";
+export type {
+  ScraperRunOptions,
+  ScraperRunResult,
+  ScraperService,
+  ScraperStatus,
+} from "./interfaces/scraper";

@@ -37,4 +37,14 @@ export const scraperService: ScraperService = {
       queueStatus: null,
     };
   },
+
+  async run({ agenteId }) {
+    await delay(200);
+    return {
+      message: agenteId
+        ? `Scraper iniciado en segundo plano (solo asesor ${agenteId})`
+        : "Scraper iniciado en segundo plano",
+      running: true,
+    };
+  },
 };

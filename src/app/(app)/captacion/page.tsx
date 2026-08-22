@@ -22,7 +22,7 @@ import {
   type PriceRange,
 } from "@/components/PriceRangeFilter";
 import { Toast } from "@/components/Toast";
-import { fichasService, leadsService, scraperService } from "@/services";
+import { agentesService, fichasService, leadsService, scraperService } from "@/services";
 import type { Lead, LeadEstado } from "@/services/interfaces/leads";
 
 const COLUMNS: LeadEstado[] = [
@@ -76,8 +76,10 @@ export default function CaptacionPage() {
   const [ownerSearch, setOwnerSearch] = useState("");
   const [openFilter, setOpenFilter] = useState<FilterKey | null>(null);
   const [criteriosOpen, setCriteriosOpen] = useState(false);
+  const [scraperAgenteId, setScraperAgenteId] = useState("");
 
   const staff = canAccessCaptacion(session);
+  const isAdmin = session?.role === "admin";
 
   useEffect(() => {
     if (!staff) {
@@ -102,6 +104,30 @@ export default function CaptacionPage() {
     enabled: staff && CAPTACION_NATIVE,
     refetchInterval: (q) =>
       q.state.data?.running || q.state.data?.queueStatus ? 5000 : 60000,
+  });
+
+  const { data: agentesList } = useQuery({
+    queryKey: ["agentes"],
+    queryFn: () => agentesService.list(token ?? undefined),
+    enabled: staff && CAPTACION_NATIVE && isAdmin,
+  });
+
+  const runScraperMutation = useMutation({
+    mutationFn: () =>
+      scraperService.run(
+        { agenteId: scraperAgenteId ? Number(scraperAgenteId) : undefined },
+        token ?? undefined,
+      ),
+    onSuccess: (result) => {
+      setToast({ message: result.message });
+      queryClient.invalidateQueries({ queryKey: ["scraper-status"] });
+    },
+    onError: (err) => {
+      setToast({
+        message: err instanceof Error ? err.message : "No se pudo iniciar el scraper.",
+        type: "error",
+      });
+    },
   });
 
   const selected = useMemo(
@@ -427,6 +453,49 @@ export default function CaptacionPage() {
           </button>
         ) : null}
       </div>
+
+      {isAdmin ? (
+        <div className="mb-4 flex flex-wrap items-center gap-2">
+          <select
+            value={scraperAgenteId}
+            onChange={(e) => setScraperAgenteId(e.target.value)}
+            className="rounded-[10px] border border-[var(--pa-border)] bg-[var(--pa-surface)] px-3 py-2 text-[13px] font-semibold text-[var(--pa-ink)]"
+          >
+            <option value="">Todas las zonas</option>
+            {(agentesList ?? []).map((a) => (
+              <option key={a.id} value={a.id}>
+                {a.nombrePreferido || a.nombre || `Asesor ${a.id}`}
+              </option>
+            ))}
+          </select>
+          <button
+            type="button"
+            onClick={() => runScraperMutation.mutate()}
+            disabled={
+              runScraperMutation.isPending ||
+              Boolean(scraperStatus?.running) ||
+              Boolean(scraperStatus?.queueStatus)
+            }
+            title={
+              scraperAgenteId
+                ? 'Corre el scraper SOLO para la zona del asesor elegido'
+                : 'Corre el scraper para todas las zonas combinadas'
+            }
+            className="rounded-[10px] bg-[var(--pa-navy)] px-4 py-2 text-[13px] font-bold text-white hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {runScraperMutation.isPending ||
+            scraperStatus?.running ||
+            scraperStatus?.queueStatus
+              ? "⏳ Scrapeando…"
+              : scraperAgenteId
+                ? `▶ Ejecutar scraper (${
+                    agentesList?.find((a) => String(a.id) === scraperAgenteId)
+                      ?.nombrePreferido ?? "asesor"
+                  })`
+                : "▶ Ejecutar scraper"}
+          </button>
+        </div>
+      ) : null}
 
       {scraperStatus ? <ScraperStatusBar status={scraperStatus} /> : null}
 
