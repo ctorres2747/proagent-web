@@ -9,8 +9,13 @@ export type ChannelConnectionStatus =
 export interface ChannelConnectionCredentials {
   wasiIdCompany?: string | null;
   wasiIdUser?: string | null;
+  /** Últimos 4 caracteres del token guardado — nunca el valor completo. */
+  wasiTokenLast4?: string | null;
   instagramAccount?: string | null;
+  instagramBusinessId?: string | null;
+  instagramTokenLast4?: string | null;
   catalogId?: string | null;
+  catalogTokenLast4?: string | null;
 }
 
 export interface ChannelConnection {
@@ -33,7 +38,10 @@ export interface ChannelPatch {
     wasiToken?: string | null;
     wasiIdUser?: string | null;
     instagramAccount?: string | null;
+    instagramBusinessId?: string | null;
+    instagramToken?: string | null;
     catalogId?: string | null;
+    catalogToken?: string | null;
   };
 }
 

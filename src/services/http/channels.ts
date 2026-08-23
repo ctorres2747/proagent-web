@@ -15,8 +15,12 @@ interface RawConnection {
   credentials?: {
     wasi_id_company?: string | null;
     wasi_id_user?: string | null;
+    wasi_token_last4?: string | null;
     instagram_account?: string | null;
+    instagram_business_id?: string | null;
+    instagram_token_last4?: string | null;
     catalog_id?: string | null;
+    catalog_token_last4?: string | null;
   } | null;
 }
 
@@ -31,8 +35,12 @@ function mapConnection(raw: RawConnection): ChannelConnection {
       ? {
           wasiIdCompany: raw.credentials.wasi_id_company ?? null,
           wasiIdUser: raw.credentials.wasi_id_user ?? null,
+          wasiTokenLast4: raw.credentials.wasi_token_last4 ?? null,
           instagramAccount: raw.credentials.instagram_account ?? null,
+          instagramBusinessId: raw.credentials.instagram_business_id ?? null,
+          instagramTokenLast4: raw.credentials.instagram_token_last4 ?? null,
           catalogId: raw.credentials.catalog_id ?? null,
+          catalogTokenLast4: raw.credentials.catalog_token_last4 ?? null,
         }
       : null,
   };
@@ -50,7 +58,10 @@ function toRawPatch(data: ChannelPatch): Record<string, unknown> {
       wasi_token: c.wasiToken ?? undefined,
       wasi_id_user: c.wasiIdUser ?? undefined,
       instagram_account: c.instagramAccount ?? undefined,
+      instagram_business_id: c.instagramBusinessId ?? undefined,
+      instagram_token: c.instagramToken ?? undefined,
       catalog_id: c.catalogId ?? undefined,
+      catalog_token: c.catalogToken ?? undefined,
     };
   }
   return out;
