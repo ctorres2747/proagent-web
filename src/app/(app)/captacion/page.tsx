@@ -17,6 +17,12 @@ import { buildMunicipioOptions, leadMatchesMunicipio } from "@/lib/municipio";
 import { buildTipoFilterOptions, leadMatchesTipo } from "@/lib/tipoInmueble";
 import { FilterDropdown } from "@/components/FilterDropdown";
 import {
+  DateRangeFilter,
+  isDateRangeActive,
+  matchesDateRange,
+  type DateRange,
+} from "@/components/DateRangeFilter";
+import {
   isPriceRangeActive,
   matchesPriceRange,
   PriceRangeFilter,
@@ -33,7 +39,7 @@ const COLUMNS: LeadEstado[] = [
   "Descartado",
 ];
 
-type FilterKey = "municipio" | "tipo" | "portal" | "estado" | "precio";
+type FilterKey = "municipio" | "tipo" | "portal" | "estado" | "precio" | "fecha";
 
 function columnCount(leads: Lead[], estado: LeadEstado): number {
   return leads.filter((l) => l.estado === estado).length;
@@ -75,6 +81,7 @@ export default function CaptacionPage() {
   const [portalFilter, setPortalFilter] = useState("Todos");
   const [estadoFilter, setEstadoFilter] = useState("Todos");
   const [priceRange, setPriceRange] = useState<PriceRange>({ min: "", max: "" });
+  const [dateRange, setDateRange] = useState<DateRange>({ from: "", to: "" });
   const [ownerSearch, setOwnerSearch] = useState("");
   const [openFilter, setOpenFilter] = useState<FilterKey | null>(null);
   const [criteriosOpen, setCriteriosOpen] = useState(false);
@@ -193,6 +200,7 @@ export default function CaptacionPage() {
         return false;
       }
       if (!matchesPriceRange(lead.precioNum, priceRange)) return false;
+      if (!matchesDateRange(lead.fechaCaptura, dateRange)) return false;
       if (!matchesOwnerSearch(lead, ownerSearch)) return false;
       return true;
     });
@@ -204,6 +212,7 @@ export default function CaptacionPage() {
     estadoFilter,
     viewAgenteId,
     priceRange,
+    dateRange,
     ownerSearch,
   ]);
 
@@ -213,6 +222,7 @@ export default function CaptacionPage() {
     portalFilter !== "Todos" ||
     estadoFilter !== "Todos" ||
     isPriceRangeActive(priceRange) ||
+    isDateRangeActive(dateRange) ||
     ownerSearch.trim().length > 0;
 
   const clearFilters = () => {
@@ -221,6 +231,7 @@ export default function CaptacionPage() {
     setPortalFilter("Todos");
     setEstadoFilter("Todos");
     setPriceRange({ min: "", max: "" });
+    setDateRange({ from: "", to: "" });
     setOwnerSearch("");
     setOpenFilter(null);
   };
@@ -432,6 +443,15 @@ export default function CaptacionPage() {
           open={openFilter === "precio"}
           onToggle={() =>
             setOpenFilter((k) => (k === "precio" ? null : "precio"))
+          }
+          onClose={() => setOpenFilter(null)}
+        />
+        <DateRangeFilter
+          range={dateRange}
+          onChange={setDateRange}
+          open={openFilter === "fecha"}
+          onToggle={() =>
+            setOpenFilter((k) => (k === "fecha" ? null : "fecha"))
           }
           onClose={() => setOpenFilter(null)}
         />
