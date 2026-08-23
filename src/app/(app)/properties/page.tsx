@@ -434,7 +434,7 @@ function PropertyTable({
   deletingId: string | null;
 }) {
   const cols =
-    "grid-cols-[36px_64px_2fr_1.2fr_1fr_1.2fr_1.1fr_1.6fr_72px]";
+    "grid-cols-[36px_64px_2fr_1.2fr_1fr_1.2fr_1.2fr_1.1fr_1.6fr_72px]";
   return (
     <div className="overflow-hidden rounded-2xl border border-[var(--pa-border)] bg-[var(--pa-surface)]">
       <div
@@ -446,6 +446,7 @@ function PropertyTable({
         <div>Tipo</div>
         <div>Precio</div>
         <div>Ubicación</div>
+        <div>Barrio / zona / conjunto</div>
         <div>Completitud</div>
         <div>Canales</div>
         <div />
@@ -490,6 +491,9 @@ function PropertyTable({
           </button>
           <button type="button" onClick={() => onOpen(p)} className="text-left text-xs text-[var(--pa-muted)]">
             {p.municipio}
+          </button>
+          <button type="button" onClick={() => onOpen(p)} className="text-left text-xs text-[var(--pa-muted)]">
+            {p.barrio || "—"}
           </button>
           <button type="button" onClick={() => onOpen(p)} className="text-left">
             <CompletenessBar value={p.completeness} showLabel={false} />

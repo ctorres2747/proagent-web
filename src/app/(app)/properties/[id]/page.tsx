@@ -1245,7 +1245,7 @@ function ContentStep({
               onChange={(v) => onPatch({ municipio: v })}
             />
             <ControlledField
-              label="Barrio / zona"
+              label="Barrio / zona / conjunto *"
               value={form.barrio}
               onChange={(v) => onPatch({ barrio: v })}
             />
