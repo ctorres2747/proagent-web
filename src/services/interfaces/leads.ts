@@ -9,6 +9,7 @@ export interface Lead {
   id: number;
   portal: string;
   municipio: string | null;
+  barrio: string | null;
   tipoInmueble: string | null;
   precio: string | null;
   precioNum: number | null;
@@ -33,6 +34,7 @@ export interface LeadUpdate {
   telefono?: string | null;
   nombrePublicador?: string | null;
   fechaRecontacto?: string | null;
+  barrio?: string | null;
 }
 
 export interface LeadsService {

@@ -16,6 +16,7 @@ export interface CaptacionDraft {
   estado: LeadEstado;
   telefono: string;
   nombrePublicador: string;
+  barrio: string;
   notas: string;
   fechaRecontacto: string;
 }
@@ -160,6 +161,19 @@ export function CaptacionDetailDrawer({
                     : "border-[var(--pa-border)]"
                 }`}
                 placeholder="300 123 4567"
+              />
+            </label>
+
+            <label className="block">
+              <span className="mb-1 block text-[12px] font-semibold text-[var(--pa-muted)]">
+                Barrio / zona / conjunto
+              </span>
+              <input
+                type="text"
+                value={draft.barrio}
+                onChange={(e) => onDraftChange({ barrio: e.target.value })}
+                className="w-full rounded-[10px] border border-[var(--pa-border)] bg-[var(--pa-bg)] px-3 py-2 text-[13px]"
+                placeholder="Aves María"
               />
             </label>
 
