@@ -267,13 +267,16 @@ function ChannelRow({
   const id = connection.channelId;
   const meta = CHANNEL_META[id];
   // WASI: credenciales propias es el camino principal (Sprint 035 — pool
-  // queda como opción legacy/secundaria); el resto arranca en pool porque
-  // "own" en Instagram/WhatsApp todavía no tiene token real (ver B3).
+  // queda como opción legacy/secundaria); el resto arranca en pool, aunque
+  // Instagram/WhatsApp ya soportan "own" con token real (seguimiento).
   const [mode, setMode] = useState<"own" | "pool">(id === "wasi" ? "own" : "pool");
   const [wasiCompany, setWasiCompany] = useState("");
   const [wasiToken, setWasiToken] = useState("");
   const [wasiUser, setWasiUser] = useState("");
   const [catalogId, setCatalogId] = useState("");
+  const [catalogToken, setCatalogToken] = useState("");
+  const [instagramBusinessId, setInstagramBusinessId] = useState("");
+  const [instagramToken, setInstagramToken] = useState("");
   const [expanded, setExpanded] = useState(false);
 
   const patchMutation = useMutation({
@@ -317,13 +320,28 @@ function ChannelRow({
     setWasiCompany(connection.credentials?.wasiIdCompany ?? "");
     setWasiUser(connection.credentials?.wasiIdUser ?? "");
     setCatalogId(connection.credentials?.catalogId ?? "");
+    setInstagramBusinessId(connection.credentials?.instagramBusinessId ?? "");
     setWasiToken("");
+    setCatalogToken("");
+    setInstagramToken("");
     setExpanded(true);
   };
 
   const connectOwn = () => {
     if (id === "instagram" && !instagramHandle.trim()) {
       onError("Agrega tu Instagram en la pestaña Perfil antes de conectar este canal");
+      return;
+    }
+    if (id === "instagram" && !instagramBusinessId.trim()) {
+      onError("Indica el ID de cuenta Business de Instagram");
+      return;
+    }
+    if (id === "instagram" && !instagramToken.trim() && !connection.credentials?.instagramTokenLast4) {
+      onError("Indica el token de acceso de Meta para Instagram");
+      return;
+    }
+    if (id === "whatsapp" && !catalogToken.trim() && !connection.credentials?.catalogTokenLast4) {
+      onError("Indica el token de acceso de Meta para el catálogo");
       return;
     }
     const credentials: NonNullable<Parameters<typeof channelsService.patch>[1]["credentials"]> =
@@ -334,8 +352,11 @@ function ChannelRow({
       credentials.wasiIdUser = wasiUser || null;
     } else if (id === "instagram") {
       credentials.instagramAccount = instagramHandle.trim() || null;
+      credentials.instagramBusinessId = instagramBusinessId || null;
+      credentials.instagramToken = instagramToken || null;
     } else if (id === "whatsapp") {
       credentials.catalogId = catalogId || null;
+      credentials.catalogToken = catalogToken || null;
     }
     patchMutation.mutate({ status: "connected", mode: "own", credentials });
   };
@@ -346,6 +367,19 @@ function ChannelRow({
   };
 
   const canConfigure = id !== "web" && connection.status !== "unavailable";
+
+  // Confirmación de que hay un token guardado, sin exponerlo (mismo patrón
+  // que Stripe/GitHub: últimos 4 caracteres). Solo aplica en modo own.
+  const tokenLast4 =
+    id === "wasi"
+      ? connection.credentials?.wasiTokenLast4
+      : id === "instagram"
+        ? connection.credentials?.instagramTokenLast4
+        : id === "whatsapp"
+          ? connection.credentials?.catalogTokenLast4
+          : null;
+  const showTokenBadge =
+    connection.status === "connected" && connection.mode === "own" && tokenLast4;
 
   return (
     <div className="rounded-xl border border-[var(--pa-border)] bg-[var(--pa-surface)] p-4">
@@ -360,6 +394,11 @@ function ChannelRow({
             <p className="mt-0.5 text-[12px] text-[var(--pa-muted)]">
               {connection.accountName}
             </p>
+            {showTokenBadge ? (
+              <p className="mt-0.5 text-[11px] text-[var(--pa-muted)]">
+                Token: <span className="font-mono">····{tokenLast4}</span>
+              </p>
+            ) : null}
             {connection.issue ? (
               <p className="mt-1 text-[12px] text-[var(--pa-warning-ink)]">
                 {connection.issue}
@@ -489,41 +528,87 @@ function ChannelRow({
           ) : null}
 
           {id === "instagram" && mode === "own" ? (
-            instagramHandle.trim() ? (
-              <p className="text-[13px] text-[var(--pa-muted)]">
-                Se usará tu Instagram de perfil:{" "}
-                <span className="font-semibold text-[var(--pa-ink)]">{instagramHandle}</span>
-                {" · "}
-                <button
-                  type="button"
-                  onClick={onGoToProfile}
-                  className="font-semibold text-[var(--pa-navy)] underline underline-offset-2"
-                >
-                  cambiarlo en Perfil
-                </button>
-              </p>
-            ) : (
-              <p className="text-[13px] text-[var(--pa-warning-ink)]">
-                No tienes Instagram en tu perfil.{" "}
-                <button
-                  type="button"
-                  onClick={onGoToProfile}
-                  className="font-semibold underline underline-offset-2"
-                >
-                  Agrégalo en Perfil
-                </button>{" "}
-                para conectar este canal.
-              </p>
-            )
+            <div className="space-y-2">
+              {instagramHandle.trim() ? (
+                <p className="text-[13px] text-[var(--pa-muted)]">
+                  Se usará tu Instagram de perfil:{" "}
+                  <span className="font-semibold text-[var(--pa-ink)]">{instagramHandle}</span>
+                  {" · "}
+                  <button
+                    type="button"
+                    onClick={onGoToProfile}
+                    className="font-semibold text-[var(--pa-navy)] underline underline-offset-2"
+                  >
+                    cambiarlo en Perfil
+                  </button>
+                </p>
+              ) : (
+                <p className="text-[13px] text-[var(--pa-warning-ink)]">
+                  No tienes Instagram en tu perfil.{" "}
+                  <button
+                    type="button"
+                    onClick={onGoToProfile}
+                    className="font-semibold underline underline-offset-2"
+                  >
+                    Agrégalo en Perfil
+                  </button>{" "}
+                  para conectar este canal.
+                </p>
+              )}
+              <div className="grid gap-2 sm:grid-cols-2">
+                <input
+                  placeholder="ID de cuenta Business"
+                  value={instagramBusinessId}
+                  onChange={(e) => setInstagramBusinessId(e.target.value)}
+                  className="rounded-lg border border-[var(--pa-border)] px-2 py-1.5 text-[13px]"
+                />
+                <PasswordInput
+                  value={instagramToken}
+                  onChange={setInstagramToken}
+                  placeholder={
+                    connection.status === "connected" && connection.mode === "own"
+                      ? "Token guardado — dejar vacío para no cambiarlo"
+                      : "Token de acceso Meta"
+                  }
+                  inputClassName="w-full rounded-lg border border-[var(--pa-border)] px-2 py-1.5 pr-8 text-[13px]"
+                />
+              </div>
+              {connection.status === "connected" && connection.mode === "own" ? (
+                <p className="text-[11px] text-[var(--pa-muted)]">
+                  El token ya guardado no se muestra por seguridad. Déjalo vacío para
+                  conservarlo, o pega uno nuevo para reemplazarlo.
+                </p>
+              ) : null}
+            </div>
           ) : null}
 
           {id === "whatsapp" && mode === "own" ? (
-            <input
-              placeholder="ID catálogo Meta"
-              value={catalogId}
-              onChange={(e) => setCatalogId(e.target.value)}
-              className="w-full rounded-lg border border-[var(--pa-border)] px-2 py-1.5 text-[13px]"
-            />
+            <div className="space-y-2">
+              <div className="grid gap-2 sm:grid-cols-2">
+                <input
+                  placeholder="ID catálogo Meta"
+                  value={catalogId}
+                  onChange={(e) => setCatalogId(e.target.value)}
+                  className="rounded-lg border border-[var(--pa-border)] px-2 py-1.5 text-[13px]"
+                />
+                <PasswordInput
+                  value={catalogToken}
+                  onChange={setCatalogToken}
+                  placeholder={
+                    connection.status === "connected" && connection.mode === "own"
+                      ? "Token guardado — dejar vacío para no cambiarlo"
+                      : "Token de acceso Meta"
+                  }
+                  inputClassName="w-full rounded-lg border border-[var(--pa-border)] px-2 py-1.5 pr-8 text-[13px]"
+                />
+              </div>
+              {connection.status === "connected" && connection.mode === "own" ? (
+                <p className="text-[11px] text-[var(--pa-muted)]">
+                  El token ya guardado no se muestra por seguridad. Déjalo vacío para
+                  conservarlo, o pega uno nuevo para reemplazarlo.
+                </p>
+              ) : null}
+            </div>
           ) : null}
 
           {id === "facebook" ? (
