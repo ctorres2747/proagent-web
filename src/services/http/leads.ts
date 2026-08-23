@@ -11,6 +11,7 @@ interface RawLead {
   id: number;
   portal: string;
   municipio?: string | null;
+  barrio?: string | null;
   tipo_inmueble?: string | null;
   precio?: string | null;
   precio_num?: number | null;
@@ -40,6 +41,7 @@ function mapLead(raw: RawLead): Lead {
     id: raw.id,
     portal: raw.portal,
     municipio: raw.municipio ?? null,
+    barrio: raw.barrio ?? null,
     tipoInmueble: raw.tipo_inmueble ?? null,
     precio: raw.precio ?? null,
     precioNum: raw.precio_num ?? null,
@@ -70,6 +72,7 @@ function toRawUpdate(data: LeadUpdate): Record<string, unknown> {
   if (data.fechaRecontacto !== undefined) {
     out.fecha_recontacto = data.fechaRecontacto;
   }
+  if (data.barrio !== undefined) out.barrio = data.barrio;
   return out;
 }
 

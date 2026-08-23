@@ -141,6 +141,7 @@ export default function CaptacionPage() {
     estado: "Pendiente" as LeadEstado,
     telefono: "",
     nombrePublicador: "",
+    barrio: "",
     notas: "",
     fechaRecontacto: "",
   });
@@ -151,6 +152,7 @@ export default function CaptacionPage() {
       estado: selected.estado,
       telefono: selected.telefono ?? "",
       nombrePublicador: selected.nombrePublicador ?? "",
+      barrio: selected.barrio ?? "",
       notas: selected.notas ?? "",
       fechaRecontacto: selected.fechaRecontacto?.slice(0, 10) ?? "",
     });
@@ -302,6 +304,7 @@ export default function CaptacionPage() {
       estado: draft.estado,
       telefono: draft.telefono || null,
       nombrePublicador: draft.nombrePublicador || null,
+      barrio: draft.barrio || null,
       notas: draft.notas || null,
       fechaRecontacto: draft.fechaRecontacto || null,
     });
