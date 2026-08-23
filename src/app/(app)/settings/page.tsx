@@ -499,6 +499,8 @@ function ChannelRow({
                   placeholder="ID company"
                   value={wasiCompany}
                   onChange={(e) => setWasiCompany(e.target.value)}
+                  name="wasi-id-company"
+                  autoComplete="off"
                   className="rounded-lg border border-[var(--pa-border)] px-2 py-1.5 text-[13px]"
                 />
                 <PasswordInput
@@ -509,12 +511,16 @@ function ChannelRow({
                       ? "Token guardado — dejar vacío para no cambiarlo"
                       : "Token"
                   }
+                  autoComplete="new-password"
+                  name="wasi-token"
                   inputClassName="w-full rounded-lg border border-[var(--pa-border)] px-2 py-1.5 pr-8 text-[13px]"
                 />
                 <input
                   placeholder="ID user"
                   value={wasiUser}
                   onChange={(e) => setWasiUser(e.target.value)}
+                  name="wasi-id-user"
+                  autoComplete="off"
                   className="rounded-lg border border-[var(--pa-border)] px-2 py-1.5 text-[13px]"
                 />
               </div>
@@ -560,6 +566,8 @@ function ChannelRow({
                   placeholder="ID de cuenta Business"
                   value={instagramBusinessId}
                   onChange={(e) => setInstagramBusinessId(e.target.value)}
+                  name="instagram-business-id"
+                  autoComplete="off"
                   className="rounded-lg border border-[var(--pa-border)] px-2 py-1.5 text-[13px]"
                 />
                 <PasswordInput
@@ -570,6 +578,8 @@ function ChannelRow({
                       ? "Token guardado — dejar vacío para no cambiarlo"
                       : "Token de acceso Meta"
                   }
+                  autoComplete="new-password"
+                  name="instagram-token"
                   inputClassName="w-full rounded-lg border border-[var(--pa-border)] px-2 py-1.5 pr-8 text-[13px]"
                 />
               </div>
@@ -589,6 +599,8 @@ function ChannelRow({
                   placeholder="ID catálogo Meta"
                   value={catalogId}
                   onChange={(e) => setCatalogId(e.target.value)}
+                  name="whatsapp-catalog-id"
+                  autoComplete="off"
                   className="rounded-lg border border-[var(--pa-border)] px-2 py-1.5 text-[13px]"
                 />
                 <PasswordInput
@@ -599,6 +611,8 @@ function ChannelRow({
                       ? "Token guardado — dejar vacío para no cambiarlo"
                       : "Token de acceso Meta"
                   }
+                  autoComplete="new-password"
+                  name="whatsapp-catalog-token"
                   inputClassName="w-full rounded-lg border border-[var(--pa-border)] px-2 py-1.5 pr-8 text-[13px]"
                 />
               </div>

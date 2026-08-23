@@ -12,6 +12,7 @@ export function PasswordInput({
   onChange,
   placeholder,
   autoComplete,
+  name,
   className = "",
   inputClassName,
 }: {
@@ -19,6 +20,7 @@ export function PasswordInput({
   onChange: (value: string) => void;
   placeholder?: string;
   autoComplete?: string;
+  name?: string;
   className?: string;
   inputClassName?: string;
 }) {
@@ -29,6 +31,7 @@ export function PasswordInput({
       <input
         type={visible ? "text" : "password"}
         autoComplete={autoComplete}
+        name={name}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
