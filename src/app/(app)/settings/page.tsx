@@ -266,10 +266,11 @@ function ChannelRow({
   const queryClient = useQueryClient();
   const id = connection.channelId;
   const meta = CHANNEL_META[id];
-  // WASI: credenciales propias es el camino principal (Sprint 035 — pool
-  // queda como opción legacy/secundaria); el resto arranca en pool, aunque
-  // Instagram/WhatsApp ya soportan "own" con token real (seguimiento).
-  const [mode, setMode] = useState<"own" | "pool">(id === "wasi" ? "own" : "pool");
+  // Facebook (Marketplace) no tiene credenciales propias — "conectar" ahí
+  // solo marca la fila como lista (mode "pool", ver connectPool más abajo).
+  // Los demás canales (wasi/instagram/whatsapp) siempre operan en "own": el
+  // toggle Pool/Mis credenciales se quitó de la UI (ver sesión 2026-08-23).
+  const [mode, setMode] = useState<"own" | "pool">(id === "facebook" ? "pool" : "own");
   const [wasiCompany, setWasiCompany] = useState("");
   const [wasiToken, setWasiToken] = useState("");
   const [wasiUser, setWasiUser] = useState("");
@@ -305,12 +306,15 @@ function ChannelRow({
         ? "bg-[var(--pa-bg-alt)] text-[var(--pa-faint)]"
         : "bg-[var(--pa-warning-bg)] text-[var(--pa-warning-ink)]";
 
+  // Solo lo usa Facebook (Marketplace no tiene credenciales propias — "Guardar
+  // conexión" ahí solo marca la fila como lista, mode "pool").
   const connectPool = () => {
     patchMutation.mutate({ status: "connected", mode: "pool" });
   };
 
-  // "Editar" (own ya conectado) y "Cambiar a mis credenciales" (pool ya
-  // conectado) abren el mismo panel, precargado con lo que haya guardado —
+  // "Editar" (own ya conectado) y "Conectar con mis datos" (sin conectar o
+  // heredado de la cuenta compartida) abren el mismo panel, precargado con
+  // lo que haya guardado —
   // el token NUNCA se precarga (el backend tampoco lo devuelve): se deja en
   // blanco y, si el asesor no escribe uno nuevo, el backend conserva el
   // actual (mismo criterio que Stripe/Twilio: nunca se re-muestra un secreto
@@ -417,16 +421,6 @@ function ChannelRow({
         <div className="mt-4 flex flex-wrap gap-2">
           {connection.status !== "connected" ? (
             <>
-              {(id === "wasi" || id === "instagram" || id === "whatsapp") && (
-                <button
-                  type="button"
-                  disabled={patchMutation.isPending}
-                  onClick={connectPool}
-                  className="rounded-lg border border-[var(--pa-border)] px-3 py-1.5 text-[12px] font-semibold hover:bg-[var(--pa-bg)]"
-                >
-                  Usar pool Proinversores
-                </button>
-              )}
               <button
                 type="button"
                 onClick={() => setExpanded((v) => !v)}
@@ -451,9 +445,9 @@ function ChannelRow({
                 >
                   {expanded
                     ? "Ocultar"
-                    : connection.mode === "pool"
-                      ? "Cambiar a mis credenciales"
-                      : "Editar"}
+                    : connection.mode === "own"
+                      ? "Editar"
+                      : "Conectar con mis datos"}
                 </button>
               ) : null}
               <button
@@ -471,58 +465,52 @@ function ChannelRow({
 
       {expanded && canConfigure ? (
         <div className="mt-4 space-y-3 border-t border-[var(--pa-border)] pt-4">
-          {(id === "wasi" || id === "instagram" || id === "whatsapp") && (
-            <div className="flex gap-3 text-[12px]">
-              <label className="flex items-center gap-1.5">
-                <input
-                  type="radio"
-                  checked={mode === "pool"}
-                  onChange={() => setMode("pool")}
-                />
-                Pool Proinversores
-              </label>
-              <label className="flex items-center gap-1.5">
-                <input
-                  type="radio"
-                  checked={mode === "own"}
-                  onChange={() => setMode("own")}
-                />
-                Mis credenciales
-              </label>
-            </div>
-          )}
-
           {id === "wasi" && mode === "own" ? (
             <div className="space-y-1.5">
               <div className="grid gap-2 sm:grid-cols-3">
-                <input
-                  placeholder="ID company"
-                  value={wasiCompany}
-                  onChange={(e) => setWasiCompany(e.target.value)}
-                  name="wasi-id-company"
-                  autoComplete="off"
-                  className="rounded-lg border border-[var(--pa-border)] px-2 py-1.5 text-[13px]"
-                />
-                <PasswordInput
-                  value={wasiToken}
-                  onChange={setWasiToken}
-                  placeholder={
-                    connection.status === "connected" && connection.mode === "own"
-                      ? "Token guardado — dejar vacío para no cambiarlo"
-                      : "Token"
-                  }
-                  autoComplete="new-password"
-                  name="wasi-token"
-                  inputClassName="w-full rounded-lg border border-[var(--pa-border)] px-2 py-1.5 pr-8 text-[13px]"
-                />
-                <input
-                  placeholder="ID user"
-                  value={wasiUser}
-                  onChange={(e) => setWasiUser(e.target.value)}
-                  name="wasi-id-user"
-                  autoComplete="off"
-                  className="rounded-lg border border-[var(--pa-border)] px-2 py-1.5 text-[13px]"
-                />
+                <label className="block">
+                  <span className="mb-1 block text-[11px] font-semibold text-[var(--pa-muted)]">
+                    ID company
+                  </span>
+                  <input
+                    placeholder="Ej: 25696111"
+                    value={wasiCompany}
+                    onChange={(e) => setWasiCompany(e.target.value)}
+                    name="wasi-id-company"
+                    autoComplete="off"
+                    className="w-full rounded-lg border border-[var(--pa-border)] px-2 py-1.5 text-[13px]"
+                  />
+                </label>
+                <label className="block">
+                  <span className="mb-1 block text-[11px] font-semibold text-[var(--pa-muted)]">
+                    Token
+                  </span>
+                  <PasswordInput
+                    value={wasiToken}
+                    onChange={setWasiToken}
+                    placeholder={
+                      connection.status === "connected" && connection.mode === "own"
+                        ? "Dejar vacío para no cambiarlo"
+                        : ""
+                    }
+                    autoComplete="new-password"
+                    name="wasi-token"
+                    inputClassName="w-full rounded-lg border border-[var(--pa-border)] px-2 py-1.5 pr-8 text-[13px]"
+                  />
+                </label>
+                <label className="block">
+                  <span className="mb-1 block text-[11px] font-semibold text-[var(--pa-muted)]">
+                    ID user
+                  </span>
+                  <input
+                    placeholder="Ej: 259967"
+                    value={wasiUser}
+                    onChange={(e) => setWasiUser(e.target.value)}
+                    name="wasi-id-user"
+                    autoComplete="off"
+                    className="w-full rounded-lg border border-[var(--pa-border)] px-2 py-1.5 text-[13px]"
+                  />
+                </label>
               </div>
               {connection.status === "connected" && connection.mode === "own" ? (
                 <p className="text-[11px] text-[var(--pa-muted)]">
@@ -562,26 +550,36 @@ function ChannelRow({
                 </p>
               )}
               <div className="grid gap-2 sm:grid-cols-2">
-                <input
-                  placeholder="ID de cuenta Business"
-                  value={instagramBusinessId}
-                  onChange={(e) => setInstagramBusinessId(e.target.value)}
-                  name="instagram-business-id"
-                  autoComplete="off"
-                  className="rounded-lg border border-[var(--pa-border)] px-2 py-1.5 text-[13px]"
-                />
-                <PasswordInput
-                  value={instagramToken}
-                  onChange={setInstagramToken}
-                  placeholder={
-                    connection.status === "connected" && connection.mode === "own"
-                      ? "Token guardado — dejar vacío para no cambiarlo"
-                      : "Token de acceso Meta"
-                  }
-                  autoComplete="new-password"
-                  name="instagram-token"
-                  inputClassName="w-full rounded-lg border border-[var(--pa-border)] px-2 py-1.5 pr-8 text-[13px]"
-                />
+                <label className="block">
+                  <span className="mb-1 block text-[11px] font-semibold text-[var(--pa-muted)]">
+                    ID de cuenta Business
+                  </span>
+                  <input
+                    placeholder="Ej: 17841400958506775"
+                    value={instagramBusinessId}
+                    onChange={(e) => setInstagramBusinessId(e.target.value)}
+                    name="instagram-business-id"
+                    autoComplete="off"
+                    className="w-full rounded-lg border border-[var(--pa-border)] px-2 py-1.5 text-[13px]"
+                  />
+                </label>
+                <label className="block">
+                  <span className="mb-1 block text-[11px] font-semibold text-[var(--pa-muted)]">
+                    Token de acceso Meta
+                  </span>
+                  <PasswordInput
+                    value={instagramToken}
+                    onChange={setInstagramToken}
+                    placeholder={
+                      connection.status === "connected" && connection.mode === "own"
+                        ? "Dejar vacío para no cambiarlo"
+                        : ""
+                    }
+                    autoComplete="new-password"
+                    name="instagram-token"
+                    inputClassName="w-full rounded-lg border border-[var(--pa-border)] px-2 py-1.5 pr-8 text-[13px]"
+                  />
+                </label>
               </div>
               {connection.status === "connected" && connection.mode === "own" ? (
                 <p className="text-[11px] text-[var(--pa-muted)]">
@@ -595,26 +593,36 @@ function ChannelRow({
           {id === "whatsapp" && mode === "own" ? (
             <div className="space-y-2">
               <div className="grid gap-2 sm:grid-cols-2">
-                <input
-                  placeholder="ID catálogo Meta"
-                  value={catalogId}
-                  onChange={(e) => setCatalogId(e.target.value)}
-                  name="whatsapp-catalog-id"
-                  autoComplete="off"
-                  className="rounded-lg border border-[var(--pa-border)] px-2 py-1.5 text-[13px]"
-                />
-                <PasswordInput
-                  value={catalogToken}
-                  onChange={setCatalogToken}
-                  placeholder={
-                    connection.status === "connected" && connection.mode === "own"
-                      ? "Token guardado — dejar vacío para no cambiarlo"
-                      : "Token de acceso Meta"
-                  }
-                  autoComplete="new-password"
-                  name="whatsapp-catalog-token"
-                  inputClassName="w-full rounded-lg border border-[var(--pa-border)] px-2 py-1.5 pr-8 text-[13px]"
-                />
+                <label className="block">
+                  <span className="mb-1 block text-[11px] font-semibold text-[var(--pa-muted)]">
+                    ID catálogo Meta
+                  </span>
+                  <input
+                    placeholder="Ej: 1568921391356201"
+                    value={catalogId}
+                    onChange={(e) => setCatalogId(e.target.value)}
+                    name="whatsapp-catalog-id"
+                    autoComplete="off"
+                    className="w-full rounded-lg border border-[var(--pa-border)] px-2 py-1.5 text-[13px]"
+                  />
+                </label>
+                <label className="block">
+                  <span className="mb-1 block text-[11px] font-semibold text-[var(--pa-muted)]">
+                    Token de acceso Meta
+                  </span>
+                  <PasswordInput
+                    value={catalogToken}
+                    onChange={setCatalogToken}
+                    placeholder={
+                      connection.status === "connected" && connection.mode === "own"
+                        ? "Dejar vacío para no cambiarlo"
+                        : ""
+                    }
+                    autoComplete="new-password"
+                    name="whatsapp-catalog-token"
+                    inputClassName="w-full rounded-lg border border-[var(--pa-border)] px-2 py-1.5 pr-8 text-[13px]"
+                  />
+                </label>
               </div>
               {connection.status === "connected" && connection.mode === "own" ? (
                 <p className="text-[11px] text-[var(--pa-muted)]">
