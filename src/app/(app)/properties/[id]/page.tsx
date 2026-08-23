@@ -282,6 +282,7 @@ export default function PublishWizardPage() {
     facebook: true,
     instagram: true,
     whatsapp: false,
+    entrega: false,
     web: false,
   });
   const [savedSelectedChannels, setSavedSelectedChannels] = useState<
@@ -360,6 +361,7 @@ export default function PublishWizardPage() {
               facebook: true,
               instagram: true,
               whatsapp: false,
+              entrega: false,
               web: false,
             },
             publishedOptInChannelsFromProperty(property),
