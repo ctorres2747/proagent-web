@@ -6,11 +6,22 @@ export type ChannelConnectionStatus =
   | "needs_auth"
   | "unavailable";
 
+export interface ChannelConnectionCredentials {
+  wasiIdCompany?: string | null;
+  wasiIdUser?: string | null;
+  instagramAccount?: string | null;
+  catalogId?: string | null;
+}
+
 export interface ChannelConnection {
   channelId: ChannelId;
   status: ChannelConnectionStatus;
   accountName: string;
   issue?: string | null;
+  /** "own" | "pool" | null (flag apagado, o canal "web" que no aplica). */
+  mode?: "own" | "pool" | null;
+  /** Campos no-secretos guardados, para precargar "Editar" — nunca trae el token. */
+  credentials?: ChannelConnectionCredentials | null;
 }
 
 export interface ChannelPatch {
