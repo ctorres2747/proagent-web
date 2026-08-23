@@ -11,6 +11,13 @@ interface RawConnection {
   status: string;
   account_name?: string | null;
   issue?: string | null;
+  mode?: "own" | "pool" | null;
+  credentials?: {
+    wasi_id_company?: string | null;
+    wasi_id_user?: string | null;
+    instagram_account?: string | null;
+    catalog_id?: string | null;
+  } | null;
 }
 
 function mapConnection(raw: RawConnection): ChannelConnection {
@@ -19,6 +26,15 @@ function mapConnection(raw: RawConnection): ChannelConnection {
     status: raw.status as ChannelConnection["status"],
     accountName: raw.account_name ?? raw.channel_id,
     issue: raw.issue ?? null,
+    mode: raw.mode ?? null,
+    credentials: raw.credentials
+      ? {
+          wasiIdCompany: raw.credentials.wasi_id_company ?? null,
+          wasiIdUser: raw.credentials.wasi_id_user ?? null,
+          instagramAccount: raw.credentials.instagram_account ?? null,
+          catalogId: raw.credentials.catalog_id ?? null,
+        }
+      : null,
   };
 }
 

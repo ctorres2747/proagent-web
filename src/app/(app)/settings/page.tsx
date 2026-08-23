@@ -6,6 +6,7 @@ import { useAuth } from "@/features/auth/AuthProvider";
 import { agentInitials } from "@/lib/agentDisplay";
 import { CHANNEL_META, CHANNEL_ORDER, type ChannelId } from "@/design-system/channels";
 import { ChannelLogo } from "@/components/ChannelLogo";
+import { PasswordInput } from "@/components/PasswordInput";
 import { ProfilePhotoCropModal } from "@/components/ProfilePhotoCropModal";
 import { Toast } from "@/components/Toast";
 import { channelsService, profileService } from "@/services";
@@ -305,6 +306,21 @@ function ChannelRow({
     patchMutation.mutate({ status: "connected", mode: "pool" });
   };
 
+  // "Editar" (own ya conectado) y "Cambiar a mis credenciales" (pool ya
+  // conectado) abren el mismo panel, precargado con lo que haya guardado —
+  // el token NUNCA se precarga (el backend tampoco lo devuelve): se deja en
+  // blanco y, si el asesor no escribe uno nuevo, el backend conserva el
+  // actual (mismo criterio que Stripe/Twilio: nunca se re-muestra un secreto
+  // ya guardado, solo se reemplaza si se pega uno nuevo).
+  const openEditPanel = () => {
+    setMode("own");
+    setWasiCompany(connection.credentials?.wasiIdCompany ?? "");
+    setWasiUser(connection.credentials?.wasiIdUser ?? "");
+    setCatalogId(connection.credentials?.catalogId ?? "");
+    setWasiToken("");
+    setExpanded(true);
+  };
+
   const connectOwn = () => {
     if (id === "instagram" && !instagramHandle.trim()) {
       onError("Agrega tu Instagram en la pestaña Perfil antes de conectar este canal");
@@ -381,14 +397,35 @@ function ChannelRow({
               </button>
             </>
           ) : (
-            <button
-              type="button"
-              disabled={patchMutation.isPending}
-              onClick={disconnect}
-              className="rounded-lg border border-[var(--pa-danger)]/40 px-3 py-1.5 text-[12px] font-semibold text-[var(--pa-danger)]"
-            >
-              Desconectar
-            </button>
+            <>
+              {id !== "facebook" || connection.mode === "pool" ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (expanded) {
+                      setExpanded(false);
+                    } else {
+                      openEditPanel();
+                    }
+                  }}
+                  className="rounded-lg border border-[var(--pa-navy)] px-3 py-1.5 text-[12px] font-semibold text-[var(--pa-navy)]"
+                >
+                  {expanded
+                    ? "Ocultar"
+                    : connection.mode === "pool"
+                      ? "Cambiar a mis credenciales"
+                      : "Editar"}
+                </button>
+              ) : null}
+              <button
+                type="button"
+                disabled={patchMutation.isPending}
+                onClick={disconnect}
+                className="rounded-lg border border-[var(--pa-danger)]/40 px-3 py-1.5 text-[12px] font-semibold text-[var(--pa-danger)]"
+              >
+                Desconectar
+              </button>
+            </>
           )}
         </div>
       ) : null}
@@ -417,26 +454,37 @@ function ChannelRow({
           )}
 
           {id === "wasi" && mode === "own" ? (
-            <div className="grid gap-2 sm:grid-cols-3">
-              <input
-                placeholder="ID company"
-                value={wasiCompany}
-                onChange={(e) => setWasiCompany(e.target.value)}
-                className="rounded-lg border border-[var(--pa-border)] px-2 py-1.5 text-[13px]"
-              />
-              <input
-                placeholder="Token"
-                type="password"
-                value={wasiToken}
-                onChange={(e) => setWasiToken(e.target.value)}
-                className="rounded-lg border border-[var(--pa-border)] px-2 py-1.5 text-[13px]"
-              />
-              <input
-                placeholder="ID user"
-                value={wasiUser}
-                onChange={(e) => setWasiUser(e.target.value)}
-                className="rounded-lg border border-[var(--pa-border)] px-2 py-1.5 text-[13px]"
-              />
+            <div className="space-y-1.5">
+              <div className="grid gap-2 sm:grid-cols-3">
+                <input
+                  placeholder="ID company"
+                  value={wasiCompany}
+                  onChange={(e) => setWasiCompany(e.target.value)}
+                  className="rounded-lg border border-[var(--pa-border)] px-2 py-1.5 text-[13px]"
+                />
+                <PasswordInput
+                  value={wasiToken}
+                  onChange={setWasiToken}
+                  placeholder={
+                    connection.status === "connected" && connection.mode === "own"
+                      ? "Token guardado — dejar vacío para no cambiarlo"
+                      : "Token"
+                  }
+                  inputClassName="w-full rounded-lg border border-[var(--pa-border)] px-2 py-1.5 pr-8 text-[13px]"
+                />
+                <input
+                  placeholder="ID user"
+                  value={wasiUser}
+                  onChange={(e) => setWasiUser(e.target.value)}
+                  className="rounded-lg border border-[var(--pa-border)] px-2 py-1.5 text-[13px]"
+                />
+              </div>
+              {connection.status === "connected" && connection.mode === "own" ? (
+                <p className="text-[11px] text-[var(--pa-muted)]">
+                  El token ya guardado no se muestra por seguridad. Déjalo vacío para
+                  conservarlo, o pega uno nuevo para reemplazarlo.
+                </p>
+              ) : null}
             </div>
           ) : null}
 
@@ -496,7 +544,7 @@ function ChannelRow({
             }}
             className="rounded-lg bg-[var(--pa-navy)] px-3 py-2 text-[12px] font-bold text-white"
           >
-            Guardar conexión
+            {connection.status === "connected" ? "Actualizar conexión" : "Guardar conexión"}
           </button>
         </div>
       ) : null}
