@@ -21,6 +21,9 @@ interface RawConnection {
     instagram_token_last4?: string | null;
     catalog_id?: string | null;
     catalog_token_last4?: string | null;
+    service_account_email?: string | null;
+    drive_parent_folder_id?: string | null;
+    drive_parent_folder_url?: string | null;
   } | null;
 }
 
@@ -41,6 +44,9 @@ function mapConnection(raw: RawConnection): ChannelConnection {
           instagramTokenLast4: raw.credentials.instagram_token_last4 ?? null,
           catalogId: raw.credentials.catalog_id ?? null,
           catalogTokenLast4: raw.credentials.catalog_token_last4 ?? null,
+          serviceAccountEmail: raw.credentials.service_account_email ?? null,
+          driveParentFolderId: raw.credentials.drive_parent_folder_id ?? null,
+          driveParentFolderUrl: raw.credentials.drive_parent_folder_url ?? null,
         }
       : null,
   };
@@ -62,6 +68,7 @@ function toRawPatch(data: ChannelPatch): Record<string, unknown> {
       instagram_token: c.instagramToken ?? undefined,
       catalog_id: c.catalogId ?? undefined,
       catalog_token: c.catalogToken ?? undefined,
+      drive_parent_folder_id: c.driveParentFolderId ?? undefined,
     };
   }
   return out;
