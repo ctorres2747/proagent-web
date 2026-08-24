@@ -278,6 +278,7 @@ function ChannelRow({
   const [catalogToken, setCatalogToken] = useState("");
   const [instagramBusinessId, setInstagramBusinessId] = useState("");
   const [instagramToken, setInstagramToken] = useState("");
+  const [driveParentFolder, setDriveParentFolder] = useState("");
   const [expanded, setExpanded] = useState(false);
 
   const patchMutation = useMutation({
@@ -325,6 +326,11 @@ function ChannelRow({
     setWasiUser(connection.credentials?.wasiIdUser ?? "");
     setCatalogId(connection.credentials?.catalogId ?? "");
     setInstagramBusinessId(connection.credentials?.instagramBusinessId ?? "");
+    setDriveParentFolder(
+      connection.credentials?.driveParentFolderUrl ??
+        connection.credentials?.driveParentFolderId ??
+        "",
+    );
     setWasiToken("");
     setCatalogToken("");
     setInstagramToken("");
@@ -365,12 +371,25 @@ function ChannelRow({
     patchMutation.mutate({ status: "connected", mode: "own", credentials });
   };
 
+  const connectEntrega = () => {
+    if (!driveParentFolder.trim()) {
+      onError("Indica el link o ID de la carpeta padre en Google Drive");
+      return;
+    }
+    patchMutation.mutate({
+      status: "connected",
+      mode: "own",
+      credentials: { driveParentFolderId: driveParentFolder.trim() },
+    });
+  };
+
   const disconnect = () => {
     patchMutation.mutate({ status: "not_connected" });
     setExpanded(false);
   };
 
   const canConfigure = id !== "web" && connection.status !== "unavailable";
+  const isEntrega = id === "entrega";
 
   // Confirmación de que hay un token guardado, sin exponerlo (mismo patrón
   // que Stripe/GitHub: últimos 4 caracteres). Solo aplica en modo own.
@@ -423,15 +442,19 @@ function ChannelRow({
             <>
               <button
                 type="button"
-                onClick={() => setExpanded((v) => !v)}
+                onClick={() => (expanded ? setExpanded(false) : openEditPanel())}
                 className="rounded-lg border border-[var(--pa-navy)] px-3 py-1.5 text-[12px] font-semibold text-[var(--pa-navy)]"
               >
-                {expanded ? "Ocultar credenciales" : "Conectar con mis datos"}
+                {expanded
+                  ? "Ocultar"
+                  : isEntrega
+                    ? "Configurar carpeta"
+                    : "Conectar con mis datos"}
               </button>
             </>
           ) : (
             <>
-              {id !== "facebook" || connection.mode === "pool" ? (
+              {id !== "facebook" && !isEntrega ? (
                 <button
                   type="button"
                   onClick={() => {
@@ -450,6 +473,16 @@ function ChannelRow({
                       : "Conectar con mis datos"}
                 </button>
               ) : null}
+              {isEntrega ? (
+                <button
+                  type="button"
+                  onClick={() => (expanded ? setExpanded(false) : openEditPanel())}
+                  className="rounded-lg border border-[var(--pa-navy)] px-3 py-1.5 text-[12px] font-semibold text-[var(--pa-navy)]"
+                >
+                  {expanded ? "Ocultar" : "Editar carpeta padre"}
+                </button>
+              ) : null}
+              {!isEntrega ? (
               <button
                 type="button"
                 disabled={patchMutation.isPending}
@@ -458,6 +491,7 @@ function ChannelRow({
               >
                 Desconectar
               </button>
+              ) : null}
             </>
           )}
         </div>
@@ -640,11 +674,43 @@ function ChannelRow({
             </p>
           ) : null}
 
+          {id === "entrega" ? (
+            <div className="space-y-2">
+              <label className="block">
+                <span className="mb-1 block text-[11px] font-semibold text-[var(--pa-muted)]">
+                  Email service account (solo lectura)
+                </span>
+                <input
+                  value={connection.credentials?.serviceAccountEmail ?? ""}
+                  readOnly
+                  placeholder="Configurado en el VPS"
+                  className="w-full cursor-not-allowed rounded-lg border border-[var(--pa-border)] bg-[var(--pa-bg)] px-2 py-1.5 text-[13px] text-[var(--pa-muted)]"
+                />
+              </label>
+              <label className="block">
+                <span className="mb-1 block text-[11px] font-semibold text-[var(--pa-muted)]">
+                  Carpeta padre (link o ID)
+                </span>
+                <input
+                  value={driveParentFolder}
+                  onChange={(e) => setDriveParentFolder(e.target.value)}
+                  placeholder="https://drive.google.com/drive/folders/…"
+                  className="w-full rounded-lg border border-[var(--pa-border)] px-2 py-1.5 text-[13px]"
+                />
+              </label>
+              <p className="text-[11px] text-[var(--pa-muted)]">
+                Comparte la carpeta padre con el email de arriba (Editor). Se creará{" "}
+                <strong>Captaciones_Proinversores</strong> automáticamente.
+              </p>
+            </div>
+          ) : null}
+
           <button
             type="button"
             disabled={patchMutation.isPending}
             onClick={() => {
-              if (mode === "pool") connectPool();
+              if (id === "entrega") connectEntrega();
+              else if (mode === "pool") connectPool();
               else if (id === "facebook") {
                 patchMutation.mutate({ status: "connected", mode: "own" });
               } else connectOwn();
