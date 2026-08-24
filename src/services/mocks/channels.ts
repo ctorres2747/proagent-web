@@ -24,6 +24,11 @@ let mockConnections: ChannelConnection[] = [
       "Catálogo Meta no configurado (META_CATALOG_ID / META_CATALOG_TOKEN en VPS)",
   },
   {
+    channelId: "entrega",
+    status: "connected",
+    accountName: "Entrega Inmobiliaria (Drive)",
+  },
+  {
     channelId: "web",
     status: "unavailable",
     accountName: "Sitio web",

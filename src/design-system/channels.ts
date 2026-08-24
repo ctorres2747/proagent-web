@@ -1,5 +1,5 @@
 /** Publishing channels shared across the ProAgent suite. */
-export type ChannelId = "wasi" | "facebook" | "instagram" | "whatsapp" | "web";
+export type ChannelId = "wasi" | "facebook" | "instagram" | "whatsapp" | "web" | "entrega";
 
 /** Per-channel publication status. */
 export type ChannelStatus = "published" | "progress" | "error" | "none";
@@ -9,6 +9,7 @@ export const CHANNEL_ORDER: ChannelId[] = [
   "facebook",
   "instagram",
   "whatsapp",
+  "entrega",
   "web",
 ];
 
@@ -45,6 +46,12 @@ export const CHANNEL_META: Record<
     subtitle: "Catálogo",
     short: "Wa",
     logo: "/channels/whatsapp.svg",
+  },
+  entrega: {
+    name: "Entrega Inmobiliaria",
+    subtitle: "Google Drive",
+    short: "E",
+    logo: "/channels/entrega.svg",
   },
   web: {
     name: "Sitio web",
