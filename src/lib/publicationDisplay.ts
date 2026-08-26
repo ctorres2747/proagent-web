@@ -1,4 +1,9 @@
-import type { Publication, PublicationStatus } from "@/services/interfaces/publications";
+import { CHANNEL_META, type ChannelId } from "@/design-system/channels";
+import type {
+  ChannelResultStatus,
+  Publication,
+  PublicationStatus,
+} from "@/services/interfaces/publications";
 import type { Property } from "@/services/interfaces/properties";
 
 export type PublicationStage =
@@ -7,8 +12,16 @@ export type PublicationStage =
   | "scheduled"
   | "publishing"
   | "published"
+  | "partially_published"
   | "partial"
   | "failed";
+
+export type ChannelIndicatorKind =
+  | "published"
+  | "pending"
+  | "error"
+  | "progress"
+  | "scheduled";
 
 export const PUBLICATION_STAGE_LABEL: Record<PublicationStage, string> = {
   none: "Sin publicar",
@@ -16,6 +29,7 @@ export const PUBLICATION_STAGE_LABEL: Record<PublicationStage, string> = {
   scheduled: "Programada",
   publishing: "Publicando",
   published: "Publicada",
+  partially_published: "Parcialmente publicado",
   partial: "Parcial",
   failed: "Error",
 };
@@ -26,21 +40,20 @@ export const PUBLICATION_STAGE_CLASS: Record<PublicationStage, string> = {
   scheduled: "bg-[#FEF3E2] text-[#B45309]",
   publishing: "bg-[#FEF3E2] text-[#B45309]",
   published: "bg-[#E6F4EE] text-[var(--pa-accent)]",
+  partially_published: "bg-[#FEF3E2] text-[#B45309]",
   partial: "bg-[#FEF3E2] text-[#B45309]",
   failed: "bg-[#FCEAEA] text-[var(--pa-danger)]",
 };
 
-// Orden de la lista de Publicación: primero lo que hay que trabajar (borrador,
-// sin publicar), luego lo que necesita atención (error/parcial), luego lo que
-// ya está en curso (programada), y al final lo que ya quedó resuelto.
 export const PUBLICATION_STAGE_SORT_ORDER: Record<PublicationStage, number> = {
   draft: 0,
   none: 1,
   failed: 2,
   partial: 3,
-  scheduled: 4,
-  publishing: 5,
-  published: 6,
+  partially_published: 4,
+  scheduled: 5,
+  publishing: 6,
+  published: 7,
 };
 
 export const PUBLICATION_FILTER_OPTIONS = [
@@ -55,11 +68,60 @@ export const PUBLICATION_FILTER_OPTIONS = [
 export type PublicationFilterLabel =
   (typeof PUBLICATION_FILTER_OPTIONS)[number]["value"];
 
-export function publicationStage(
+function channelResultMap(
+  publication: Publication,
+): Map<ChannelId, ChannelResultStatus> {
+  return new Map(publication.channelResults.map((r) => [r.channelId, r.status]));
+}
+
+/** Etapa visible en lista — calculada desde selectedChannels + channelResults (Sprint 045). */
+export function publicationAggregateStage(
   publication: Publication | undefined,
 ): PublicationStage {
   if (!publication) return "none";
-  return publication.status as PublicationStage;
+
+  if (publication.status === "draft") return "draft";
+  if (publication.status === "publishing") return "publishing";
+  if (publication.status === "scheduled") return "scheduled";
+
+  const selected = publication.selectedChannels ?? [];
+  if (selected.length === 0) {
+    return "none";
+  }
+
+  let published = 0;
+  let pending = 0;
+  let failed = 0;
+  let inProgress = 0;
+  let scheduled = 0;
+
+  const byChannel = channelResultMap(publication);
+  for (const ch of selected) {
+    const s = byChannel.get(ch) ?? "waiting";
+    if (s === "published") published += 1;
+    else if (s === "failed" || s === "unavailable") failed += 1;
+    else if (s === "waiting") pending += 1;
+    else if (s === "publishing" || s === "pending") inProgress += 1;
+    else if (s === "scheduled") scheduled += 1;
+  }
+
+  if (inProgress > 0) return "publishing";
+  if (scheduled > 0 && published === 0 && failed === 0 && pending === 0) {
+    return "scheduled";
+  }
+  if (published > 0 && failed > 0) return "partial";
+  if (published > 0 && pending > 0) return "partially_published";
+  if (published === selected.length) return "published";
+  if (failed === selected.length) return "failed";
+  if (failed > 0) return "partial";
+  if (publication.status === "failed") return "failed";
+  return "none";
+}
+
+export function publicationStage(
+  publication: Publication | undefined,
+): PublicationStage {
+  return publicationAggregateStage(publication);
 }
 
 export function stageFromStatus(status: PublicationStatus): PublicationStage {
@@ -68,6 +130,34 @@ export function stageFromStatus(status: PublicationStatus): PublicationStage {
 
 export function stageLabel(stage: PublicationStage): string {
   return PUBLICATION_STAGE_LABEL[stage];
+}
+
+export function channelIndicatorForPublication(
+  channelId: ChannelId,
+  publication?: Publication,
+): ChannelIndicatorKind | null {
+  if (!publication?.selectedChannels?.includes(channelId)) return null;
+  const status = channelResultMap(publication).get(channelId) ?? "waiting";
+  if (status === "published") return "published";
+  if (status === "failed" || status === "unavailable") return "error";
+  if (status === "publishing" || status === "pending") return "progress";
+  if (status === "scheduled") return "scheduled";
+  return "pending";
+}
+
+export function channelIndicatorAriaLabel(
+  channelId: ChannelId,
+  kind: ChannelIndicatorKind,
+): string {
+  const name = CHANNEL_META[channelId].name;
+  const text: Record<ChannelIndicatorKind, string> = {
+    published: "publicado",
+    pending: "pendiente",
+    error: "error",
+    progress: "en proceso",
+    scheduled: "programado",
+  };
+  return `${name}: ${text[kind]}`;
 }
 
 export type PublicationShortcuts = {
@@ -90,7 +180,11 @@ export function matchesPublicationShortcuts(
   ) {
     return false;
   }
-  if (shortcuts.conError && stage !== "failed" && stage !== "partial") {
+  if (
+    shortcuts.conError &&
+    stage !== "failed" &&
+    stage !== "partial"
+  ) {
     return false;
   }
   return true;
@@ -103,15 +197,16 @@ export function matchesPublicationStageFilter(
   if (filter === "Todos") return true;
   if (filter === "Sin publicar") return stage === "none";
   if (filter === "Borrador") return stage === "draft";
-  if (filter === "Programada") return stage === "scheduled" || stage === "publishing";
-  if (filter === "Publicada") {
-    return stage === "published" || stage === "partial";
+  if (filter === "Programada") {
+    return stage === "scheduled" || stage === "publishing";
   }
+  // Solo filas con todos los canales seleccionados publicados (Sprint 045).
+  // "Parcialmente publicado" y "Parcial" no entran aquí.
+  if (filter === "Publicada") return stage === "published";
   if (filter === "Con error") return stage === "failed" || stage === "partial";
   return true;
 }
 
-/** Última publicación por propiedad (más reciente por updatedAt). */
 export function indexPublicationsByProperty(
   publications: Publication[],
 ): Map<string, Publication> {
