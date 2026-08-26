@@ -2,7 +2,7 @@
 
 | Campo | Valor |
 |-------|--------|
-| Estado | **pendiente** |
+| Estado | **en curso** — Sprint **047** [`proagent-mobile/sprints/047-npm-audit-next-deps.md`](https://github.com/ctorres2747/proagent-mobile/blob/main/sprints/047-npm-audit-next-deps.md) |
 | Prioridad | **P0** (Owner 2026-08-15: no construir/desplegar dejando highs sin plan) |
 | Detectado | 2026-08-15 (deploy VPS Sprint 009 — `npm ci`) |
 | Repo | `proagent-web` (`main`) |
@@ -30,7 +30,9 @@ Nota: el `postcss@8.5.26` de **devDependencies** (Tailwind) no es el vulnerable;
 3. Remediación = sprint/ticket dedicado: upgrade Next (o overrides auditados) + `npm audit` limpio + `typecheck`/`build` + redeploy `app.proinversores.bond`.
 4. Hasta cerrar: smoke de producto puede continuar, pero el fix de seguridad **no se diluye** detrás de features.
 
-## Trabajo Dev (cuando se abra el ticket)
+## Trabajo Dev (Sprint 047)
+
+Ver spec: [`proagent-mobile/sprints/047-npm-audit-next-deps.md`](https://github.com/ctorres2747/proagent-mobile/blob/main/sprints/047-npm-audit-next-deps.md).
 
 - [ ] Reproducir `npm audit` en `main` limpio; pegar reporte en el PR.
 - [ ] Elegir remediación **sin** `--force` ciego (preferir Next patch/minor que traga postcss/sharp sanos; si hace falta Next 16, changelog + plan de migración).
