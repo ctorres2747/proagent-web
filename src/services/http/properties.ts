@@ -55,6 +55,15 @@ interface RawProperty {
   nombre_contacto?: string | null;
   completeness?: number | null;
   missing_fields?: string[] | null;
+  completeness_drive?: { is_complete?: boolean; missing_fields?: string[] } | null;
+  predial?: string | null;
+  afectaciones_inmueble?: string | null;
+  afectaciones_detalle?: string | null;
+  observaciones_inmueble?: string | null;
+  precio_minimo_cliente?: string | null;
+  puntos_favorables_externos?: string | null;
+  detalle_parqueadero?: string | null;
+  frente_fondo_m?: string | null;
   portada_url?: string | null;
   fotos?: RawPhoto[] | null;
   owner_agente_id?: number | string | null;
@@ -137,6 +146,20 @@ function mapProperty(raw: RawProperty): Property {
       : null,
     completeness: typeof raw.completeness === "number" ? raw.completeness : 0,
     missingFields: Array.isArray(raw.missing_fields) ? raw.missing_fields : [],
+    completenessDrive: {
+      isComplete: Boolean(raw.completeness_drive?.is_complete),
+      missingFields: Array.isArray(raw.completeness_drive?.missing_fields)
+        ? raw.completeness_drive.missing_fields
+        : [],
+    },
+    predial: raw.predial ?? null,
+    afectacionesInmueble: raw.afectaciones_inmueble ?? null,
+    afectacionesDetalle: raw.afectaciones_detalle ?? null,
+    observacionesInmueble: raw.observaciones_inmueble ?? null,
+    precioMinimoCliente: raw.precio_minimo_cliente ?? null,
+    puntosFavorablesExternos: raw.puntos_favorables_externos ?? null,
+    detalleParqueadero: raw.detalle_parqueadero ?? null,
+    frenteFondoM: raw.frente_fondo_m ?? null,
     portadaUrl: raw.portada_url ?? fotos[0]?.url ?? null,
     fotos,
     ownerAgenteId:
@@ -181,6 +204,26 @@ function toWriteBody(
     body.telefono_contacto = data.telefonoContacto;
   }
   if (data.nombreContacto !== undefined) body.nombre_contacto = data.nombreContacto;
+  if (data.predial !== undefined) body.predial = data.predial;
+  if (data.afectacionesInmueble !== undefined) {
+    body.afectaciones_inmueble = data.afectacionesInmueble;
+  }
+  if (data.afectacionesDetalle !== undefined) {
+    body.afectaciones_detalle = data.afectacionesDetalle;
+  }
+  if (data.observacionesInmueble !== undefined) {
+    body.observaciones_inmueble = data.observacionesInmueble;
+  }
+  if (data.precioMinimoCliente !== undefined) {
+    body.precio_minimo_cliente = data.precioMinimoCliente;
+  }
+  if (data.puntosFavorablesExternos !== undefined) {
+    body.puntos_favorables_externos = data.puntosFavorablesExternos;
+  }
+  if (data.detalleParqueadero !== undefined) {
+    body.detalle_parqueadero = data.detalleParqueadero;
+  }
+  if (data.frenteFondoM !== undefined) body.frente_fondo_m = data.frenteFondoM;
   return body;
 }
 

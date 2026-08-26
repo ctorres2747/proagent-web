@@ -13,8 +13,32 @@ function channels(map: Partial<Record<ChannelId, ChannelStatus>>): PropertyChann
   return CHANNEL_ORDER.map((id) => ({ id, status: map[id] ?? "none" }));
 }
 
+const DRIVE_FIELDS_DEFAULT = {
+  completenessDrive: { isComplete: false, missingFields: [] as string[] },
+  predial: null,
+  afectacionesInmueble: null,
+  afectacionesDetalle: null,
+  observacionesInmueble: null,
+  precioMinimoCliente: null,
+  puntosFavorablesExternos: null,
+  detalleParqueadero: null,
+  frenteFondoM: null,
+} satisfies Pick<
+  Property,
+  | "completenessDrive"
+  | "predial"
+  | "afectacionesInmueble"
+  | "afectacionesDetalle"
+  | "observacionesInmueble"
+  | "precioMinimoCliente"
+  | "puntosFavorablesExternos"
+  | "detalleParqueadero"
+  | "frenteFondoM"
+>;
+
 const MOCK_PROPERTIES: Property[] = [
   {
+    ...DRIVE_FIELDS_DEFAULT,
     id: "PI-1042",
     code: "PI-1042",
     titulo: "Apartamento de 3 alcobas en Envigado, cerca al parque principal",
@@ -57,6 +81,7 @@ const MOCK_PROPERTIES: Property[] = [
     }),
   },
   {
+    ...DRIVE_FIELDS_DEFAULT,
     id: "PI-0987",
     code: "PI-0987",
     titulo: "Casa de 4 alcobas en Sabaneta",
@@ -93,6 +118,7 @@ const MOCK_PROPERTIES: Property[] = [
     channels: channels({ wasi: "progress" }),
   },
   {
+    ...DRIVE_FIELDS_DEFAULT,
     id: "PI-1103",
     code: "PI-1103",
     titulo: "Apartamento amplio en Laureles",
@@ -134,6 +160,7 @@ const MOCK_PROPERTIES: Property[] = [
     }),
   },
   {
+    ...DRIVE_FIELDS_DEFAULT,
     id: "PI-1187",
     code: "PI-1187",
     titulo: "Apartaestudio en Belén",
@@ -170,6 +197,7 @@ const MOCK_PROPERTIES: Property[] = [
     channels: channels({}),
   },
   {
+    ...DRIVE_FIELDS_DEFAULT,
     id: "PI-1201",
     code: "PI-1201",
     titulo: "Casa campestre en Rionegro",
@@ -212,6 +240,7 @@ const MOCK_PROPERTIES: Property[] = [
     }),
   },
   {
+    ...DRIVE_FIELDS_DEFAULT,
     id: "PI-1233",
     code: "PI-1233",
     titulo: "Oficina 60 m² en El Poblado",
@@ -264,6 +293,7 @@ export const propertiesService: PropertiesService = {
     await delay(250);
     const id = `PI-${Math.floor(Math.random() * 9000) + 1000}`;
     const created: Property = {
+      ...DRIVE_FIELDS_DEFAULT,
       id,
       code: id,
       titulo: data.titulo ?? "(sin título)",

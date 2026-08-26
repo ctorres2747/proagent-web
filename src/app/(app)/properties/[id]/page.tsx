@@ -38,12 +38,21 @@ import { formatPrice } from "@/lib/format";
 import { capturedAtLabel } from "@/lib/formatCapturedAt";
 import {
   checklistForTipo,
+  formatDriveMissingFields,
   formatMissingFields,
+  isDrivePublishReady,
   isFieldComplete,
+  isResidentialTipo,
   isWasiPublishReady,
   missingFieldsFromDraft,
+  DRIVE_PUBLISH_HINT,
   WASI_PUBLISH_HINT,
 } from "@/lib/completeness";
+import {
+  DRIVE_PARKING_OPTIONS,
+  DRIVE_PROPERTY_LIENS_OPTIONS,
+} from "@/lib/driveFieldOptions";
+import { driveFieldOptionsService } from "@/services/http/driveFieldOptions";
 import {
   DEFAULT_TIMEZONE,
   buildScheduleIso,
@@ -128,6 +137,14 @@ type ContentFormSnapshot = {
   direccion: string;
   codigoPostal: string;
   featureIds: number[];
+  predial: string;
+  afectacionesInmueble: string;
+  afectacionesDetalle: string;
+  observacionesInmueble: string;
+  precioMinimoCliente: string;
+  puntosFavorablesExternos: string;
+  detalleParqueadero: string;
+  frenteFondoM: string;
 };
 
 function emptyContentForm(): ContentFormSnapshot {
@@ -155,6 +172,14 @@ function emptyContentForm(): ContentFormSnapshot {
     direccion: "",
     codigoPostal: "",
     featureIds: [],
+    predial: "",
+    afectacionesInmueble: "",
+    afectacionesDetalle: "",
+    observacionesInmueble: "",
+    precioMinimoCliente: "",
+    puntosFavorablesExternos: "",
+    detalleParqueadero: "",
+    frenteFondoM: "",
   };
 }
 
@@ -188,6 +213,14 @@ function snapshotFromProperty(property: Property): ContentFormSnapshot {
     direccion: property.direccion ?? "",
     codigoPostal: property.codigoPostal ?? "",
     featureIds: [...(property.featureIds ?? [])],
+    predial: property.predial ?? "",
+    afectacionesInmueble: property.afectacionesInmueble ?? "",
+    afectacionesDetalle: property.afectacionesDetalle ?? "",
+    observacionesInmueble: property.observacionesInmueble ?? "",
+    precioMinimoCliente: property.precioMinimoCliente ?? "",
+    puntosFavorablesExternos: property.puntosFavorablesExternos ?? "",
+    detalleParqueadero: property.detalleParqueadero ?? "",
+    frenteFondoM: property.frenteFondoM ?? "",
   };
 }
 
@@ -236,7 +269,15 @@ function contentFormsEqual(a: ContentFormSnapshot, b: ContentFormSnapshot): bool
     a.anioConstruccion === b.anioConstruccion &&
     a.direccion === b.direccion &&
     a.codigoPostal === b.codigoPostal &&
-    featureIdsEqual(a.featureIds, b.featureIds)
+    featureIdsEqual(a.featureIds, b.featureIds) &&
+    a.predial === b.predial &&
+    a.afectacionesInmueble === b.afectacionesInmueble &&
+    a.afectacionesDetalle === b.afectacionesDetalle &&
+    a.observacionesInmueble === b.observacionesInmueble &&
+    a.precioMinimoCliente === b.precioMinimoCliente &&
+    a.puntosFavorablesExternos === b.puntosFavorablesExternos &&
+    a.detalleParqueadero === b.detalleParqueadero &&
+    a.frenteFondoM === b.frenteFondoM
   );
 }
 
@@ -473,9 +514,13 @@ export default function PublishWizardPage() {
   const wasiPublishReady = property
     ? isWasiPublishReady(property.missingFields)
     : true;
+  const drivePublishReady = property
+    ? isDrivePublishReady(property.completenessDrive?.missingFields ?? [])
+    : true;
 
   const channelSelectable = (id: ChannelId): boolean => {
     if (id === "wasi" && !wasiPublishReady) return false;
+    if (id === "entrega" && !drivePublishReady) return false;
     const conn = connectionById.get(id);
     if (!conn) return id !== "web";
     return conn.status === "connected" || conn.status === "needs_auth";
@@ -483,6 +528,12 @@ export default function PublishWizardPage() {
 
   const channelToggleHint = (id: ChannelId): string | undefined => {
     if (id === "wasi" && !wasiPublishReady) return WASI_PUBLISH_HINT;
+    if (id === "entrega" && !drivePublishReady) {
+      const missing = property?.completenessDrive?.missingFields ?? [];
+      return missing.length
+        ? `${DRIVE_PUBLISH_HINT}: ${formatMissingFields(missing)}`
+        : DRIVE_PUBLISH_HINT;
+    }
     const conn = connectionById.get(id);
     if (!channelSelectable(id) && conn?.issue) return conn.issue;
     return undefined;
@@ -495,6 +546,14 @@ export default function PublishWizardPage() {
       return { ...prev, wasi: false };
     });
   }, [property?.id, wasiPublishReady]);
+
+  useEffect(() => {
+    if (!property || drivePublishReady) return;
+    setSelectedChannels((prev) => {
+      if (!prev.entrega) return prev;
+      return { ...prev, entrega: false };
+    });
+  }, [property?.id, drivePublishReady]);
 
   const saveContentChanges = async (options?: { advance?: boolean }) => {
     if (!property || !publication) return;
@@ -526,6 +585,14 @@ export default function PublishWizardPage() {
           direccion: contentForm.direccion || null,
           codigoPostal: contentForm.codigoPostal || null,
           featureIds: contentForm.featureIds,
+          predial: contentForm.predial || null,
+          afectacionesInmueble: contentForm.afectacionesInmueble || null,
+          afectacionesDetalle: contentForm.afectacionesDetalle || null,
+          observacionesInmueble: contentForm.observacionesInmueble || null,
+          precioMinimoCliente: contentForm.precioMinimoCliente || null,
+          puntosFavorablesExternos: contentForm.puntosFavorablesExternos || null,
+          detalleParqueadero: contentForm.detalleParqueadero || null,
+          frenteFondoM: contentForm.frenteFondoM || null,
         },
         token ?? undefined,
       );
@@ -1148,6 +1215,26 @@ function ContentStep({
     queryKey: ["wasi-features"],
     queryFn: () => wasiFeaturesService.list(token),
   });
+  const {
+    data: driveFieldOptions,
+    isLoading: driveOptionsLoading,
+  } = useQuery({
+    queryKey: ["drive-field-options"],
+    queryFn: () => driveFieldOptionsService.list(token),
+  });
+  const parkingOptions =
+    driveFieldOptions?.parkingDetail?.length
+      ? driveFieldOptions.parkingDetail
+      : DRIVE_PARKING_OPTIONS;
+  const liensOptions =
+    driveFieldOptions?.propertyLiens?.length
+      ? driveFieldOptions.propertyLiens
+      : DRIVE_PROPERTY_LIENS_OPTIONS;
+  const tipoActual = form.tipo || property.tipo;
+  const esResidencial = isResidentialTipo(tipoActual);
+  const driveMissing = property.completenessDrive?.missingFields ?? [];
+  const driveMissingSummary = formatDriveMissingFields(driveMissing);
+  const driveReady = isDrivePublishReady(driveMissing);
   const liveMissing = missingFieldsFromDraft({
     titulo: form.titulo,
     descripcion: form.descripcion,
@@ -1361,6 +1448,92 @@ function ContentStep({
             }
           />
         </Card>
+
+        <Card title="Google Drive (Entrega)">
+          <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
+            <ControlledField
+              label="Predial (anual COP) *"
+              value={form.predial}
+              onChange={(v) => onPatch({ predial: v })}
+            />
+            <ControlledField
+              label="Precio mínimo para cliente *"
+              value={form.precioMinimoCliente}
+              onChange={(v) => onPatch({ precioMinimoCliente: v })}
+            />
+            <div className="sm:col-span-2">
+              <div className={label}>Afectaciones del inmueble *</div>
+              <select
+                className={input}
+                value={form.afectacionesInmueble}
+                onChange={(e) =>
+                  onPatch({ afectacionesInmueble: e.target.value })
+                }
+              >
+                <option value="">Seleccionar…</option>
+                {liensOptions.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            {form.afectacionesInmueble && form.afectacionesInmueble !== "ninguna" ? (
+              <div className="sm:col-span-2">
+                <ControlledField
+                  label="Detalle afectación"
+                  value={form.afectacionesDetalle}
+                  onChange={(v) => onPatch({ afectacionesDetalle: v })}
+                />
+              </div>
+            ) : null}
+            {esResidencial ? (
+              <div className="sm:col-span-2">
+                <div className={label}>Detalle parqueadero *</div>
+                <select
+                  className={input}
+                  value={form.detalleParqueadero}
+                  onChange={(e) =>
+                    onPatch({ detalleParqueadero: e.target.value })
+                  }
+                  disabled={driveOptionsLoading}
+                >
+                  <option value="">Seleccionar…</option>
+                  {parkingOptions.map((o) => (
+                    <option key={o.value} value={o.value}>
+                      {o.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            ) : null}
+            <ControlledField
+              label="Frente × fondo (opcional)"
+              value={form.frenteFondoM}
+              onChange={(v) => onPatch({ frenteFondoM: v })}
+            />
+          </div>
+          <div className="mt-3.5">
+            <div className={label}>Puntos favorables externos *</div>
+            <textarea
+              className={`${input} min-h-[72px] resize-y`}
+              value={form.puntosFavorablesExternos}
+              onChange={(e) =>
+                onPatch({ puntosFavorablesExternos: e.target.value })
+              }
+            />
+          </div>
+          <div className="mt-3.5">
+            <div className={label}>Observaciones del inmueble *</div>
+            <textarea
+              className={`${input} min-h-[72px] resize-y`}
+              value={form.observacionesInmueble}
+              onChange={(e) =>
+                onPatch({ observacionesInmueble: e.target.value })
+              }
+            />
+          </div>
+        </Card>
       </div>
 
       <div className="flex flex-col gap-4 lg:sticky lg:top-6">
@@ -1391,6 +1564,20 @@ function ContentStep({
           ) : (
             <p className="mt-3 text-xs font-semibold text-[var(--pa-success)]">
               ✓ Información completa
+            </p>
+          )}
+        </Card>
+        <Card>
+          <div className="mb-3 text-xs font-bold uppercase tracking-wide text-[var(--pa-muted)]">
+            Google Drive
+          </div>
+          {driveReady ? (
+            <p className="text-xs font-semibold text-[var(--pa-success)]">
+              ✓ Listo para publicar en Drive
+            </p>
+          ) : (
+            <p className="text-xs font-semibold text-[var(--pa-warning)]">
+              Falta: {driveMissingSummary || "completar campos Entrega"}
             </p>
           )}
         </Card>

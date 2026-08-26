@@ -14,7 +14,24 @@ export const FIELD_LABELS: Record<string, string> = {
   areaM2: "área",
   bedrooms: "alcobas",
   bathrooms: "baños",
+  // Drive (Entrega) — Sprint 046
+  stratum: "estrato",
+  adminFee: "administración",
+  address: "dirección",
+  contactName: "nombre del contacto",
+  parking: "parqueaderos",
+  externalHighlights: "puntos favorables externos",
+  propertyObservations: "observaciones del inmueble",
+  minNetPrice: "precio mínimo para cliente",
+  predial: "predial",
+  propertyLiens: "afectaciones del inmueble",
+  floor: "piso",
+  parkingDetail: "detalle de parqueadero",
 };
+
+export function formatDriveMissingFields(missingFields: string[]): string {
+  return missingFields.map((f) => FIELD_LABELS[f] ?? f).join(", ");
+}
 
 export function formatMissingFields(missingFields: string[]): string {
   return missingFields.map((f) => FIELD_LABELS[f] ?? f).join(", ");
@@ -70,9 +87,14 @@ export function isFieldComplete(
 }
 
 export const WASI_PUBLISH_HINT = "Falta datos para publicar en WASI";
+export const DRIVE_PUBLISH_HINT = "Faltan datos obligatorios para Google Drive";
 
 export function isWasiPublishReady(missingFields: string[]): boolean {
   return missingFields.length === 0;
+}
+
+export function isDrivePublishReady(missingDriveFields: string[]): boolean {
+  return missingDriveFields.length === 0;
 }
 
 function parseDraftNumber(value: string | null | undefined): number | null {

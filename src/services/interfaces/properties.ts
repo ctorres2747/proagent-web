@@ -58,6 +58,16 @@ export interface Property {
   completeness: number;
   /** Required fields still missing (mobile keys: title, photos, …). */
   missingFields: string[];
+  /** Drive (Entrega Inmobiliaria) completeness — Sprint 046. */
+  completenessDrive: { isComplete: boolean; missingFields: string[] };
+  predial: string | null;
+  afectacionesInmueble: string | null;
+  afectacionesDetalle: string | null;
+  observacionesInmueble: string | null;
+  precioMinimoCliente: string | null;
+  puntosFavorablesExternos: string | null;
+  detalleParqueadero: string | null;
+  frenteFondoM: string | null;
   portadaUrl: string | null;
   fotos: PropertyPhoto[];
   /** Owning agent id (ownership: an agent sees only their own). */
@@ -98,6 +108,14 @@ export interface PropertiesService {
         | "featureIds"
         | "telefonoContacto"
         | "nombreContacto"
+        | "predial"
+        | "afectacionesInmueble"
+        | "afectacionesDetalle"
+        | "observacionesInmueble"
+        | "precioMinimoCliente"
+        | "puntosFavorablesExternos"
+        | "detalleParqueadero"
+        | "frenteFondoM"
       >
     >,
     token?: string,
@@ -129,6 +147,14 @@ export interface PropertiesService {
         | "featureIds"
         | "telefonoContacto"
         | "nombreContacto"
+        | "predial"
+        | "afectacionesInmueble"
+        | "afectacionesDetalle"
+        | "observacionesInmueble"
+        | "precioMinimoCliente"
+        | "puntosFavorablesExternos"
+        | "detalleParqueadero"
+        | "frenteFondoM"
       >
     >,
     token?: string,
