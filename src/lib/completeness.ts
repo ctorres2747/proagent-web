@@ -14,7 +14,24 @@ export const FIELD_LABELS: Record<string, string> = {
   areaM2: "área",
   bedrooms: "alcobas",
   bathrooms: "baños",
+  // Drive (Entrega) — Sprint 046
+  stratum: "estrato",
+  adminFee: "administración",
+  address: "dirección",
+  contactName: "nombre del contacto",
+  parking: "parqueaderos",
+  externalHighlights: "puntos favorables externos",
+  propertyObservations: "observaciones del inmueble",
+  minNetPrice: "precio mínimo para cliente",
+  predial: "predial",
+  propertyLiens: "afectaciones del inmueble",
+  floor: "piso",
+  parkingDetail: "detalle de parqueadero",
 };
+
+export function formatDriveMissingFields(missingFields: string[]): string {
+  return missingFields.map((f) => FIELD_LABELS[f] ?? f).join(", ");
+}
 
 export function formatMissingFields(missingFields: string[]): string {
   return missingFields.map((f) => FIELD_LABELS[f] ?? f).join(", ");

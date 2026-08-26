@@ -38,9 +38,11 @@ import { formatPrice } from "@/lib/format";
 import { capturedAtLabel } from "@/lib/formatCapturedAt";
 import {
   checklistForTipo,
+  formatDriveMissingFields,
   formatMissingFields,
   isDrivePublishReady,
   isFieldComplete,
+  isResidentialTipo,
   isWasiPublishReady,
   missingFieldsFromDraft,
   DRIVE_PUBLISH_HINT,
@@ -50,6 +52,7 @@ import {
   DRIVE_PARKING_OPTIONS,
   DRIVE_PROPERTY_LIENS_OPTIONS,
 } from "@/lib/driveFieldOptions";
+import { driveFieldOptionsService } from "@/services/http/driveFieldOptions";
 import {
   DEFAULT_TIMEZONE,
   buildScheduleIso,
@@ -1212,6 +1215,26 @@ function ContentStep({
     queryKey: ["wasi-features"],
     queryFn: () => wasiFeaturesService.list(token),
   });
+  const {
+    data: driveFieldOptions,
+    isLoading: driveOptionsLoading,
+  } = useQuery({
+    queryKey: ["drive-field-options"],
+    queryFn: () => driveFieldOptionsService.list(token),
+  });
+  const parkingOptions =
+    driveFieldOptions?.parkingDetail?.length
+      ? driveFieldOptions.parkingDetail
+      : DRIVE_PARKING_OPTIONS;
+  const liensOptions =
+    driveFieldOptions?.propertyLiens?.length
+      ? driveFieldOptions.propertyLiens
+      : DRIVE_PROPERTY_LIENS_OPTIONS;
+  const tipoActual = form.tipo || property.tipo;
+  const esResidencial = isResidentialTipo(tipoActual);
+  const driveMissing = property.completenessDrive?.missingFields ?? [];
+  const driveMissingSummary = formatDriveMissingFields(driveMissing);
+  const driveReady = isDrivePublishReady(driveMissing);
   const liveMissing = missingFieldsFromDraft({
     titulo: form.titulo,
     descripcion: form.descripcion,
@@ -1448,7 +1471,7 @@ function ContentStep({
                 }
               >
                 <option value="">Seleccionar…</option>
-                {DRIVE_PROPERTY_LIENS_OPTIONS.map((o) => (
+                {liensOptions.map((o) => (
                   <option key={o.value} value={o.value}>
                     {o.label}
                   </option>
@@ -1464,23 +1487,26 @@ function ContentStep({
                 />
               </div>
             ) : null}
-            <div className="sm:col-span-2">
-              <div className={label}>Detalle parqueadero *</div>
-              <select
-                className={input}
-                value={form.detalleParqueadero}
-                onChange={(e) =>
-                  onPatch({ detalleParqueadero: e.target.value })
-                }
-              >
-                <option value="">Seleccionar…</option>
-                {DRIVE_PARKING_OPTIONS.map((o) => (
-                  <option key={o.value} value={o.value}>
-                    {o.label}
-                  </option>
-                ))}
-              </select>
-            </div>
+            {esResidencial ? (
+              <div className="sm:col-span-2">
+                <div className={label}>Detalle parqueadero *</div>
+                <select
+                  className={input}
+                  value={form.detalleParqueadero}
+                  onChange={(e) =>
+                    onPatch({ detalleParqueadero: e.target.value })
+                  }
+                  disabled={driveOptionsLoading}
+                >
+                  <option value="">Seleccionar…</option>
+                  {parkingOptions.map((o) => (
+                    <option key={o.value} value={o.value}>
+                      {o.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            ) : null}
             <ControlledField
               label="Frente × fondo (opcional)"
               value={form.frenteFondoM}
@@ -1538,6 +1564,20 @@ function ContentStep({
           ) : (
             <p className="mt-3 text-xs font-semibold text-[var(--pa-success)]">
               ✓ Información completa
+            </p>
+          )}
+        </Card>
+        <Card>
+          <div className="mb-3 text-xs font-bold uppercase tracking-wide text-[var(--pa-muted)]">
+            Google Drive
+          </div>
+          {driveReady ? (
+            <p className="text-xs font-semibold text-[var(--pa-success)]">
+              ✓ Listo para publicar en Drive
+            </p>
+          ) : (
+            <p className="text-xs font-semibold text-[var(--pa-warning)]">
+              Falta: {driveMissingSummary || "completar campos Entrega"}
             </p>
           )}
         </Card>
