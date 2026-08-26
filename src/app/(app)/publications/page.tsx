@@ -8,7 +8,7 @@ import { useAuth } from "@/features/auth/AuthProvider";
 import { propertiesService, publicationsService } from "@/services";
 import type { Property } from "@/services/interfaces/properties";
 import type { Publication } from "@/services/interfaces/publications";
-import { ChannelChips } from "@/components/ChannelChips";
+import { PublicationChannelIndicators } from "@/components/PublicationChannelIndicators";
 import { CoverImage } from "@/components/CoverImage";
 import { FilterDropdown } from "@/components/FilterDropdown";
 import {
@@ -507,14 +507,7 @@ function PublicationCard({
             )}
           </div>
         ) : null}
-        <ChannelChips channels={property.channels} />
-        {publication && publication.channelResults.length > 0 ? (
-          <div className="mt-2 text-[11px] text-[var(--pa-faint)]">
-            {publication.channelResults.length} canal
-            {publication.channelResults.length === 1 ? "" : "es"} en última
-            publicación
-          </div>
-        ) : null}
+        <PublicationChannelIndicators publication={publication} />
       </button>
       <button
         type="button"
@@ -544,7 +537,7 @@ function PublicationTable({
   deletingId: string | null;
 }) {
   const cols =
-    "grid-cols-[36px_64px_2fr_1fr_1fr_1.1fr_1.2fr_1.4fr_72px]";
+    "grid-cols-[36px_64px_2fr_1fr_1fr_1.1fr_1.6fr_72px]";
   return (
     <div className="overflow-hidden rounded-2xl border border-[var(--pa-border)] bg-[var(--pa-surface)]">
       <div
@@ -556,14 +549,12 @@ function PublicationTable({
         <div>Tipo</div>
         <div>Precio</div>
         <div>Estado</div>
-        <div>Programada</div>
         <div>Canales</div>
         <div />
       </div>
       {properties.map((p, index) => {
         const pub = pubByPropertyId.get(p.id);
         const title = publicationTitle(p, pub);
-        const stage = publicationStage(pub);
         return (
           <div
             key={p.id}
@@ -612,17 +603,8 @@ function PublicationTable({
             <button type="button" onClick={() => onOpen(p)} className="text-left">
               <PublicationStatusBadge publication={pub} />
             </button>
-            <button
-              type="button"
-              onClick={() => onOpen(p)}
-              className="text-left text-[11px] text-[var(--pa-muted)]"
-            >
-              {stage === "scheduled" && pub?.scheduledFor
-                ? formatScheduledFor(pub.scheduledFor, pub.timezone)
-                : "—"}
-            </button>
             <button type="button" onClick={() => onOpen(p)} className="text-left">
-              <ChannelChips channels={p.channels} />
+              <PublicationChannelIndicators publication={pub} />
             </button>
             <button
               type="button"
