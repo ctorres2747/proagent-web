@@ -26,7 +26,7 @@ let mockConnections: ChannelConnection[] = [
   {
     channelId: "entrega",
     status: "connected",
-    accountName: "Entrega Inmobiliaria (Drive)",
+    accountName: "Google Drive",
   },
   {
     channelId: "web",

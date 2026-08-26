@@ -48,9 +48,9 @@ export const CHANNEL_META: Record<
     logo: "/channels/whatsapp.svg",
   },
   entrega: {
-    name: "Entrega Inmobiliaria",
-    subtitle: "Google Drive",
-    short: "E",
+    name: "Google Drive",
+    subtitle: "",
+    short: "GD",
     logo: "/channels/entrega.svg",
   },
   web: {
