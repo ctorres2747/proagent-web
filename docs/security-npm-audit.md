@@ -2,18 +2,19 @@
 
 | Campo | Valor |
 |-------|--------|
-| Estado | **en curso** — Sprint **047** [`proagent-mobile/sprints/047-npm-audit-next-deps.md`](https://github.com/ctorres2747/proagent-mobile/blob/main/sprints/047-npm-audit-next-deps.md) |
+| Estado | **done** — Sprint **047** (merge PR web) |
 | Prioridad | **P0** (Owner 2026-08-15: no construir/desplegar dejando highs sin plan) |
 | Detectado | 2026-08-15 (deploy VPS Sprint 009 — `npm ci`) |
+| Remediado | 2026-08-26 — `overrides` postcss + sharp en `package.json` |
 | Repo | `proagent-web` (`main`) |
 | Entorno | build prod en `/opt/proagent-web` + CI local |
 
-## Hallazgo
+## Hallazgo original
 
-`npm audit` reporta **3 vulnerabilidades high**.  
-**No** correr `npm audit fix --force` a ciegas: propone `next@16.3.1` (**breaking**).
+`npm audit` reportaba **3 vulnerabilidades high**.  
+**No** se usó `npm audit fix --force` (propone `next@16.x`, breaking).
 
-### Detalle (audit 2026-08-15)
+### Detalle (audit 2026-08-15 / reproducido 2026-08-26)
 
 | Paquete | Severidad | Cómo entra | Advisories (resumen) |
 |---------|-----------|------------|----------------------|
@@ -21,7 +22,38 @@
 | **sharp** `<0.35.0` (en árbol: `sharp@0.34.5` vía Next) | high | dependencia de **`next`** | libvips CVEs ([GHSA-f88m-g3jw-g9cj](https://github.com/advisories/GHSA-f88m-g3jw-g9cj)) |
 | (3er conteo audit) | high | mismo grafo Next/postcss/sharp | reportado por npm como parte del mismo cluster |
 
-Nota: el `postcss@8.5.26` de **devDependencies** (Tailwind) no es el vulnerable; el problema está en el **postcss anidado de Next**.
+Nota: el `postcss@8.5.26` de **devDependencies** (Tailwind) no era el vulnerable; el problema estaba en el **postcss anidado de Next**.
+
+## Remediación aplicada (Sprint 047)
+
+**Next 15.5.24** sigue declarando `postcss@8.4.31` en sus dependencias; no hay patch de Next 15 que traiga versiones sanas. Se optó por **`overrides`** en `package.json` (soportado por npm, sin saltar a Next 16):
+
+```json
+"overrides": {
+  "postcss": "^8.5.26",
+  "sharp": "^0.35.4"
+}
+```
+
+### Versiones finales (`npm ls`)
+
+| Paquete | Versión resuelta |
+|---------|------------------|
+| `next` | 15.5.23 |
+| `postcss` (incl. anidado en `next`) | 8.5.26 |
+| `sharp` | 0.35.4 |
+
+### Verificación
+
+- `npm audit` → **0 vulnerabilities**
+- `npm run typecheck` → OK
+- `npm run build` → OK (Next 15.5.23 + Turbopack)
+
+## Pendiente Owner (Parte B)
+
+1. Merge PR web → `main`.
+2. Redeploy `app.proinversores.bond` según [`docs/deploy.md`](./deploy.md).
+3. Smoke mínimo: login → inventario → abrir wizard publicación (una pantalla).
 
 ## Política Owner
 
@@ -30,18 +62,8 @@ Nota: el `postcss@8.5.26` de **devDependencies** (Tailwind) no es el vulnerable;
 3. Remediación = sprint/ticket dedicado: upgrade Next (o overrides auditados) + `npm audit` limpio + `typecheck`/`build` + redeploy `app.proinversores.bond`.
 4. Hasta cerrar: smoke de producto puede continuar, pero el fix de seguridad **no se diluye** detrás de features.
 
-## Trabajo Dev (Sprint 047)
-
-Ver spec: [`proagent-mobile/sprints/047-npm-audit-next-deps.md`](https://github.com/ctorres2747/proagent-mobile/blob/main/sprints/047-npm-audit-next-deps.md).
-
-- [ ] Reproducir `npm audit` en `main` limpio; pegar reporte en el PR.
-- [ ] Elegir remediación **sin** `--force` ciego (preferir Next patch/minor que traga postcss/sharp sanos; si hace falta Next 16, changelog + plan de migración).
-- [ ] Valorar `overrides` en `package.json` solo si está soportado y no rompe build.
-- [ ] `npm run typecheck` + `npm run build` OK.
-- [ ] Redeploy VPS (`docs/deploy.md` §8) tras merge.
-- [ ] `npm audit` → 0 high (o excepción escrita por Owner).
-
 ## Referencias
 
 - Deploy: [`docs/deploy.md`](./deploy.md)
-- Package pin actual: `next@^15.5.23` en `package.json`
+- Sprint: [`proagent-mobile/sprints/047-npm-audit-next-deps.md`](https://github.com/ctorres2747/proagent-mobile/blob/main/sprints/047-npm-audit-next-deps.md)
+- Package pin: `next@^15.5.23` + overrides postcss/sharp en `package.json`
