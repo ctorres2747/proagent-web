@@ -106,7 +106,12 @@ export function publicationAggregateStage(
   }
 
   if (inProgress > 0) return "publishing";
-  if (scheduled > 0 && published === 0 && failed === 0 && pending === 0) {
+  // Bug real (review 2026-08-27): exigir pending===0 acá dejaba una
+  // publicación con, por ejemplo, WhatsApp programado + Instagram todavía
+  // sin tocar (ninguno publicado/con error/en curso) cayendo al fallback
+  // final ("none" / "Sin publicar") en vez de reflejar que sí hay algo
+  // programado en curso.
+  if (scheduled > 0 && published === 0 && failed === 0) {
     return "scheduled";
   }
   if (published > 0 && failed > 0) return "partial";
