@@ -74,16 +74,19 @@ function channelResultMap(
   return new Map(publication.channelResults.map((r) => [r.channelId, r.status]));
 }
 
-/** Canales visibles en lista: selección del wizard ∪ resultados del motor. */
+/**
+ * Canales visibles en lista: TODOS los soportados con motor real (pedido de
+ * Cristhian, 2026-08-27) — el asesor ve de un vistazo qué falta aunque nunca
+ * lo haya seleccionado en el wizard, en vez de solo lo que ya tocó. "web"
+ * queda afuera a propósito: no tiene motor de publicación (ver
+ * `_build_channel_results` en el backend) y jamás podría completarse, así
+ * que incluirlo haría "Publicada" (100%) inalcanzable para cualquier ficha.
+ */
 export function publicationDisplayChannels(
   publication: Publication | undefined,
 ): ChannelId[] {
   if (!publication) return [];
-  const ids = new Set<ChannelId>(publication.selectedChannels ?? []);
-  for (const result of publication.channelResults ?? []) {
-    ids.add(result.channelId);
-  }
-  return CHANNEL_ORDER.filter((id) => ids.has(id));
+  return CHANNEL_ORDER.filter((id) => id !== "web");
 }
 
 /** Etapa visible en lista — calculada desde selectedChannels + channelResults (Sprint 045). */
