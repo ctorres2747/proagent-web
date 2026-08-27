@@ -3,6 +3,7 @@ import { ChannelLogo } from "@/components/ChannelLogo";
 import {
   channelIndicatorAriaLabel,
   channelIndicatorForPublication,
+  publicationDisplayChannels,
   type ChannelIndicatorKind,
 } from "@/lib/publicationDisplay";
 import type { Publication } from "@/services/interfaces/publications";
@@ -62,13 +63,14 @@ export function PublicationChannelIndicators({
 }: {
   publication?: Publication;
 }) {
-  if (!publication?.selectedChannels?.length) {
+  const channels = publicationDisplayChannels(publication);
+  if (!channels.length) {
     return <span className="text-[11px] text-[var(--pa-faint)]">—</span>;
   }
 
   return (
-    <div className="flex flex-wrap gap-2">
-      {publication.selectedChannels.map((channelId) => {
+    <div className="flex flex-wrap gap-2.5">
+      {channels.map((channelId) => {
         const kind = channelIndicatorForPublication(channelId, publication);
         if (!kind) return null;
         const label = channelIndicatorAriaLabel(channelId, kind);
@@ -77,7 +79,7 @@ export function PublicationChannelIndicators({
             key={channelId}
             title={label}
             aria-label={label}
-            className="inline-flex items-center gap-0.5"
+            className="inline-flex flex-col items-center gap-0.5"
           >
             <ChannelLogo channelId={channelId} size={18} />
             <IndicatorIcon kind={kind} />
