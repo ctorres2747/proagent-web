@@ -1,4 +1,4 @@
-import { CHANNEL_META, type ChannelId } from "@/design-system/channels";
+import { CHANNEL_META, CHANNEL_ORDER, type ChannelId } from "@/design-system/channels";
 import type {
   ChannelResultStatus,
   Publication,
@@ -74,6 +74,18 @@ function channelResultMap(
   return new Map(publication.channelResults.map((r) => [r.channelId, r.status]));
 }
 
+/** Canales visibles en lista: selección del wizard ∪ resultados del motor. */
+export function publicationDisplayChannels(
+  publication: Publication | undefined,
+): ChannelId[] {
+  if (!publication) return [];
+  const ids = new Set<ChannelId>(publication.selectedChannels ?? []);
+  for (const result of publication.channelResults ?? []) {
+    ids.add(result.channelId);
+  }
+  return CHANNEL_ORDER.filter((id) => ids.has(id));
+}
+
 /** Etapa visible en lista — calculada desde selectedChannels + channelResults (Sprint 045). */
 export function publicationAggregateStage(
   publication: Publication | undefined,
@@ -82,9 +94,8 @@ export function publicationAggregateStage(
 
   if (publication.status === "draft") return "draft";
   if (publication.status === "publishing") return "publishing";
-  if (publication.status === "scheduled") return "scheduled";
 
-  const selected = publication.selectedChannels ?? [];
+  const selected = publicationDisplayChannels(publication);
   if (selected.length === 0) {
     return "none";
   }
@@ -115,7 +126,12 @@ export function publicationAggregateStage(
     return "scheduled";
   }
   if (published > 0 && failed > 0) return "partial";
-  if (published > 0 && pending > 0) return "partially_published";
+  // Parcialmente publicado: ≥1 canal publicado y aún falta al menos uno más
+  // (waiting, scheduled, sin fila en motor, etc.) — no solo waiting estricto.
+  if (published > 0 && published < selected.length && failed === 0) {
+    return "partially_published";
+  }
+  if (published > 0 && published < selected.length) return "partial";
   if (published === selected.length) return "published";
   if (failed === selected.length) return "failed";
   if (failed > 0) return "partial";
@@ -141,7 +157,8 @@ export function channelIndicatorForPublication(
   channelId: ChannelId,
   publication?: Publication,
 ): ChannelIndicatorKind | null {
-  if (!publication?.selectedChannels?.includes(channelId)) return null;
+  if (!publication) return null;
+  if (!publicationDisplayChannels(publication).includes(channelId)) return null;
   const status = channelResultMap(publication).get(channelId) ?? "waiting";
   if (status === "published") return "published";
   if (status === "failed" || status === "unavailable") return "error";
