@@ -1283,7 +1283,7 @@ function ContentStep({
                 Tip: cada línea con «- » se convierte en viñeta al publicar en WASI.
               </p>
             </div>
-            <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-3">
+            <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-4">
               <div>
                 <div className={label}>Tipo</div>
                 <div className="flex flex-wrap gap-1.5">
@@ -1318,9 +1318,14 @@ function ContentStep({
                 </div>
               </div>
               <ControlledField
-                label="Precio (COP) *"
+                label="Precio a Publicar (COP) *"
                 value={form.precio}
                 onChange={(v) => onPatch({ precio: v })}
+              />
+              <ControlledField
+                label="Precio mínimo para cliente *"
+                value={form.precioMinimoCliente}
+                onChange={(v) => onPatch({ precioMinimoCliente: v })}
               />
             </div>
           </div>
@@ -1455,11 +1460,6 @@ function ContentStep({
               label="Predial (anual COP) *"
               value={form.predial}
               onChange={(v) => onPatch({ predial: v })}
-            />
-            <ControlledField
-              label="Precio mínimo para cliente *"
-              value={form.precioMinimoCliente}
-              onChange={(v) => onPatch({ precioMinimoCliente: v })}
             />
             <div className="sm:col-span-2">
               <div className={label}>Afectaciones del inmueble *</div>

@@ -678,17 +678,6 @@ function ChannelRow({
             <div className="space-y-2">
               <label className="block">
                 <span className="mb-1 block text-[11px] font-semibold text-[var(--pa-muted)]">
-                  Email service account (solo lectura)
-                </span>
-                <input
-                  value={connection.credentials?.serviceAccountEmail ?? ""}
-                  readOnly
-                  placeholder="Configurado en el VPS"
-                  className="w-full cursor-not-allowed rounded-lg border border-[var(--pa-border)] bg-[var(--pa-bg)] px-2 py-1.5 text-[13px] text-[var(--pa-muted)]"
-                />
-              </label>
-              <label className="block">
-                <span className="mb-1 block text-[11px] font-semibold text-[var(--pa-muted)]">
                   Carpeta padre (link o ID)
                 </span>
                 <input
@@ -699,8 +688,11 @@ function ChannelRow({
                 />
               </label>
               <p className="text-[11px] text-[var(--pa-muted)]">
-                Comparte la carpeta padre con el email de arriba (Editor). Se creará{" "}
-                <strong>Captaciones_Proinversores</strong> automáticamente.
+                Los archivos se guardan en la cuenta de Google Drive conectada
+                al backend (configurada en el VPS). Esta carpeta define dónde
+                queda todo organizado — se creará{" "}
+                <strong>Captaciones_Proinversores</strong> automáticamente
+                dentro de ella.
               </p>
             </div>
           ) : null}

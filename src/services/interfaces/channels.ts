@@ -16,7 +16,6 @@ export interface ChannelConnectionCredentials {
   instagramTokenLast4?: string | null;
   catalogId?: string | null;
   catalogTokenLast4?: string | null;
-  serviceAccountEmail?: string | null;
   driveParentFolderId?: string | null;
   driveParentFolderUrl?: string | null;
 }
