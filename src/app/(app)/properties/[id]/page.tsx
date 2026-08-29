@@ -386,41 +386,34 @@ export default function PublishWizardPage() {
         if (cancelled) return;
         setPublication(pub);
 
-        const snapshot = snapshotFromProperty(property);
-        const contentEmpty =
-          !snapshot.titulo.trim() && !snapshot.descripcion.trim();
         const pubContentEmpty =
           !(pub.sharedTitle || "").trim() && !(pub.sharedBody || "").trim();
 
         let suggestedTitle = pub.sharedTitle || seedTitle || "";
         let suggestedBody = pub.sharedBody || seedBody || "";
 
-        if ((contentEmpty || pubContentEmpty) && token) {
+        if (pubContentEmpty && token) {
           try {
             const suggested = await propertiesService.getSuggestedContent(
               propId,
               token,
             );
-            if (contentEmpty) {
-              setContentForm((prev) => ({
-                ...prev,
-                titulo: suggested.title,
-                descripcion: suggested.body,
-              }));
-              setSavedContent((prev) =>
-                prev
-                  ? {
-                      ...prev,
-                      titulo: suggested.title,
-                      descripcion: suggested.body,
-                    }
-                  : prev,
-              );
-            }
-            if (pubContentEmpty) {
-              suggestedTitle = suggested.title;
-              suggestedBody = suggested.body;
-            }
+            setContentForm((prev) => ({
+              ...prev,
+              titulo: suggested.title,
+              descripcion: suggested.body,
+            }));
+            setSavedContent((prev) =>
+              prev
+                ? {
+                    ...prev,
+                    titulo: suggested.title,
+                    descripcion: suggested.body,
+                  }
+                : prev,
+            );
+            suggestedTitle = suggested.title;
+            suggestedBody = suggested.body;
           } catch {
             // Sin API o sin red: se mantiene el seed vacío.
           }
@@ -1342,7 +1335,11 @@ function ContentStep({
             </div>
             <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-4">
               <div>
-                <div className={label}>Tipo</div>
+                <div
+                  className={`mb-1.5 text-xs font-bold ${fieldMissing("type") ? "text-[var(--pa-danger)]" : "text-[var(--pa-muted)]"}`}
+                >
+                  Tipo
+                </div>
                 <div className="flex flex-wrap gap-1.5">
                   {PROPERTY_TYPES.map((t) => (
                     <Chip
@@ -1378,6 +1375,7 @@ function ContentStep({
                 label="Precio a Publicar (COP) *"
                 value={form.precio}
                 onChange={(v) => onPatch({ precio: v })}
+                missing={fieldMissing("price")}
               />
               <ControlledField
                 label="Precio mínimo para cliente *"
@@ -1394,6 +1392,7 @@ function ContentStep({
               label="Ciudad"
               value={form.municipio}
               onChange={(v) => onPatch({ municipio: v })}
+              missing={fieldMissing("city")}
             />
             <ControlledField
               label="Barrio / zona / conjunto *"
@@ -1422,11 +1421,13 @@ function ContentStep({
               label="Alcobas"
               value={form.alcobas}
               onChange={(v) => onPatch({ alcobas: v })}
+              missing={fieldMissing("bedrooms")}
             />
             <ControlledField
               label="Baños"
               value={form.banos}
               onChange={(v) => onPatch({ banos: v })}
+              missing={fieldMissing("bathrooms")}
             />
             <ControlledField
               label="Parqueaderos"
@@ -1470,6 +1471,7 @@ function ContentStep({
               label="Año de construcción"
               value={form.anioConstruccion}
               onChange={(v) => onPatch({ anioConstruccion: v })}
+              missing={fieldMissing("buildingYear")}
             />
             <div className="col-span-2">
               <div className={label}>Estado</div>
@@ -1628,6 +1630,11 @@ function ContentStep({
               ✓ Información completa
             </p>
           )}
+          {fieldMissing("photos") ? (
+            <p className="mt-2 text-xs font-semibold text-[var(--pa-danger)]">
+              Fotos: se gestionan en el siguiente paso. Campo obligatorio.
+            </p>
+          ) : null}
         </Card>
         <Card>
           <div className="mb-3 text-xs font-bold uppercase tracking-wide text-[var(--pa-muted)]">
