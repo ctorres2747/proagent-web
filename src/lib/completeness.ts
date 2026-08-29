@@ -12,6 +12,9 @@ export const FIELD_LABELS: Record<string, string> = {
   photos: "fotos",
   buildingYear: "año de construcción",
   areaM2: "área",
+  privateAreaM2: "área privada",
+  builtAreaM2: "área construida",
+  postalCode: "código postal",
   bedrooms: "alcobas",
   bathrooms: "baños",
   // Drive (Entrega) — Sprint 046
@@ -52,6 +55,10 @@ export const COMPLETENESS_CHECKLIST: {
   { key: "photos", label: "Fotos" },
   { key: "buildingYear", label: "Año de construcción" },
   { key: "areaM2", label: "Área (m²)" },
+  { key: "privateAreaM2", label: "Área privada" },
+  { key: "builtAreaM2", label: "Área construida" },
+  { key: "address", label: "Dirección" },
+  { key: "postalCode", label: "Código postal" },
   { key: "bedrooms", label: "Alcobas" },
   { key: "bathrooms", label: "Baños" },
 ];
@@ -117,6 +124,10 @@ export function missingFieldsFromDraft(input: {
   alcobas: string;
   banos: string;
   areaM2: string;
+  areaPrivada: string;
+  areaConstruida: string;
+  direccion: string;
+  codigoPostal: string;
   anioConstruccion: string;
   photoCount: number;
 }): string[] {
@@ -139,6 +150,14 @@ export function missingFieldsFromDraft(input: {
   if (year == null || year <= 0) missing.push("buildingYear");
   const area = parseDraftNumber(input.areaM2);
   if (area == null || area <= 0) missing.push("areaM2");
+  const areaPrivada = parseDraftNumber(input.areaPrivada);
+  if (areaPrivada == null || areaPrivada <= 0) missing.push("privateAreaM2");
+  const areaConstruida = parseDraftNumber(input.areaConstruida);
+  if (areaConstruida == null || areaConstruida <= 0) {
+    missing.push("builtAreaM2");
+  }
+  if (!input.direccion.trim()) missing.push("address");
+  if (!input.codigoPostal.trim()) missing.push("postalCode");
   if (isResidentialTipo(tipo)) {
     if (parseDraftNumber(input.alcobas) == null) missing.push("bedrooms");
     if (parseDraftNumber(input.banos) == null) missing.push("bathrooms");
