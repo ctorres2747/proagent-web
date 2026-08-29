@@ -386,8 +386,18 @@ export default function PublishWizardPage() {
         if (cancelled) return;
         setPublication(pub);
 
+        // Bug real (Cristhian, 2026-08-29): createDraft (backend) siempre
+        // precarga sharedTitle/sharedBody con el título/descripción de la
+        // ficha — así que para cualquier propiedad real (casi siempre ya
+        // tiene título) el chequeo "¿está vacío?" nunca se cumplía y el
+        // contenido sugerido de Sprint 049 nunca se disparaba. "Vacío" acá
+        // también cuenta como "todavía es exactamente el auto-seed de la
+        // ficha, el agente no lo tocó" — si el agente edita y guarda,
+        // sharedTitle/sharedBody dejan de coincidir con el seed y esta
+        // condición ya no aplica (no se pisa su edición).
         const pubContentEmpty =
-          !(pub.sharedTitle || "").trim() && !(pub.sharedBody || "").trim();
+          (!(pub.sharedTitle || "").trim() || pub.sharedTitle === seedTitle) &&
+          (!(pub.sharedBody || "").trim() || pub.sharedBody === (seedBody || ""));
 
         let suggestedTitle = pub.sharedTitle || seedTitle || "";
         let suggestedBody = pub.sharedBody || seedBody || "";
