@@ -398,4 +398,14 @@ export const propertiesService: PropertiesService = {
     MOCK_PROPERTIES[idx] = next;
     return next;
   },
+  async getSuggestedContent(id) {
+    await delay(200);
+    const prop = MOCK_PROPERTIES.find((p) => p.id === id);
+    if (!prop) throw new Error(`Propiedad ${id} no encontrada`);
+    const title = `${prop.tipo} en venta en ${prop.barrio ?? "[barrio]"} – ${prop.municipio}`;
+    return {
+      title: `${title}\nPrecio venta: [XX] Millones COP`,
+      body: `VENTA DE ${prop.tipo.toUpperCase()} – ${prop.municipio.toUpperCase()}\n\n- Área construida: [XX] m²`,
+    };
+  },
 };

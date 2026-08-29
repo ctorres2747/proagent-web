@@ -74,31 +74,39 @@ function channelResultMap(
   return new Map(publication.channelResults.map((r) => [r.channelId, r.status]));
 }
 
+function resolveDisplayChannels(
+  publication: Publication | undefined,
+  connectedChannelIds?: ChannelId[],
+): ChannelId[] {
+  if (!publication) return [];
+  const motorChannels = CHANNEL_ORDER.filter((id) => id !== "web");
+  if (connectedChannelIds === undefined) return motorChannels;
+  const connected = new Set(connectedChannelIds);
+  return motorChannels.filter((id) => connected.has(id));
+}
+
 /**
- * Canales visibles en lista: TODOS los soportados con motor real (pedido de
- * Cristhian, 2026-08-27) — el asesor ve de un vistazo qué falta aunque nunca
- * lo haya seleccionado en el wizard, en vez de solo lo que ya tocó. "web"
- * queda afuera a propósito: no tiene motor de publicación (ver
- * `_build_channel_results` en el backend) y jamás podría completarse, así
- * que incluirlo haría "Publicada" (100%) inalcanzable para cualquier ficha.
+ * Canales visibles en lista. Con `connectedChannelIds` (Sprint 049) solo
+ * canales conectados del asesor; sin él (wizard) todos los motores.
  */
 export function publicationDisplayChannels(
   publication: Publication | undefined,
+  connectedChannelIds?: ChannelId[],
 ): ChannelId[] {
-  if (!publication) return [];
-  return CHANNEL_ORDER.filter((id) => id !== "web");
+  return resolveDisplayChannels(publication, connectedChannelIds);
 }
 
-/** Etapa visible en lista — calculada desde selectedChannels + channelResults (Sprint 045). */
+/** Etapa visible en lista — calculada desde canales conectados + channelResults. */
 export function publicationAggregateStage(
   publication: Publication | undefined,
+  connectedChannelIds?: ChannelId[],
 ): PublicationStage {
   if (!publication) return "none";
 
   if (publication.status === "draft") return "draft";
   if (publication.status === "publishing") return "publishing";
 
-  const selected = publicationDisplayChannels(publication);
+  const selected = publicationDisplayChannels(publication, connectedChannelIds);
   if (selected.length === 0) {
     return "none";
   }
@@ -144,8 +152,9 @@ export function publicationAggregateStage(
 
 export function publicationStage(
   publication: Publication | undefined,
+  connectedChannelIds?: ChannelId[],
 ): PublicationStage {
-  return publicationAggregateStage(publication);
+  return publicationAggregateStage(publication, connectedChannelIds);
 }
 
 export function stageFromStatus(status: PublicationStatus): PublicationStage {
@@ -159,9 +168,16 @@ export function stageLabel(stage: PublicationStage): string {
 export function channelIndicatorForPublication(
   channelId: ChannelId,
   publication?: Publication,
+  connectedChannelIds?: ChannelId[],
 ): ChannelIndicatorKind | null {
   if (!publication) return null;
-  if (!publicationDisplayChannels(publication).includes(channelId)) return null;
+  if (
+    !publicationDisplayChannels(publication, connectedChannelIds).includes(
+      channelId,
+    )
+  ) {
+    return null;
+  }
   const status = channelResultMap(publication).get(channelId) ?? "waiting";
   if (status === "published") return "published";
   if (status === "failed" || status === "unavailable") return "error";

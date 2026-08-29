@@ -385,8 +385,49 @@ export default function PublishWizardPage() {
         }
         if (cancelled) return;
         setPublication(pub);
-        setSharedTitle(pub.sharedTitle || seedTitle || "");
-        setSharedBody(pub.sharedBody || seedBody || "");
+
+        const snapshot = snapshotFromProperty(property);
+        const contentEmpty =
+          !snapshot.titulo.trim() && !snapshot.descripcion.trim();
+        const pubContentEmpty =
+          !(pub.sharedTitle || "").trim() && !(pub.sharedBody || "").trim();
+
+        let suggestedTitle = pub.sharedTitle || seedTitle || "";
+        let suggestedBody = pub.sharedBody || seedBody || "";
+
+        if ((contentEmpty || pubContentEmpty) && token) {
+          try {
+            const suggested = await propertiesService.getSuggestedContent(
+              propId,
+              token,
+            );
+            if (contentEmpty) {
+              setContentForm((prev) => ({
+                ...prev,
+                titulo: suggested.title,
+                descripcion: suggested.body,
+              }));
+              setSavedContent((prev) =>
+                prev
+                  ? {
+                      ...prev,
+                      titulo: suggested.title,
+                      descripcion: suggested.body,
+                    }
+                  : prev,
+              );
+            }
+            if (pubContentEmpty) {
+              suggestedTitle = suggested.title;
+              suggestedBody = suggested.body;
+            }
+          } catch {
+            // Sin API o sin red: se mantiene el seed vacío.
+          }
+        }
+
+        setSharedTitle(suggestedTitle);
+        setSharedBody(suggestedBody);
         const contentMap: Partial<
           Record<ChannelId, { title: string; body: string }>
         > = {};
@@ -1124,16 +1165,22 @@ function ControlledField({
   label: l,
   value,
   onChange,
+  missing = false,
 }: {
   label: string;
   value: string;
   onChange: (v: string) => void;
+  missing?: boolean;
 }) {
   return (
     <div>
-      <div className={label}>{l}</div>
+      <div
+        className={`mb-1.5 text-xs font-bold ${missing ? "text-[var(--pa-danger)]" : "text-[var(--pa-muted)]"}`}
+      >
+        {l}
+      </div>
       <input
-        className={input}
+        className={`${input} ${missing ? "border-[var(--pa-danger)] focus:border-[var(--pa-danger)]" : ""}`}
         value={value}
         onChange={(e) => onChange(e.target.value)}
       />
@@ -1247,9 +1294,14 @@ function ContentStep({
     alcobas: form.alcobas,
     banos: form.banos,
     areaM2: form.areaM2,
+    areaPrivada: form.areaPrivada,
+    areaConstruida: form.areaConstruida,
+    direccion: form.direccion,
+    codigoPostal: form.codigoPostal,
     anioConstruccion: form.anioConstruccion,
     photoCount: property.fotos.length,
   });
+  const fieldMissing = (key: string) => liveMissing.includes(key);
   const checklist = checklistForTipo(form.tipo || property.tipo).map((item) => ({
     label: item.label,
     done: isFieldComplete(item.key, liveMissing),
@@ -1270,11 +1322,16 @@ function ContentStep({
               label="Título *"
               value={form.titulo}
               onChange={(v) => onPatch({ titulo: v })}
+              missing={fieldMissing("title")}
             />
             <div>
-              <div className={label}>Descripción</div>
+              <div
+                className={`mb-1.5 text-xs font-bold ${fieldMissing("description") ? "text-[var(--pa-danger)]" : "text-[var(--pa-muted)]"}`}
+              >
+                Descripción *
+              </div>
               <textarea
-                className={`${input} min-h-[88px] font-normal leading-relaxed text-[#45525E]`}
+                className={`${input} min-h-[88px] font-normal leading-relaxed text-[#45525E] ${fieldMissing("description") ? "border-[var(--pa-danger)]" : ""}`}
                 value={form.descripcion}
                 onChange={(e) => onPatch({ descripcion: e.target.value })}
                 placeholder="Usa líneas que empiecen con «- » para viñetas en WASI"
@@ -1342,16 +1399,19 @@ function ContentStep({
               label="Barrio / zona / conjunto *"
               value={form.barrio}
               onChange={(v) => onPatch({ barrio: v })}
+              missing={fieldMissing("neighborhood")}
             />
             <ControlledField
-              label="Dirección"
+              label="Dirección *"
               value={form.direccion}
               onChange={(v) => onPatch({ direccion: v })}
+              missing={fieldMissing("address")}
             />
             <ControlledField
-              label="Código postal"
+              label="Código postal *"
               value={form.codigoPostal}
               onChange={(v) => onPatch({ codigoPostal: v })}
+              missing={fieldMissing("postalCode")}
             />
           </div>
         </Card>
@@ -1384,19 +1444,22 @@ function ContentStep({
               onChange={(v) => onPatch({ piso: v })}
             />
             <ControlledField
-              label="Área (m²)"
+              label="Área (m²) *"
               value={form.areaM2}
               onChange={(v) => onPatch({ areaM2: v })}
+              missing={fieldMissing("areaM2")}
             />
             <ControlledField
-              label="Área privada"
+              label="Área privada *"
               value={form.areaPrivada}
               onChange={(v) => onPatch({ areaPrivada: v })}
+              missing={fieldMissing("privateAreaM2")}
             />
             <ControlledField
-              label="Área construida"
+              label="Área construida *"
               value={form.areaConstruida}
               onChange={(v) => onPatch({ areaConstruida: v })}
+              missing={fieldMissing("builtAreaM2")}
             />
             <ControlledField
               label="Administración (COP)"
@@ -1425,44 +1488,15 @@ function ContentStep({
           </div>
         </Card>
 
-        <Card title="Contacto">
-          <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
-            <ControlledField
-              label="Nombre"
-              value={form.nombreContacto}
-              onChange={(v) => onPatch({ nombreContacto: v })}
-            />
-            <ControlledField
-              label="Teléfono *"
-              value={form.telefonoContacto}
-              onChange={(v) => onPatch({ telefonoContacto: v })}
-            />
-          </div>
-        </Card>
-
-        <Card title="Características WASI">
-          <WasiFeaturesCheckboxes
-            catalog={wasiCatalog ?? null}
-            selectedIds={form.featureIds}
-            onChange={(featureIds) => onPatch({ featureIds })}
-            loading={wasiCatalogLoading}
-            error={
-              wasiCatalogError
-                ? "No se pudo cargar el catálogo WASI."
-                : null
-            }
-          />
-        </Card>
-
         <Card title="Google Drive (Entrega)">
-          <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3">
             <ControlledField
-              label="Predial (anual COP) *"
+              label="Predial *"
               value={form.predial}
               onChange={(v) => onPatch({ predial: v })}
             />
             <div className="sm:col-span-2">
-              <div className={label}>Afectaciones del inmueble *</div>
+              <div className={label}>Afectaciones *</div>
               <select
                 className={input}
                 value={form.afectacionesInmueble}
@@ -1479,17 +1513,15 @@ function ContentStep({
               </select>
             </div>
             {form.afectacionesInmueble && form.afectacionesInmueble !== "ninguna" ? (
-              <div className="sm:col-span-2">
-                <ControlledField
-                  label="Detalle afectación"
-                  value={form.afectacionesDetalle}
-                  onChange={(v) => onPatch({ afectacionesDetalle: v })}
-                />
-              </div>
+              <ControlledField
+                label="Detalle afectación"
+                value={form.afectacionesDetalle}
+                onChange={(v) => onPatch({ afectacionesDetalle: v })}
+              />
             ) : null}
             {esResidencial ? (
               <div className="sm:col-span-2">
-                <div className={label}>Detalle parqueadero *</div>
+                <div className={label}>Parqueadero *</div>
                 <select
                   className={input}
                   value={form.detalleParqueadero}
@@ -1508,31 +1540,61 @@ function ContentStep({
               </div>
             ) : null}
             <ControlledField
-              label="Frente × fondo (opcional)"
+              label="Frente × fondo"
               value={form.frenteFondoM}
               onChange={(v) => onPatch({ frenteFondoM: v })}
             />
+            <div className="sm:col-span-3">
+              <div className={label}>Puntos favorables externos *</div>
+              <textarea
+                className={`${input} min-h-[48px] resize-y`}
+                value={form.puntosFavorablesExternos}
+                onChange={(e) =>
+                  onPatch({ puntosFavorablesExternos: e.target.value })
+                }
+              />
+            </div>
+            <div className="sm:col-span-3">
+              <div className={label}>Observaciones inmueble *</div>
+              <textarea
+                className={`${input} min-h-[48px] resize-y`}
+                value={form.observacionesInmueble}
+                onChange={(e) =>
+                  onPatch({ observacionesInmueble: e.target.value })
+                }
+              />
+            </div>
           </div>
-          <div className="mt-3.5">
-            <div className={label}>Puntos favorables externos *</div>
-            <textarea
-              className={`${input} min-h-[72px] resize-y`}
-              value={form.puntosFavorablesExternos}
-              onChange={(e) =>
-                onPatch({ puntosFavorablesExternos: e.target.value })
-              }
+        </Card>
+
+        <Card title="Contacto">
+          <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
+            <ControlledField
+              label="Nombre"
+              value={form.nombreContacto}
+              onChange={(v) => onPatch({ nombreContacto: v })}
+            />
+            <ControlledField
+              label="Teléfono *"
+              value={form.telefonoContacto}
+              onChange={(v) => onPatch({ telefonoContacto: v })}
+              missing={fieldMissing("contactPhone")}
             />
           </div>
-          <div className="mt-3.5">
-            <div className={label}>Observaciones del inmueble *</div>
-            <textarea
-              className={`${input} min-h-[72px] resize-y`}
-              value={form.observacionesInmueble}
-              onChange={(e) =>
-                onPatch({ observacionesInmueble: e.target.value })
-              }
-            />
-          </div>
+        </Card>
+
+        <Card title="Características WASI">
+          <WasiFeaturesCheckboxes
+            catalog={wasiCatalog ?? null}
+            selectedIds={form.featureIds}
+            onChange={(featureIds) => onPatch({ featureIds })}
+            loading={wasiCatalogLoading}
+            error={
+              wasiCatalogError
+                ? "No se pudo cargar el catálogo WASI."
+                : null
+            }
+          />
         </Card>
       </div>
 

@@ -282,4 +282,10 @@ export const propertiesService: PropertiesService = {
     );
     return mapProperty(raw);
   },
+  async getSuggestedContent(id, token?: string) {
+    return apiFetch<{ title: string; body: string }>(
+      `${detailPath(id)}/suggested-content`,
+      { token },
+    );
+  },
 };

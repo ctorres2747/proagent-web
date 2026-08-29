@@ -1,4 +1,5 @@
 import { CHANNEL_META } from "@/design-system/channels";
+import type { ChannelId } from "@/design-system/channels";
 import { ChannelLogo } from "@/components/ChannelLogo";
 import {
   channelIndicatorAriaLabel,
@@ -17,7 +18,7 @@ const INDICATOR_CLASS: Record<ChannelIndicatorKind, string> = {
 };
 
 function IndicatorIcon({ kind }: { kind: ChannelIndicatorKind }) {
-  const className = `h-3 w-3 shrink-0 ${INDICATOR_CLASS[kind]}`;
+  const className = `h-3.5 w-3.5 shrink-0 ${INDICATOR_CLASS[kind]}`;
   if (kind === "published") {
     return (
       <svg viewBox="0 0 20 20" className={className} aria-hidden>
@@ -41,12 +42,11 @@ function IndicatorIcon({ kind }: { kind: ChannelIndicatorKind }) {
   if (kind === "progress") {
     return (
       <span
-        className={`inline-block h-3 w-3 shrink-0 animate-spin rounded-full border-2 border-current border-t-transparent ${INDICATOR_CLASS[kind]}`}
+        className={`inline-block h-3.5 w-3.5 shrink-0 animate-spin rounded-full border-2 border-current border-t-transparent ${INDICATOR_CLASS[kind]}`}
         aria-hidden
       />
     );
   }
-  // pending / scheduled — alerta amarilla
   return (
     <svg viewBox="0 0 20 20" className={className} aria-hidden>
       <path
@@ -57,13 +57,15 @@ function IndicatorIcon({ kind }: { kind: ChannelIndicatorKind }) {
   );
 }
 
-/** Íconos de canal con check / alerta / error para la lista de Publicación (Sprint 045). */
+/** Íconos de canal con check / alerta / error para la lista de Publicación. */
 export function PublicationChannelIndicators({
   publication,
+  connectedChannelIds,
 }: {
   publication?: Publication;
+  connectedChannelIds?: ChannelId[];
 }) {
-  const channels = publicationDisplayChannels(publication);
+  const channels = publicationDisplayChannels(publication, connectedChannelIds);
   if (!channels.length) {
     return <span className="text-[11px] text-[var(--pa-faint)]">—</span>;
   }
@@ -71,7 +73,11 @@ export function PublicationChannelIndicators({
   return (
     <div className="flex flex-wrap gap-2.5">
       {channels.map((channelId) => {
-        const kind = channelIndicatorForPublication(channelId, publication);
+        const kind = channelIndicatorForPublication(
+          channelId,
+          publication,
+          connectedChannelIds,
+        );
         if (!kind) return null;
         const label = channelIndicatorAriaLabel(channelId, kind);
         return (
@@ -81,7 +87,7 @@ export function PublicationChannelIndicators({
             aria-label={label}
             className="inline-flex flex-col items-center gap-0.5"
           >
-            <ChannelLogo channelId={channelId} size={18} />
+            <ChannelLogo channelId={channelId} size={26} />
             <IndicatorIcon kind={kind} />
             <span className="sr-only">{CHANNEL_META[channelId].name}</span>
           </span>
