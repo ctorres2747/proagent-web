@@ -90,11 +90,20 @@ export default function PublicationsPage() {
     queryFn: () => channelsService.list(token ?? undefined),
   });
 
+  // Bug real (review 2026-08-29): `channelConnections ?? []` convertía
+  // "todavía cargando" (o el query fallido) en "cero canales conectados" —
+  // indistinguible de un asesor sin canales reales. Como
+  // resolveDisplayChannels solo usa el fallback de "todos los motores"
+  // cuando el valor es exactamente `undefined`, un `[]` de carga hacía que
+  // TODA la lista mostrara "Sin publicar" un instante (o para siempre si
+  // la query fallaba), sin importar el estado real de cada publicación.
   const connectedChannelIds = useMemo(
     () =>
-      (channelConnections ?? [])
-        .filter((c) => c.status === "connected")
-        .map((c) => c.channelId as ChannelId),
+      channelConnections === undefined
+        ? undefined
+        : channelConnections
+            .filter((c) => c.status === "connected")
+            .map((c) => c.channelId as ChannelId),
     [channelConnections],
   );
 
