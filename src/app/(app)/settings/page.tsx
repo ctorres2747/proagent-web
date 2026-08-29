@@ -482,7 +482,6 @@ function ChannelRow({
                   {expanded ? "Ocultar" : "Editar carpeta padre"}
                 </button>
               ) : null}
-              {!isEntrega ? (
               <button
                 type="button"
                 disabled={patchMutation.isPending}
@@ -491,7 +490,6 @@ function ChannelRow({
               >
                 Desconectar
               </button>
-              ) : null}
             </>
           )}
         </div>
