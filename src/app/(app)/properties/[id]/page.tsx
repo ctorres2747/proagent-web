@@ -1164,16 +1164,29 @@ function Chip({
   return <span className={className}>{children}</span>;
 }
 
+/** "280000000" -> "280.000.000" (formato COP, sin obligar al agente a tipear los puntos). */
+function formatThousands(raw: string): string {
+  const digits = raw.replace(/\D/g, "");
+  if (!digits) return "";
+  return Number(digits).toLocaleString("es-CO");
+}
+
 function ControlledField({
   label: l,
   value,
   onChange,
   missing = false,
+  thousands = false,
 }: {
   label: string;
   value: string;
   onChange: (v: string) => void;
   missing?: boolean;
+  /** Formatea con puntos de mil mientras se escribe (precio, administración,
+   * etc.) — el valor guardado ya incluye los puntos; parsePrecioInput los
+   * quita antes de mandar el número al backend, así que no cambia nada del
+   * lado del guardado. */
+  thousands?: boolean;
 }) {
   return (
     <div>
@@ -1183,9 +1196,12 @@ function ControlledField({
         {l}
       </div>
       <input
+        inputMode={thousands ? "numeric" : undefined}
         className={`${input} ${missing ? "border-[var(--pa-danger)] focus:border-[var(--pa-danger)]" : ""}`}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
+        value={thousands ? formatThousands(value) : value}
+        onChange={(e) =>
+          onChange(thousands ? formatThousands(e.target.value) : e.target.value)
+        }
       />
     </div>
   );
@@ -1386,11 +1402,13 @@ function ContentStep({
                 value={form.precio}
                 onChange={(v) => onPatch({ precio: v })}
                 missing={fieldMissing("price")}
+                thousands
               />
               <ControlledField
                 label="Precio mínimo para cliente *"
                 value={form.precioMinimoCliente}
                 onChange={(v) => onPatch({ precioMinimoCliente: v })}
+                thousands
               />
             </div>
           </div>
@@ -1476,6 +1494,7 @@ function ContentStep({
               label="Administración (COP)"
               value={form.administracion}
               onChange={(v) => onPatch({ administracion: v })}
+              thousands
             />
             <ControlledField
               label="Año de construcción"
@@ -1691,6 +1710,8 @@ function PhotosStep({
 }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
+  const [overIndex, setOverIndex] = useState<number | null>(null);
   const fotos = property.fotos ?? [];
 
   const run = async (fn: () => Promise<void>) => {
@@ -1735,11 +1756,33 @@ function PhotosStep({
     });
   };
 
+  // Arrastrar y soltar: saca la foto de `from` y la inserta en `to` — permite
+  // llevar cualquier foto a cualquier posición (ej. la última a primera) en
+  // un solo movimiento, en vez de ir de a una con las flechas.
+  const moveToIndex = (from: number, to: number) => {
+    if (from === to || from < 0 || to < 0 || from >= fotos.length || to >= fotos.length) {
+      return;
+    }
+    const ids = fotos.map((f) => f.id);
+    const [moved] = ids.splice(from, 1);
+    ids.splice(to, 0, moved);
+    void run(async () => {
+      await propertiesService.reorderPhotos(property.id, ids, token);
+    });
+  };
+
+  const handleDrop = (targetIndex: number) => {
+    if (dragIndex !== null) moveToIndex(dragIndex, targetIndex);
+    setDragIndex(null);
+    setOverIndex(null);
+  };
+
   return (
     <div className="max-w-[920px]">
       <div className="mb-4 text-[13px] text-[var(--pa-muted)]">
-        La primera foto es la portada. Usa las flechas para reordenar. Facebook
-        Marketplace e Instagram usan como máximo 10 fotos por publicación.
+        La primera foto es la portada. Arrastra una foto y suéltala donde
+        quieras (o usa las flechas). Facebook Marketplace e Instagram usan
+        como máximo 10 fotos por publicación.
       </div>
       {error && (
         <p className="mb-3 text-sm text-[var(--pa-danger)]">{error}</p>
@@ -1748,12 +1791,32 @@ function PhotosStep({
         {fotos.map((p, i) => (
           <div
             key={p.id}
-            className="relative overflow-hidden rounded-xl bg-[var(--pa-bg-alt)]"
+            draggable={!busy}
+            onDragStart={(e) => {
+              setDragIndex(i);
+              e.dataTransfer.effectAllowed = "move";
+            }}
+            onDragEnter={() => {
+              if (dragIndex !== null) setOverIndex(i);
+            }}
+            onDragOver={(e) => e.preventDefault()}
+            onDrop={(e) => {
+              e.preventDefault();
+              handleDrop(i);
+            }}
+            onDragEnd={() => {
+              setDragIndex(null);
+              setOverIndex(null);
+            }}
+            className={`relative cursor-grab overflow-hidden rounded-xl bg-[var(--pa-bg-alt)] transition-opacity active:cursor-grabbing ${
+              dragIndex === i ? "opacity-40" : ""
+            } ${overIndex === i && dragIndex !== null && dragIndex !== i ? "ring-2 ring-[var(--pa-accent)]" : ""}`}
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={p.url}
               alt=""
+              draggable={false}
               className="aspect-[4/3] w-full object-cover"
             />
             {i === 0 && (
