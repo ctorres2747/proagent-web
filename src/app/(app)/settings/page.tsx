@@ -248,6 +248,38 @@ function ProfileTab({
   );
 }
 
+function ToggleSwitch({
+  checked,
+  onChange,
+  disabled,
+  label,
+}: {
+  checked: boolean;
+  onChange: (next: boolean) => void;
+  disabled?: boolean;
+  label: string;
+}) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      aria-label={label}
+      disabled={disabled}
+      onClick={() => onChange(!checked)}
+      className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
+        checked ? "bg-[var(--pa-accent)]" : "bg-[var(--pa-border)]"
+      }`}
+    >
+      <span
+        className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
+          checked ? "translate-x-6" : "translate-x-1"
+        }`}
+      />
+    </button>
+  );
+}
+
 function ChannelRow({
   connection,
   token,
@@ -404,6 +436,36 @@ function ChannelRow({
   const showTokenBadge =
     connection.status === "connected" && connection.mode === "own" && tokenLast4;
 
+  // Facebook (pool) siempre tiene "algo" para prender — no pide credenciales
+  // propias. Entrega usa la carpeta guardada. Los demás necesitan un token
+  // ya guardado (persiste tras desconectar, ver fix 2026-08-29) para poder
+  // prenderse de nuevo sin reabrir el panel.
+  const hasSavedSetup =
+    id === "facebook" ||
+    (isEntrega ? Boolean(connection.credentials?.driveParentFolderId) : Boolean(tokenLast4));
+
+  // El interruptor es el control principal para excluir/incluir el canal de
+  // Canales/Estado en Publicación (pedido de Cristhian, 2026-08-29) — sin
+  // pisar la configuración guardada. Apagar siempre desconecta. Prender:
+  // si ya hay algo guardado, reconecta directo (sin reabrir el panel); si
+  // nunca se configuró nada, no hay con qué prender — abre el panel para
+  // cargar credenciales por primera vez.
+  const handleToggle = (next: boolean) => {
+    if (!next) {
+      disconnect();
+      return;
+    }
+    if (id === "facebook") {
+      connectPool();
+      return;
+    }
+    if (hasSavedSetup) {
+      patchMutation.mutate({ status: "connected", mode: connection.mode ?? "own" });
+      return;
+    }
+    openEditPanel();
+  };
+
   return (
     <div className="rounded-xl border border-[var(--pa-border)] bg-[var(--pa-surface)] p-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -429,11 +491,21 @@ function ChannelRow({
             ) : null}
           </div>
         </div>
-        <span
-          className={`rounded-full px-2.5 py-1 text-[11px] font-bold ${statusClass}`}
-        >
-          {statusLabel}
-        </span>
+        <div className="flex items-center gap-2.5">
+          <span
+            className={`rounded-full px-2.5 py-1 text-[11px] font-bold ${statusClass}`}
+          >
+            {statusLabel}
+          </span>
+          {canConfigure ? (
+            <ToggleSwitch
+              checked={connection.status === "connected"}
+              onChange={handleToggle}
+              disabled={patchMutation.isPending}
+              label={`${connection.status === "connected" ? "Desconectar" : "Conectar"} ${meta.name}`}
+            />
+          ) : null}
+        </div>
       </div>
 
       {canConfigure ? (
@@ -482,14 +554,6 @@ function ChannelRow({
                   {expanded ? "Ocultar" : "Editar carpeta padre"}
                 </button>
               ) : null}
-              <button
-                type="button"
-                disabled={patchMutation.isPending}
-                onClick={disconnect}
-                className="rounded-lg border border-[var(--pa-danger)]/40 px-3 py-1.5 text-[12px] font-semibold text-[var(--pa-danger)]"
-              >
-                Desconectar
-              </button>
             </>
           )}
         </div>
