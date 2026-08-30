@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/features/auth/AuthProvider";
@@ -65,6 +65,10 @@ import {
   pickCanonicalPublication,
 } from "@/lib/publicationResolve";
 import { ApiError } from "@/services/http/client";
+import {
+  getMarketplaceLoginStatus,
+  triggerMarketplaceLogin,
+} from "@/services/http/marketplaceLogin";
 import { formatChannelDurationLine, formatChannelResultMeta } from "@/lib/channelResults";
 import {
   isChannelPersonalized,
@@ -2468,12 +2472,22 @@ function ResultsStep({
   onResultUpdated: (result: ChannelResult) => void;
   onPublicationRefresh: (publication: Publication) => void;
 }) {
+  const { session } = useAuth();
+  const isAdmin = session?.role === "admin";
   const [retrying, setRetrying] = useState<ChannelId | null>(null);
   const [republishing, setRepublishing] = useState<ChannelId | null>(null);
   const [removing, setRemoving] = useState<ChannelId | null>(null);
   const [retryError, setRetryError] = useState<string | null>(null);
   const [republishError, setRepublishError] = useState<string | null>(null);
   const [removeError, setRemoveError] = useState<string | null>(null);
+  // Re-login de Marketplace: cuando falla "Sesión de Andreina no activa" en
+  // el resultado de Facebook, se ofrece un botón que dispara/encola que la
+  // PC abra el navegador de login — en vez de tener que correr el comando
+  // por SSH/AnyDesk. Ver POST /api/marketplace/login (backend compartido).
+  const [mpLoginState, setMpLoginState] = useState<
+    "idle" | "pending" | "done" | "error"
+  >("idle");
+  const [mpLoginMessage, setMpLoginMessage] = useState<string | null>(null);
   const [pendingConfirm, setPendingConfirm] = useState<{
     kind: "remove" | "republish";
     channelId: ChannelId;
@@ -2540,6 +2554,44 @@ function ResultsStep({
     results.length === 0
       ? 0
       : Math.round((publishedCount / results.length) * 100);
+
+  const mpLoginPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  useEffect(() => {
+    return () => {
+      if (mpLoginPollRef.current) clearInterval(mpLoginPollRef.current);
+    };
+  }, []);
+
+  const onMarketplaceLogin = async () => {
+    setMpLoginState("pending");
+    setMpLoginMessage(null);
+    try {
+      await triggerMarketplaceLogin(token);
+    } catch (err) {
+      setMpLoginState("error");
+      setMpLoginMessage(
+        err instanceof ApiError
+          ? err.message
+          : "No se pudo iniciar el re-login de Marketplace.",
+      );
+      return;
+    }
+    if (mpLoginPollRef.current) clearInterval(mpLoginPollRef.current);
+    mpLoginPollRef.current = setInterval(async () => {
+      try {
+        const status = await getMarketplaceLoginStatus(token);
+        if (status.estado === "pendiente" || status.estado === null) return;
+        if (mpLoginPollRef.current) {
+          clearInterval(mpLoginPollRef.current);
+          mpLoginPollRef.current = null;
+        }
+        setMpLoginState(status.estado === "completado" ? "done" : "error");
+        setMpLoginMessage(status.mensaje);
+      } catch {
+        // Red momentánea -- se reintenta en el próximo tick, no se corta el poll.
+      }
+    }, 5000);
+  };
 
   const onRetry = async (channelId: ChannelId) => {
     setRetrying(channelId);
@@ -2699,6 +2751,16 @@ function ResultsStep({
             {r.note ? (
               <div className="mt-1 text-xs text-[var(--pa-muted)]">{r.note}</div>
             ) : null}
+            {r.id === "facebook" && mpLoginState === "done" ? (
+              <div className="mt-1 text-xs text-[var(--pa-success)]">
+                ✅ Sesión de Marketplace reiniciada — reintenta la publicación.
+              </div>
+            ) : null}
+            {r.id === "facebook" && mpLoginState === "error" && mpLoginMessage ? (
+              <div className="mt-1 text-xs text-[var(--pa-danger)]">
+                No se pudo reiniciar la sesión: {mpLoginMessage}
+              </div>
+            ) : null}
           </div>
           <span
             className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-md px-2.5 py-1 text-[10px] font-bold ${STATUS_META[r.status].chip}`}
@@ -2722,6 +2784,19 @@ function ResultsStep({
               {retrying === r.id ? "Reintentando…" : "Reintentar"}
             </button>
           )}
+          {isAdmin &&
+            r.id === "facebook" &&
+            r.error?.includes("Sesión de Andreina no activa") && (
+              <button
+                type="button"
+                disabled={actionBusy || mpLoginState === "pending"}
+                onClick={() => void onMarketplaceLogin()}
+                title="Abre un navegador en la PC para que alguien reinicie la sesión de Facebook a mano"
+                className="whitespace-nowrap rounded-lg border border-[var(--pa-warning-ink)] px-3.5 py-1.5 text-[11px] font-bold text-[var(--pa-warning-ink)] disabled:opacity-50"
+              >
+                {mpLoginState === "pending" ? "Abriendo sesión…" : "🔑 Reintentar login"}
+              </button>
+            )}
           {r.canRepublish && (
             <button
               type="button"
