@@ -97,6 +97,10 @@ const label = "mb-1.5 text-xs font-bold text-[var(--pa-muted)]";
 const input =
   "w-full rounded-[10px] border border-[var(--pa-border)] bg-[var(--pa-bg)] px-3.5 py-2.5 text-[13px] font-semibold text-[var(--pa-ink)] outline-none focus:border-[var(--pa-navy)]";
 
+// Estrato socioeconómico colombiano: 1 a 6, sin excepciones por tipo de
+// inmueble (mismo criterio que WASI/backend/completeness.py).
+const ESTRATO_OPTIONS = ["1", "2", "3", "4", "5", "6"];
+
 function mapResultStatus(status: ChannelResultStatus): ChannelStatus {
   if (status === "published") return "published";
   if (status === "failed") return "error";
@@ -1322,6 +1326,7 @@ function ContentStep({
     direccion: form.direccion,
     codigoPostal: form.codigoPostal,
     anioConstruccion: form.anioConstruccion,
+    estrato: form.estrato,
     photoCount: property.fotos.length,
   });
   const fieldMissing = (key: string) => liveMissing.includes(key);
@@ -1466,11 +1471,25 @@ function ContentStep({
               value={form.parqueaderos}
               onChange={(v) => onPatch({ parqueaderos: v })}
             />
-            <ControlledField
-              label="Estrato"
-              value={form.estrato}
-              onChange={(v) => onPatch({ estrato: v })}
-            />
+            <div>
+              <div
+                className={`mb-1.5 text-xs font-bold ${fieldMissing("stratum") ? "text-[var(--pa-danger)]" : "text-[var(--pa-muted)]"}`}
+              >
+                Estrato *
+              </div>
+              <select
+                className={`${input} ${fieldMissing("stratum") ? "border-[var(--pa-danger)] focus:border-[var(--pa-danger)]" : ""}`}
+                value={form.estrato}
+                onChange={(e) => onPatch({ estrato: e.target.value })}
+              >
+                <option value="">Seleccionar…</option>
+                {ESTRATO_OPTIONS.map((e) => (
+                  <option key={e} value={e}>
+                    Estrato {e}
+                  </option>
+                ))}
+              </select>
+            </div>
             <ControlledField
               label="Piso"
               value={form.piso}

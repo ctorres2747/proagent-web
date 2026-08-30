@@ -59,6 +59,7 @@ export const COMPLETENESS_CHECKLIST: {
   { key: "builtAreaM2", label: "Área construida" },
   { key: "address", label: "Dirección" },
   { key: "postalCode", label: "Código postal" },
+  { key: "stratum", label: "Estrato" },
   { key: "bedrooms", label: "Alcobas" },
   { key: "bathrooms", label: "Baños" },
 ];
@@ -129,6 +130,7 @@ export function missingFieldsFromDraft(input: {
   direccion: string;
   codigoPostal: string;
   anioConstruccion: string;
+  estrato: string;
   photoCount: number;
 }): string[] {
   const missing: string[] = [];
@@ -158,6 +160,8 @@ export function missingFieldsFromDraft(input: {
   }
   if (!input.direccion.trim()) missing.push("address");
   if (!input.codigoPostal.trim()) missing.push("postalCode");
+  const estrato = parseDraftNumber(input.estrato);
+  if (estrato == null || estrato < 1 || estrato > 6) missing.push("stratum");
   if (isResidentialTipo(tipo)) {
     if (parseDraftNumber(input.alcobas) == null) missing.push("bedrooms");
     if (parseDraftNumber(input.banos) == null) missing.push("bathrooms");
