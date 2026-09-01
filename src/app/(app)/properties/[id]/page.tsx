@@ -49,6 +49,12 @@ import {
   WASI_PUBLISH_HINT,
 } from "@/lib/completeness";
 import {
+  validateWasiTitle,
+  wasiTitleCounterTone,
+  wasiTitleLength,
+  WASI_TITLE_MAX_LENGTH,
+} from "@/lib/wasiTitle";
+import {
   DRIVE_PARKING_OPTIONS,
   DRIVE_PROPERTY_LIENS_OPTIONS,
 } from "@/lib/driveFieldOptions";
@@ -609,6 +615,11 @@ export default function PublishWizardPage() {
 
   const saveContentChanges = async (options?: { advance?: boolean }) => {
     if (!property || !publication) return;
+    const wasiTitleError = validateWasiTitle(contentForm.titulo);
+    if (wasiTitleError) {
+      setActionError(wasiTitleError);
+      return;
+    }
     setActionBusy(true);
     setActionError(null);
     try {
@@ -1330,6 +1341,10 @@ function ContentStep({
     photoCount: property.fotos.length,
   });
   const fieldMissing = (key: string) => liveMissing.includes(key);
+  const wasiTitleLen = wasiTitleLength(form.titulo);
+  const wasiTitleError = validateWasiTitle(form.titulo);
+  const wasiTitleTone = wasiTitleCounterTone(wasiTitleLen);
+  const titleBlocked = Boolean(wasiTitleError);
   const checklist = checklistForTipo(form.tipo || property.tipo).map((item) => ({
     label: item.label,
     done: isFieldComplete(item.key, liveMissing),
@@ -1346,12 +1361,44 @@ function ContentStep({
       <div className="flex min-w-0 flex-col gap-6">
         <Card title="Básicos">
           <div className="grid gap-4">
-            <ControlledField
-              label="Título *"
-              value={form.titulo}
-              onChange={(v) => onPatch({ titulo: v })}
-              missing={fieldMissing("title")}
-            />
+            <div>
+              <div
+                className={`mb-1.5 text-xs font-bold ${
+                  fieldMissing("title") || titleBlocked
+                    ? "text-[var(--pa-danger)]"
+                    : "text-[var(--pa-muted)]"
+                }`}
+              >
+                Título *
+              </div>
+              <input
+                className={`${input} ${
+                  fieldMissing("title") || titleBlocked
+                    ? "border-[var(--pa-danger)] focus:border-[var(--pa-danger)]"
+                    : ""
+                }`}
+                value={form.titulo}
+                onChange={(e) => onPatch({ titulo: e.target.value })}
+              />
+              <div className="mt-1 flex flex-col gap-1">
+                <span
+                  className={`text-[11px] font-semibold ${
+                    wasiTitleTone === "error"
+                      ? "text-[var(--pa-danger)]"
+                      : wasiTitleTone === "warn"
+                        ? "text-[var(--pa-warning)]"
+                        : "text-[var(--pa-muted)]"
+                  }`}
+                >
+                  {wasiTitleLen}/{WASI_TITLE_MAX_LENGTH}
+                </span>
+                {wasiTitleError ? (
+                  <p className="text-xs font-semibold text-[var(--pa-danger)]">
+                    {wasiTitleError}
+                  </p>
+                ) : null}
+              </div>
+            </div>
             <div>
               <div
                 className={`mb-1.5 text-xs font-bold ${fieldMissing("description") ? "text-[var(--pa-danger)]" : "text-[var(--pa-muted)]"}`}
@@ -1706,12 +1753,12 @@ function ContentStep({
           <button
             type="button"
             onClick={onSave}
-            disabled={!isDirty || busy}
+            disabled={!isDirty || busy || titleBlocked}
             className="rounded-xl border border-[var(--pa-navy)] bg-[var(--pa-surface)] px-6 py-3.5 text-center text-[13px] font-bold text-[var(--pa-navy)] transition-opacity hover:bg-[var(--pa-bg)] disabled:cursor-not-allowed disabled:opacity-50"
           >
             {busy ? "Guardando…" : "Guardar cambios"}
           </button>
-          <PrimaryBlock onClick={onNext} disabled={busy}>
+          <PrimaryBlock onClick={onNext} disabled={busy || titleBlocked}>
             {busy ? "Guardando…" : "Continuar a fotos"}
           </PrimaryBlock>
         </div>
