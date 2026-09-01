@@ -28,6 +28,7 @@ apruebe una dirección final.
 |---|---|---|
 | Navy primario | `#0A3D62` | `--pa-navy` |
 | Navy hover | `#0C4A78` | `--pa-navy-hover` |
+| Navy pressed | `#082F4C` | `--pa-navy-pressed` |
 | Esmeralda | `#1E8E5A` | `--pa-accent` |
 
 ### Semánticos
@@ -64,7 +65,47 @@ apruebe una dirección final.
 éxito/disponible, naranja solo para pendiente/atención. **Nunca** usar estos
 tres como color decorativo o de fondo general.
 
-### Fondo general en degradado
+### Superficie navy — app shell
+
+El navy deja de ser solo color de acento y pasa a ser **fondo del marco de la
+aplicación** (sidebar web, riel de navegación, drawer móvil web). Esto exige
+una escala de texto sobre navy y un acento que funcione sobre ese fondo. Los
+hex de marca base **no cambian**; los tokens de abajo extienden la paleta
+existente.
+
+| Rol | Hex | Token |
+|---|---|---|
+| Navy pressed | `#082F4C` | `--pa-navy-pressed` |
+| Navy 050 (superficie clara derivada) | `#EAF0F5` | `--pa-navy-050` |
+| Esmeralda brillante (solo sobre navy) | `#2FC98A` | `--pa-emerald-bright` |
+| Esmeralda ink (texto sobre brillante) | `#06331F` | `--pa-emerald-ink` |
+| Anillo de foco (solo sobre navy) | `#7FE3B8` | `--pa-focus-ring` |
+
+**Texto sobre navy** (sidebar, riel, drawer):
+
+| Rol | Valor | Token |
+|---|---|---|
+| Primario (activo) | `#FFFFFF` | `--pa-on-navy-primary` |
+| Secundario (normal) | `rgba(255,255,255,0.72)` | `--pa-on-navy-secondary` |
+| Muted (encabezados de grupo) | `rgba(255,255,255,0.42)` | `--pa-on-navy-muted` |
+| Disabled | `rgba(255,255,255,0.34)` | `--pa-on-navy-disabled` |
+
+**Reglas shell:**
+
+- La esmeralda brillante `#2FC98A` es **solo para acentos sobre navy** (badges
+  de conteo, indicador de ítem activo, avatar). Sobre fondo claro se sigue
+  usando la esmeralda de marca `#1E8E5A` (`--pa-accent`).
+- Todo texto sobre esmeralda brillante va en `#06331F` (`--pa-emerald-ink`),
+  **nunca** en blanco (blanco sobre `#2FC98A` no alcanza contraste AA).
+- El anillo de foco `#7FE3B8` se usa **solo sobre navy**. Sobre superficies
+  claras el foco es el navy primario (`--pa-navy`).
+- Error / destructivo / punto de notificación: seguir `--pa-danger` (`#C23B2B`),
+  no inventar rojos alternos.
+
+Especificación de layout e interacción del shell: [`proagent-web/design_handoff/shell-v2-README.md`](https://github.com/ctorres2747/proagent-web/blob/main/design_handoff/shell-v2-README.md) (Sprint 052).
+
+### Fondo alternativo — dashboards densos
+
 Degradado azulado muy sutil derivado del navy de marca (hue 240, igual que
 `#0A3D62`); token `--pa-bg-app`:
 
@@ -72,16 +113,20 @@ Degradado azulado muy sutil derivado del navy de marca (hue 240, igual que
 radial-gradient(120% 100% at 0% 0%, oklch(97% 0.008 240) 0%, oklch(95% 0.014 240) 100%)
 ```
 
-Es una **extensión** de la paleta (no un color base) para dar profundidad al
-**fondo general** de la app, sobre todo donde hay muchas tarjetas blancas. Se
-aplica al **body + contenedor raíz** de:
+Es una **extensión** de la paleta (no un color base) para dar profundidad en
+**interfaces densas** con muchas tarjetas blancas (p. ej. Kanban / captación
+interna en `agente-inmobiliario`).
 
-- **ProAgent Web** (fondo general de toda la app), y
-- las **interfaces internas densas** (dashboard/Kanban de `agente-inmobiliario`).
+**Dónde aplica:**
 
-Solo afecta al fondo: el resto de superficies (tarjetas, inputs, chips) siguen
-en blanco / `#F6F7F9` sólido. La **app móvil** mantiene el fondo plano
-`#F6F7F9` (pantalla compacta, una mano) salvo decisión futura.
+| Superficie | Fondo |
+|---|---|
+| **ProAgent Web** | Plano `#F6F7F9` (`--pa-bg`) — **sin** degradado en body |
+| **ProAgent Mobile** | Plano `#F6F7F9` (`--pa-bg`) |
+| **Dashboard / Kanban interno** (`agente-inmobiliario`) | Degradado `--pa-bg-app` en body + contenedor raíz |
+
+Solo afecta al fondo del canvas: tarjetas, inputs y chips siguen en blanco /
+`#F6F7F9` sólido.
 
 ---
 
@@ -139,9 +184,12 @@ Fondo suave + texto del estado, radio 6, peso 700, 11px. Siempre con **texto**
   11px peso 700 color muted.
 
 ### Navegación
-- **Sidebar (web):** ítem activo en navy con texto blanco; inactivo texto
-  `#45525E` peso 600.
-- **Tab bar (móvil):** ítems faint; acción central elevada en navy (círculo).
+- **App shell v2 (ProAgent Web):** sidebar / riel / drawer en `--pa-navy`; ítems
+  con íconos SVG; activo con barra `--pa-emerald-bright` sobre navy; UserMenu
+  en pie de sidebar. Handoff: `design_handoff/shell-v2-README.md`.
+- **Tab bar (ProAgent Mobile):** 5 ítems; acción central elevada en navy;
+  label **Inventario** (no “Propiedades”); activo con píldora `--pa-navy-050`.
+  Sin Captación en mobile.
 
 ---
 
@@ -152,12 +200,14 @@ referencia canónica:
 
 - **`proagent-web`** (Next.js + Tailwind v4): variables CSS `--pa-*` en
   `src/app/globals.css` + `src/design-system/tokens.ts`. Fuente Plus Jakarta
-  Sans vía `next/font`.
+  Sans vía `next/font`. Fondo **plano** `--pa-bg`; tokens § Superficie navy
+  para el app shell (Sprint 052).
 - **`proagent-mobile`** (Expo/RN): `src/design-system/` (tokens) + Plus Jakarta
-  Sans (`@expo-google-fonts/plus-jakarta-sans`).
+  Sans (`@expo-google-fonts/plus-jakarta-sans`). Portar tokens § Superficie navy
+  donde aplique (bottom nav, estados activos).
 - **`agente-inmobiliario`** (dashboard `frontend/AgenteInmobiliario.html`):
-  mismos hex; es el único que usa el **fondo alternativo** (degradado) por ser
-  una interfaz densa interna.
+  mismos hex; usa el **fondo alternativo** (degradado `--pa-bg-app`) por ser
+  interfaz densa interna.
 
 Al crear o ajustar UI en cualquiera de los tres, seguir esta guía. Si un valor
 no está aquí, derivarlo de estos tokens antes de inventar uno nuevo.
