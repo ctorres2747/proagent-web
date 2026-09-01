@@ -29,6 +29,8 @@ export interface ChannelConnection {
   mode?: "own" | "pool" | null;
   /** Campos no-secretos guardados, para precargar "Editar" — nunca trae el token. */
   credentials?: ChannelConnectionCredentials | null;
+  /** true solo en facebook cuando el VPS tiene MARKETPLACE_PER_AGENT=true. */
+  marketplacePerAgentEnabled?: boolean | null;
 }
 
 export interface ChannelPatch {

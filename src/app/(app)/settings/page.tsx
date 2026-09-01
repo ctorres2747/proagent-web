@@ -302,11 +302,11 @@ function ChannelRow({
   const queryClient = useQueryClient();
   const id = connection.channelId;
   const meta = CHANNEL_META[id];
-  // Facebook (Marketplace) no tiene credenciales propias — "conectar" ahí
-  // solo marca la fila como lista (mode "pool", ver connectPool más abajo).
-  // Los demás canales (wasi/instagram/whatsapp) siempre operan en "own": el
-  // toggle Pool/Mis credenciales se quitó de la UI (ver sesión 2026-08-23).
-  const [mode, setMode] = useState<"own" | "pool">("own");
+  const fbPerAgent = id === "facebook" && connection.marketplacePerAgentEnabled === true;
+  // Facebook legacy (flag off): pool Andreina — "conectar" marca la fila lista.
+  const [mode, setMode] = useState<"own" | "pool">(
+    id === "facebook" && !fbPerAgent ? "pool" : "own",
+  );
   const [wasiCompany, setWasiCompany] = useState("");
   const [wasiToken, setWasiToken] = useState("");
   const [wasiUser, setWasiUser] = useState("");
@@ -477,7 +477,7 @@ function ChannelRow({
   // ya guardado (persiste tras desconectar, ver fix 2026-08-29) para poder
   // prenderse de nuevo sin reabrir el panel.
   const hasSavedSetup =
-    id === "facebook" ||
+    (id === "facebook" && !fbPerAgent) ||
     (isEntrega ? Boolean(connection.credentials?.driveParentFolderId) : Boolean(tokenLast4));
 
   // El interruptor es el control principal para excluir/incluir el canal de
@@ -492,7 +492,11 @@ function ChannelRow({
       return;
     }
     if (id === "facebook") {
-      fbConnectMutation.mutate();
+      if (fbPerAgent) {
+        fbConnectMutation.mutate();
+      } else {
+        connectPool();
+      }
       return;
     }
     if (hasSavedSetup) {
@@ -546,7 +550,7 @@ function ChannelRow({
 
       {canConfigure ? (
         <div className="mt-4 flex flex-wrap gap-2">
-          {id === "facebook" ? (
+          {fbPerAgent ? (
             <>
               <button
                 type="button"
@@ -785,7 +789,7 @@ function ChannelRow({
             </div>
           ) : null}
 
-          {id === "facebook" ? (
+          {id === "facebook" && fbPerAgent ? (
             <div className="space-y-3">
               <p className="text-[12px] text-[var(--pa-muted)]">
                 Marketplace publica desde tu cuenta de Facebook. Al conectar, se abrirá

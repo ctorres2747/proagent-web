@@ -24,6 +24,7 @@ interface RawConnection {
     drive_parent_folder_id?: string | null;
     drive_parent_folder_url?: string | null;
   } | null;
+  marketplace_per_agent_enabled?: boolean | null;
 }
 
 function mapConnection(raw: RawConnection): ChannelConnection {
@@ -44,9 +45,10 @@ function mapConnection(raw: RawConnection): ChannelConnection {
           catalogId: raw.credentials.catalog_id ?? null,
           catalogTokenLast4: raw.credentials.catalog_token_last4 ?? null,
           driveParentFolderId: raw.credentials.drive_parent_folder_id ?? null,
-          driveParentFolderUrl: raw.credentials.drive_parent_folder_url ?? null,
-        }
+        driveParentFolderUrl: raw.credentials.drive_parent_folder_url ?? null,
+      }
       : null,
+    marketplacePerAgentEnabled: raw.marketplace_per_agent_enabled ?? null,
   };
 }
 
