@@ -10,6 +10,10 @@ import { PasswordInput } from "@/components/PasswordInput";
 import { ProfilePhotoCropModal } from "@/components/ProfilePhotoCropModal";
 import { Toast } from "@/components/Toast";
 import { channelsService, profileService } from "@/services";
+import {
+  getFacebookConnectStatus,
+  triggerFacebookConnect,
+} from "@/services/http/facebookConnect";
 import type { AgentProfile } from "@/services/interfaces/profile";
 import type { ChannelConnection } from "@/services/interfaces/channels";
 
@@ -298,11 +302,11 @@ function ChannelRow({
   const queryClient = useQueryClient();
   const id = connection.channelId;
   const meta = CHANNEL_META[id];
-  // Facebook (Marketplace) no tiene credenciales propias — "conectar" ahí
-  // solo marca la fila como lista (mode "pool", ver connectPool más abajo).
-  // Los demás canales (wasi/instagram/whatsapp) siempre operan en "own": el
-  // toggle Pool/Mis credenciales se quitó de la UI (ver sesión 2026-08-23).
-  const [mode, setMode] = useState<"own" | "pool">(id === "facebook" ? "pool" : "own");
+  const fbPerAgent = id === "facebook" && connection.marketplacePerAgentEnabled === true;
+  // Facebook legacy (flag off): pool Andreina — "conectar" marca la fila lista.
+  const [mode, setMode] = useState<"own" | "pool">(
+    id === "facebook" && !fbPerAgent ? "pool" : "own",
+  );
   const [wasiCompany, setWasiCompany] = useState("");
   const [wasiToken, setWasiToken] = useState("");
   const [wasiUser, setWasiUser] = useState("");
@@ -312,6 +316,38 @@ function ChannelRow({
   const [instagramToken, setInstagramToken] = useState("");
   const [driveParentFolder, setDriveParentFolder] = useState("");
   const [expanded, setExpanded] = useState(false);
+  const [fbConnectPending, setFbConnectPending] = useState(false);
+
+  const fbConnectMutation = useMutation({
+    mutationFn: () => triggerFacebookConnect(token),
+    onSuccess: (data) => {
+      setFbConnectPending(Boolean(data.pendiente));
+      onSaved(data.message);
+    },
+    onError: (err) => {
+      onError(err instanceof Error ? err.message : "No se pudo conectar Facebook");
+    },
+  });
+
+  useEffect(() => {
+    if (id !== "facebook" || !fbConnectPending) return;
+    const poll = setInterval(async () => {
+      try {
+        const data = await getFacebookConnectStatus(token);
+        if (data.estado === "completado") {
+          setFbConnectPending(false);
+          void queryClient.invalidateQueries({ queryKey: ["channel-connections"] });
+          onSaved("Facebook Marketplace conectado");
+        } else if (data.estado === "error") {
+          setFbConnectPending(false);
+          onError(data.mensaje ?? "No se pudo completar el inicio de sesión en Facebook");
+        }
+      } catch {
+        /* ignore poll errors */
+      }
+    }, 3000);
+    return () => clearInterval(poll);
+  }, [fbConnectPending, id, onError, onSaved, queryClient, token]);
 
   const patchMutation = useMutation({
     mutationFn: (body: Parameters<typeof channelsService.patch>[1]) =>
@@ -441,7 +477,7 @@ function ChannelRow({
   // ya guardado (persiste tras desconectar, ver fix 2026-08-29) para poder
   // prenderse de nuevo sin reabrir el panel.
   const hasSavedSetup =
-    id === "facebook" ||
+    (id === "facebook" && !fbPerAgent) ||
     (isEntrega ? Boolean(connection.credentials?.driveParentFolderId) : Boolean(tokenLast4));
 
   // El interruptor es el control principal para excluir/incluir el canal de
@@ -456,7 +492,11 @@ function ChannelRow({
       return;
     }
     if (id === "facebook") {
-      connectPool();
+      if (fbPerAgent) {
+        fbConnectMutation.mutate();
+      } else {
+        connectPool();
+      }
       return;
     }
     if (hasSavedSetup) {
@@ -510,52 +550,72 @@ function ChannelRow({
 
       {canConfigure ? (
         <div className="mt-4 flex flex-wrap gap-2">
-          {connection.status !== "connected" ? (
+          {fbPerAgent ? (
             <>
               <button
                 type="button"
-                onClick={() => (expanded ? setExpanded(false) : openEditPanel())}
-                className="rounded-lg border border-[var(--pa-navy)] px-3 py-1.5 text-[12px] font-semibold text-[var(--pa-navy)]"
+                disabled={fbConnectMutation.isPending || fbConnectPending}
+                onClick={() => fbConnectMutation.mutate()}
+                className="rounded-lg bg-[#1877F2] px-4 py-2 text-[12px] font-bold text-white disabled:opacity-60"
               >
-                {expanded
-                  ? "Ocultar"
-                  : isEntrega
-                    ? "Configurar carpeta"
-                    : "Conectar con mis datos"}
+                {connection.status === "connected"
+                  ? "Reconectar con Facebook"
+                  : "Conectar con Facebook"}
               </button>
-            </>
-          ) : (
-            <>
-              {id !== "facebook" && !isEntrega ? (
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (expanded) {
-                      setExpanded(false);
-                    } else {
-                      openEditPanel();
-                    }
-                  }}
-                  className="rounded-lg border border-[var(--pa-navy)] px-3 py-1.5 text-[12px] font-semibold text-[var(--pa-navy)]"
-                >
-                  {expanded
-                    ? "Ocultar"
-                    : connection.mode === "own"
-                      ? "Editar"
-                      : "Conectar con mis datos"}
-                </button>
+              {fbConnectPending ? (
+                <span className="self-center text-[11px] text-[var(--pa-muted)]">
+                  Esperando login en la PC…
+                </span>
               ) : null}
-              {isEntrega ? (
+            </>
+          ) : null}
+          {id !== "facebook" &&
+            (connection.status !== "connected" ? (
+              <>
                 <button
                   type="button"
                   onClick={() => (expanded ? setExpanded(false) : openEditPanel())}
                   className="rounded-lg border border-[var(--pa-navy)] px-3 py-1.5 text-[12px] font-semibold text-[var(--pa-navy)]"
                 >
-                  {expanded ? "Ocultar" : "Editar carpeta padre"}
+                  {expanded
+                    ? "Ocultar"
+                    : isEntrega
+                      ? "Configurar carpeta"
+                      : "Conectar con mis datos"}
                 </button>
-              ) : null}
-            </>
-          )}
+              </>
+            ) : (
+              <>
+                {!isEntrega ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (expanded) {
+                        setExpanded(false);
+                      } else {
+                        openEditPanel();
+                      }
+                    }}
+                    className="rounded-lg border border-[var(--pa-navy)] px-3 py-1.5 text-[12px] font-semibold text-[var(--pa-navy)]"
+                  >
+                    {expanded
+                      ? "Ocultar"
+                      : connection.mode === "own"
+                        ? "Editar"
+                        : "Conectar con mis datos"}
+                  </button>
+                ) : null}
+                {isEntrega ? (
+                  <button
+                    type="button"
+                    onClick={() => (expanded ? setExpanded(false) : openEditPanel())}
+                    className="rounded-lg border border-[var(--pa-navy)] px-3 py-1.5 text-[12px] font-semibold text-[var(--pa-navy)]"
+                  >
+                    {expanded ? "Ocultar" : "Editar carpeta padre"}
+                  </button>
+                ) : null}
+              </>
+            ))}
         </div>
       ) : null}
 
@@ -729,11 +789,29 @@ function ChannelRow({
             </div>
           ) : null}
 
-          {id === "facebook" ? (
-            <p className="text-[12px] text-[var(--pa-muted)]">
-              Marketplace usa el worker de la PC (Opción B). Marca como conectado
-              si ya tienes la cola configurada.
-            </p>
+          {id === "facebook" && fbPerAgent ? (
+            <div className="space-y-3">
+              <p className="text-[12px] text-[var(--pa-muted)]">
+                Marketplace publica desde tu cuenta de Facebook. Al conectar, se abrirá
+                un navegador en la PC configurada para ti — inicia sesión ahí cuando
+                aparezca (tienes unos minutos).
+              </p>
+              <button
+                type="button"
+                disabled={fbConnectMutation.isPending || fbConnectPending}
+                onClick={() => fbConnectMutation.mutate()}
+                className="rounded-lg bg-[#1877F2] px-4 py-2 text-[12px] font-bold text-white disabled:opacity-60"
+              >
+                {connection.status === "connected"
+                  ? "Reconectar con Facebook"
+                  : "Conectar con Facebook"}
+              </button>
+              {fbConnectPending ? (
+                <p className="text-[11px] text-[var(--pa-muted)]">
+                  Esperando inicio de sesión en la PC…
+                </p>
+              ) : null}
+            </div>
           ) : null}
 
           {id === "entrega" ? (
@@ -765,9 +843,7 @@ function ChannelRow({
             onClick={() => {
               if (id === "entrega") connectEntrega();
               else if (mode === "pool") connectPool();
-              else if (id === "facebook") {
-                patchMutation.mutate({ status: "connected", mode: "own" });
-              } else connectOwn();
+              else connectOwn();
             }}
             className="rounded-lg bg-[var(--pa-navy)] px-3 py-2 text-[12px] font-bold text-white"
           >
