@@ -412,51 +412,22 @@ export default function PublishWizardPage() {
         if (cancelled) return;
         setPublication(pub);
 
-        // Bug real (Cristhian, 2026-08-29): createDraft (backend) siempre
-        // precarga sharedTitle/sharedBody con el título/descripción de la
-        // ficha — así que para cualquier propiedad real (casi siempre ya
-        // tiene título) el chequeo "¿está vacío?" nunca se cumplía y el
-        // contenido sugerido de Sprint 049 nunca se disparaba. "Vacío" acá
-        // también cuenta como "todavía es exactamente el auto-seed de la
-        // ficha, el agente no lo tocó" — si el agente edita y guarda,
-        // sharedTitle/sharedBody dejan de coincidir con el seed y esta
-        // condición ya no aplica (no se pisa su edición).
-        const pubContentEmpty =
-          (!(pub.sharedTitle || "").trim() || pub.sharedTitle === seedTitle) &&
-          (!(pub.sharedBody || "").trim() || pub.sharedBody === (seedBody || ""));
+        // Pedido de Cristhian (2026-09-02): se elimina la sugerencia
+        // automática de título/descripción (Sprint 049) — pisaba con texto
+        // de plantilla (placeholders tipo "[barrio]", "[XX] Millones COP")
+        // aun cuando la ficha SÍ tenía una descripción real, cada vez que
+        // sharedTitle/sharedBody del borrador coincidían con el seed de la
+        // ficha — que es el caso normal, tanto si la ficha está vacía como
+        // si el agente ya la escribió y nunca la volvió a tocar desde el
+        // borrador. sharedTitle/sharedBody ahora siempre reflejan lo que de
+        // verdad hay en la ficha (o lo que el agente ya guardó en el
+        // borrador): si está vacío, se queda vacío y el chequeo de
+        // completitud lo marca como obligatorio, en vez de disfrazarlo.
+        const realTitle = pub.sharedTitle || seedTitle || "";
+        const realBody = pub.sharedBody || seedBody || "";
 
-        let suggestedTitle = pub.sharedTitle || seedTitle || "";
-        let suggestedBody = pub.sharedBody || seedBody || "";
-
-        if (pubContentEmpty && token) {
-          try {
-            const suggested = await propertiesService.getSuggestedContent(
-              propId,
-              token,
-            );
-            setContentForm((prev) => ({
-              ...prev,
-              titulo: suggested.title,
-              descripcion: suggested.body,
-            }));
-            setSavedContent((prev) =>
-              prev
-                ? {
-                    ...prev,
-                    titulo: suggested.title,
-                    descripcion: suggested.body,
-                  }
-                : prev,
-            );
-            suggestedTitle = suggested.title;
-            suggestedBody = suggested.body;
-          } catch {
-            // Sin API o sin red: se mantiene el seed vacío.
-          }
-        }
-
-        setSharedTitle(suggestedTitle);
-        setSharedBody(suggestedBody);
+        setSharedTitle(realTitle);
+        setSharedBody(realBody);
         const contentMap: Partial<
           Record<ChannelId, { title: string; body: string }>
         > = {};
