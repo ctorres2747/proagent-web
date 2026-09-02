@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet"></link>
+  <style>
+    body { margin:0; background:#E9EDF1; font-family:'Plus Jakarta Sans',sans-serif; }
+    a { color:#0A3D62; } a:hover { color:#0C4A78; }
+    ::-webkit-scrollbar { width:8px; height:8px; }
+    ::-webkit-scrollbar-thumb { background:#D7DCE1; border-radius:4px; }
+  </style>
+</helmet>
+
+<div style="padding:56px 48px 96px;display:flex;flex-direction:column;gap:56px;align-items:flex-start;color:#16212B;">
+
+  <div style="max-width:900px;">
+    <div style="font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#0A3D62;">Handoff técnico</div>
+    <div style="font-size:34px;font-weight:800;margin-top:8px;letter-spacing:-.01em;">App Shell v2 — ProAgent</div>
+    <div style="font-size:15px;color:#45525E;line-height:1.55;margin-top:10px;text-wrap:pretty;">Mejoras visuales y de UX sobre el <code style="background:#fff;border:1px solid #E4E8EC;border-radius:5px;padding:1px 5px;font-size:13px;">AppShell</code> actual. Especificación completa en <code style="background:#fff;border:1px solid #E4E8EC;border-radius:5px;padding:1px 5px;font-size:13px;">shell-v2-README.md</code>.</div>
+    <div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap;">
+      <div style="background:#0A3D62;color:#fff;font-size:11.5px;font-weight:700;padding:6px 12px;border-radius:20px;">Next.js 15 · App Router</div>
+      <div style="background:#fff;border:1px solid #E4E8EC;color:#45525E;font-size:11.5px;font-weight:600;padding:6px 12px;border-radius:20px;">Expo</div>
+      <div style="background:#fff;border:1px solid #E4E8EC;color:#45525E;font-size:11.5px;font-weight:600;padding:6px 12px;border-radius:20px;">Plus Jakarta Sans</div>
+      <div style="background:#fff;border:1px solid #E4E8EC;color:#45525E;font-size:11.5px;font-weight:600;padding:6px 12px;border-radius:20px;">Tokens --pa-*</div>
+    </div>
+  </div>
+
+  <!-- 01 DESKTOP -->
+  <div id="f-desktop-wrap" style="display:flex;flex-direction:column;gap:14px;">
+    <div style="display:flex;align-items:baseline;gap:12px;">
+      <div style="font-size:13px;font-weight:800;color:#0A3D62;">01</div>
+      <div style="font-size:17px;font-weight:800;">Desktop · sidebar expandida</div>
+      <div style="font-size:12.5px;color:#5B6B79;">1440 × 900 · sidebar 248px · header 60px</div>
+    </div>
+    <div id="f-desktop" style="width:1440px;height:900px;background:#F6F7F9;border:1px solid #D7DCE1;border-radius:14px;overflow:hidden;display:flex;box-shadow:0 12px 40px rgba(16,33,49,.09);">
+      <div style="width:248px;flex-shrink:0;background:#0A3D62;display:flex;flex-direction:column;">
+        <div style="display:flex;align-items:center;gap:11px;padding:0 20px;height:60px;flex-shrink:0;">
+          <div style="width:34px;height:34px;border-radius:10px;background:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <div style="position:relative;width:16px;height:18px;">
+              <div style="position:absolute;left:2px;top:0;width:3px;height:18px;background:#0A3D62;border-radius:1px;"></div>
+              <div style="position:absolute;left:2px;top:1px;width:9px;height:7.5px;background:#0A3D62;border-radius:0 4px 4px 0;"></div>
+              <div style="position:absolute;left:4.5px;top:2.5px;width:5px;height:4.5px;background:#fff;border-radius:0 3px 3px 0;"></div>
+            </div>
+          </div>
+          <div>
+            <div style="font-size:14.5px;font-weight:800;color:#fff;line-height:1.1;">ProAgent</div>
+            <div style="font-size:9.5px;font-weight:600;color:rgba(255,255,255,.5);letter-spacing:.06em;text-transform:uppercase;margin-top:2px;">by Proinversores</div>
+          </div>
+        </div>
+
+        <div style="flex:1;padding:4px 12px 16px;display:flex;flex-direction:column;gap:2px;overflow-y:auto;">
+          <div style="font-size:10px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:rgba(255,255,255,.42);padding:14px 12px 8px;">Operación</div>
+
+          <div style="display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:10px;cursor:pointer;color:rgba(255,255,255,.72);">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"></path><path d="M5.5 9.5V21h13V9.5"></path></svg>
+            <div style="font-size:13px;font-weight:600;">Inicio</div>
+          </div>
+
+          <div style="display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:10px;cursor:pointer;background:rgba(255,255,255,.07);color:#fff;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="6" height="16" rx="1.5"></rect><rect x="11" y="4" width="6" height="11" rx="1.5"></rect><rect x="19" y="4" width="2" height="7" rx="1"></rect></svg>
+            <div style="font-size:13px;font-weight:600;flex:1;">Captación</div>
+            <div style="background:#2FC98A;color:#06331F;font-size:10.5px;font-weight:800;padding:2px 7px;border-radius:20px;">8</div>
+            <div style="position:absolute;"></div>
+          </div>
+
+          <div style="display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:10px;cursor:pointer;background:rgba(255,255,255,.12);color:#fff;position:relative;">
+            <div style="position:absolute;left:-12px;top:50%;transform:translateY(-50%);width:3px;height:20px;border-radius:0 3px 3px 0;background:#2FC98A;"></div>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="14" rx="2"></rect><path d="M8 7V4.5h8V7"></path><path d="M3 13h18"></path></svg>
+            <div style="font-size:13px;font-weight:700;flex:1;">Inventario</div>
+            <div style="font-size:11px;font-weight:700;color:rgba(255,255,255,.55);">15</div>
+          </div>
+
+          <div style="display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:10px;cursor:pointer;color:rgba(255,255,255,.72);">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5"></path><path d="m5 12 7-7 7 7"></path></svg>
+            <div style="font-size:13px;font-weight:600;">Publicación</div>
+          </div>
+
+          <div style="font-size:10px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:rgba(255,255,255,.42);padding:20px 12px 8px;">Cartera</div>
+
+          <div style="display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:10px;color:rgba(255,255,255,.34);cursor:default;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.4"></circle><path d="M3 20c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5"></path><path d="M17 11.5a3 3 0 1 0 0-6"></path><path d="M18.5 20c0-2.4-.9-4.2-2.4-5.2"></path></svg>
+            <div style="font-size:13px;font-weight:600;flex:1;">Clientes</div>
+            <div style="border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.42);font-size:9.5px;font-weight:700;padding:2px 6px;border-radius:20px;">Pronto</div>
+          </div>
+
+          <div style="display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:10px;color:rgba(255,255,255,.34);cursor:default;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V9"></path><path d="M10 19V5"></path><path d="M16 19v-7"></path><path d="M21 19H3"></path></svg>
+            <div style="font-size:13px;font-weight:600;flex:1;">Reportes</div>
+            <div style="border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.42);font-size:9.5px;font-weight:700;padding:2px 6px;border-radius:20px;">Pronto</div>
+          </div>
+        </div>
+
+        <div style="padding:12px;border-top:1px solid rgba(255,255,255,.12);flex-shrink:0;display:flex;flex-direction:column;gap:8px;">
+          <div style="background:rgba(255,255,255,.07);border-radius:10px;padding:8px 12px;cursor:pointer;">
+            <div style="font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.42);">Viendo como</div>
+            <div style="display:flex;align-items:center;gap:8px;margin-top:3px;">
+              <div style="font-size:12px;font-weight:700;color:#fff;flex:1;">Todos los agentes</div>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.5)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"></path></svg>
+            </div>
+          </div>
+          <div style="background:rgba(255,255,255,.07);border-radius:12px;padding:10px 12px;display:flex;align-items:center;gap:10px;cursor:pointer;">
+            <div style="width:32px;height:32px;border-radius:50%;background:#2FC98A;color:#06331F;font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;">CR</div>
+            <div style="min-width:0;flex:1;">
+              <div style="font-size:12.5px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Carolina Restrepo</div>
+              <div style="font-size:10.5px;color:rgba(255,255,255,.55);font-weight:600;">Staff Proinversores</div>
+            </div>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.5)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"></path></svg>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;padding:4px 8px;color:rgba(255,255,255,.5);font-size:11.5px;font-weight:600;cursor:pointer;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"></rect><path d="M9 4v16"></path></svg>
+            <div>Colapsar menú</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="flex:1;display:flex;flex-direction:column;min-width:0;">
+        <div style="height:60px;flex-shrink:0;background:#fff;border-bottom:1px solid #E4E8EC;display:flex;align-items:center;gap:16px;padding:0 28px;">
+          <div style="font-size:15px;font-weight:800;white-space:nowrap;">Inventario</div>
+          <div style="flex:1;display:flex;justify-content:center;min-width:0;">
+            <div style="display:flex;align-items:center;gap:9px;width:100%;max-width:440px;background:#F6F7F9;border:1px solid #E4E8EC;border-radius:10px;padding:8px 12px;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#9AA6B2" stroke-width="2.1" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>
+              <div style="flex:1;font-size:12.5px;color:#9AA6B2;">Buscar propiedad, cliente o código</div>
+              <div style="font-size:10.5px;font-weight:700;color:#9AA6B2;background:#fff;border:1px solid #E4E8EC;border-radius:5px;padding:1.5px 5px;">⌘K</div>
+            </div>
+          </div>
+          <div style="width:36px;height:36px;border-radius:10px;border:1px solid #E4E8EC;display:flex;align-items:center;justify-content:center;position:relative;flex-shrink:0;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#45525E" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 6-3 7-3 7h18s-3-1-3-7"></path><path d="M10.5 20a2 2 0 0 0 3 0"></path></svg>
+            <div style="position:absolute;top:7px;right:8px;width:7px;height:7px;border-radius:50%;background:#C23B2B;border:1.5px solid #fff;"></div>
+          </div>
+          <div style="background:#0A3D62;color:#fff;font-size:12.5px;font-weight:700;padding:10px 16px;border-radius:9px;white-space:nowrap;display:flex;align-items:center;gap:7px;flex-shrink:0;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg>
+            Nueva propiedad
+          </div>
+        </div>
+
+        <div style="flex:1;overflow:hidden;padding:28px 32px 60px;">
+          <div style="max-width:1440px;">
+            <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:20px;">
+              <div>
+                <div style="font-size:24px;font-weight:800;">Inventario</div>
+                <div style="font-size:13px;color:#5B6B79;margin-top:4px;">15 inmuebles · 12 publicados · 3 borradores</div>
+              </div>
+              <div style="display:flex;gap:8px;">
+                <div style="background:#0A3D62;color:#fff;font-size:12px;font-weight:700;padding:8px 14px;border-radius:20px;">Todos</div>
+                <div style="border:1px solid #E4E8EC;background:#fff;color:#45525E;font-size:12px;font-weight:600;padding:8px 14px;border-radius:20px;">Publicados</div>
+                <div style="border:1px solid #E4E8EC;background:#fff;color:#45525E;font-size:12px;font-weight:600;padding:8px 14px;border-radius:20px;">Borradores</div>
+              </div>
+            </div>
+            <div style="background:#fff;border:1px solid #E4E8EC;border-radius:16px;overflow:hidden;">
+              <div style="display:grid;grid-template-columns:2.4fr 1fr 1fr 1fr 100px;gap:16px;padding:14px 20px;background:#FAFBFC;border-bottom:1px solid #E4E8EC;font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#9AA6B2;">
+                <div>Inmueble</div><div>Zona</div><div>Precio</div><div>Portales</div><div>Estado</div>
+              </div>
+              <div style="display:grid;grid-template-columns:2.4fr 1fr 1fr 1fr 100px;gap:16px;padding:16px 20px;border-bottom:1px solid #EEF0F3;align-items:center;font-size:13px;">
+                <div style="font-weight:700;">Apto 302 · Torre Aura</div><div style="color:#5B6B79;">El Poblado</div><div style="font-weight:600;">$ 780.000.000</div><div style="color:#5B6B79;">3 de 4</div><div><span style="background:#E6F5EE;color:#1E8E5A;font-size:11px;font-weight:700;padding:4px 9px;border-radius:20px;">Publicado</span></div>
+              </div>
+              <div style="display:grid;grid-template-columns:2.4fr 1fr 1fr 1fr 100px;gap:16px;padding:16px 20px;border-bottom:1px solid #EEF0F3;align-items:center;font-size:13px;">
+                <div style="font-weight:700;">Casa 14 · Loma del Indio</div><div style="color:#5B6B79;">Envigado</div><div style="font-weight:600;">$ 1.240.000.000</div><div style="color:#5B6B79;">4 de 4</div><div><span style="background:#E6F5EE;color:#1E8E5A;font-size:11px;font-weight:700;padding:4px 9px;border-radius:20px;">Publicado</span></div>
+              </div>
+              <div style="display:grid;grid-template-columns:2.4fr 1fr 1fr 1fr 100px;gap:16px;padding:16px 20px;border-bottom:1px solid #EEF0F3;align-items:center;font-size:13px;">
+                <div style="font-weight:700;">Local 5 · Ed. Nutibara</div><div style="color:#5B6B79;">Laureles</div><div style="font-weight:600;">$ 410.000.000</div><div style="color:#9AA6B2;">—</div><div><span style="background:#FCEEE0;color:#8A4E12;font-size:11px;font-weight:700;padding:4px 9px;border-radius:20px;">Borrador</span></div>
+              </div>
+              <div style="display:grid;grid-template-columns:2.4fr 1fr 1fr 1fr 100px;gap:16px;padding:16px 20px;align-items:center;font-size:13px;">
+                <div style="font-weight:700;">Apto 1201 · Bosques de Zúñiga</div><div style="color:#5B6B79;">Envigado</div><div style="font-weight:600;">$ 620.000.000</div><div style="color:#5B6B79;">2 de 4</div><div><span style="background:#E6F5EE;color:#1E8E5A;font-size:11px;font-weight:700;padding:4px 9px;border-radius:20px;">Publicado</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- 02 COLLAPSED -->
+  <div style="display:flex;flex-direction:column;gap:14px;">
+    <div style="display:flex;align-items:baseline;gap:12px;">
+      <div style="font-size:13px;font-weight:800;color:#0A3D62;">02</div>
+      <div style="font-size:17px;font-weight:800;">Desktop · riel colapsado</div>
+      <div style="font-size:12.5px;color:#5B6B79;">riel 76px · tooltip a 400ms · activo invertido a blanco</div>
+    </div>
+    <div id="f-collapsed" style="width:1440px;height:760px;background:#F6F7F9;border:1px solid #D7DCE1;border-radius:14px;overflow:hidden;display:flex;box-shadow:0 12px 40px rgba(16,33,49,.09);">
+
+      <div style="width:76px;flex-shrink:0;background:#0A3D62;display:flex;flex-direction:column;align-items:center;padding:13px 0;gap:6px;">
+        <div style="width:34px;height:34px;border-radius:10px;background:#fff;display:flex;align-items:center;justify-content:center;margin-bottom:14px;flex-shrink:0;">
+          <div style="position:relative;width:16px;height:18px;">
+            <div style="position:absolute;left:2px;top:0;width:3px;height:18px;background:#0A3D62;border-radius:1px;"></div>
+            <div style="position:absolute;left:2px;top:1px;width:9px;height:7.5px;background:#0A3D62;border-radius:0 4px 4px 0;"></div>
+            <div style="position:absolute;left:4.5px;top:2.5px;width:5px;height:4.5px;background:#fff;border-radius:0 3px 3px 0;"></div>
+          </div>
+        </div>
+
+        <div style="width:60px;display:flex;flex-direction:column;align-items:center;gap:5px;padding:9px 0;border-radius:12px;color:rgba(255,255,255,.62);position:relative;">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"></path><path d="M5.5 9.5V21h13V9.5"></path></svg>
+          <div style="font-size:9.5px;font-weight:700;">Inicio</div>
+          <div style="position:absolute;left:70px;top:50%;transform:translateY(-50%);background:#16212B;color:#fff;font-size:11.5px;font-weight:600;padding:6px 10px;border-radius:7px;white-space:nowrap;z-index:5;">Inicio</div>
+        </div>
+
+        <div style="width:60px;display:flex;flex-direction:column;align-items:center;gap:5px;padding:9px 0;border-radius:12px;color:rgba(255,255,255,.62);position:relative;">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="6" height="16" rx="1.5"></rect><rect x="11" y="4" width="6" height="11" rx="1.5"></rect><rect x="19" y="4" width="2" height="7" rx="1"></rect></svg>
+          <div style="font-size:9.5px;font-weight:700;">Captación</div>
+          <div style="position:absolute;top:6px;right:7px;min-width:16px;height:16px;padding:0 4px;border-radius:8px;background:#2FC98A;color:#06331F;font-size:9.5px;font-weight:800;display:flex;align-items:center;justify-content:center;box-sizing:border-box;">8</div>
+        </div>
+
+        <div style="width:60px;display:flex;flex-direction:column;align-items:center;gap:5px;padding:9px 0;border-radius:12px;background:#fff;color:#0A3D62;">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="14" rx="2"></rect><path d="M8 7V4.5h8V7"></path><path d="M3 13h18"></path></svg>
+          <div style="font-size:9.5px;font-weight:800;">Inventario</div>
+        </div>
+
+        <div style="width:60px;display:flex;flex-direction:column;align-items:center;gap:5px;padding:9px 0;border-radius:12px;background:rgba(255,255,255,.08);color:#fff;">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5"></path><path d="m5 12 7-7 7 7"></path></svg>
+          <div style="font-size:9.5px;font-weight:700;">Publicación</div>
+        </div>
+
+        <div style="width:44px;height:1px;background:rgba(255,255,255,.14);margin:8px 0;"></div>
+
+        <div style="width:60px;display:flex;flex-direction:column;align-items:center;gap:5px;padding:9px 0;border-radius:12px;color:rgba(255,255,255,.34);">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.4"></circle><path d="M3 20c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5"></path><path d="M17 11.5a3 3 0 1 0 0-6"></path><path d="M18.5 20c0-2.4-.9-4.2-2.4-5.2"></path></svg>
+          <div style="font-size:9.5px;font-weight:700;">Clientes</div>
+        </div>
+
+        <div style="width:60px;display:flex;flex-direction:column;align-items:center;gap:5px;padding:9px 0;border-radius:12px;color:rgba(255,255,255,.34);">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V9"></path><path d="M10 19V5"></path><path d="M16 19v-7"></path><path d="M21 19H3"></path></svg>
+          <div style="font-size:9.5px;font-weight:700;">Reportes</div>
+        </div>
+
+        <div style="flex:1;"></div>
+        <div style="width:44px;height:44px;display:flex;align-items:center;justify-content:center;border-radius:11px;color:rgba(255,255,255,.5);">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"></rect><path d="M15 4v16"></path></svg>
+        </div>
+        <div style="width:36px;height:36px;border-radius:50%;background:#2FC98A;color:#06331F;font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center;">CR</div>
+      </div>
+
+      <div style="flex:1;display:flex;flex-direction:column;min-width:0;">
+        <div style="height:60px;flex-shrink:0;background:#fff;border-bottom:1px solid #E4E8EC;display:flex;align-items:center;gap:16px;padding:0 28px;">
+          <div style="font-size:15px;font-weight:800;">Inventario</div>
+          <div style="flex:1;display:flex;justify-content:center;min-width:0;">
+            <div style="display:flex;align-items:center;gap:9px;width:100%;max-width:440px;background:#F6F7F9;border:1px solid #E4E8EC;border-radius:10px;padding:8px 12px;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#9AA6B2" stroke-width="2.1" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>
+              <div style="flex:1;font-size:12.5px;color:#9AA6B2;">Buscar propiedad, cliente o código</div>
+              <div style="font-size:10.5px;font-weight:700;color:#9AA6B2;background:#fff;border:1px solid #E4E8EC;border-radius:5px;padding:1.5px 5px;">⌘K</div>
+            </div>
+          </div>
+          <div style="width:36px;height:36px;border-radius:10px;border:1px solid #E4E8EC;display:flex;align-items:center;justify-content:center;position:relative;flex-shrink:0;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#45525E" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 6-3 7-3 7h18s-3-1-3-7"></path><path d="M10.5 20a2 2 0 0 0 3 0"></path></svg>
+            <div style="position:absolute;top:7px;right:8px;width:7px;height:7px;border-radius:50%;background:#C23B2B;border:1.5px solid #fff;"></div>
+          </div>
+          <div style="background:#0A3D62;color:#fff;font-size:12.5px;font-weight:700;padding:10px 16px;border-radius:9px;white-space:nowrap;display:flex;align-items:center;gap:7px;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg>
+            Nueva propiedad
+          </div>
+        </div>
+        <div style="flex:1;padding:64px 32px 28px;overflow:hidden;">
+          <div style="font-size:24px;font-weight:800;">Inventario</div>
+          <div style="font-size:13px;color:#5B6B79;margin-top:4px;">15 inmuebles · 12 publicados · 3 borradores</div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:22px;max-width:1440px;">
+            <div style="background:#fff;border:1px solid #E4E8EC;border-radius:16px;padding:20px;">
+              <div style="font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#9AA6B2;">Publicados</div>
+              <div style="font-size:30px;font-weight:800;margin-top:8px;">12</div>
+            </div>
+            <div style="background:#fff;border:1px solid #E4E8EC;border-radius:16px;padding:20px;">
+              <div style="font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#9AA6B2;">Borradores</div>
+              <div style="font-size:30px;font-weight:800;margin-top:8px;">3</div>
+            </div>
+            <div style="background:#fff;border:1px solid #E4E8EC;border-radius:16px;padding:20px;">
+              <div style="font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#9AA6B2;">Leads nuevos</div>
+              <div style="font-size:30px;font-weight:800;margin-top:8px;color:#1E8E5A;">8</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 03 USERMENU -->
+  <div style="display:flex;flex-direction:column;gap:14px;">
+    <div style="display:flex;align-items:baseline;gap:12px;">
+      <div style="font-size:13px;font-weight:800;color:#0A3D62;">03</div>
+      <div style="font-size:17px;font-weight:800;">UserMenu abierto</div>
+      <div style="font-size:12.5px;color:#5B6B79;">panel 232px · anclado al disparador del pie de sidebar</div>
+    </div>
+    <div id="f-usermenu" style="width:760px;height:520px;background:#0A3D62;border:1px solid #D7DCE1;border-radius:14px;overflow:hidden;position:relative;box-shadow:0 12px 40px rgba(16,33,49,.09);">
+      <div style="position:absolute;left:248px;top:0;bottom:0;right:0;background:#F6F7F9;"></div>
+      <div style="position:absolute;left:248px;top:0;right:0;height:60px;background:#fff;border-bottom:1px solid #E4E8EC;display:flex;align-items:center;padding:0 24px;">
+        <div style="font-size:15px;font-weight:800;">Inventario</div>
+      </div>
+
+      <div style="position:absolute;left:12px;bottom:12px;width:224px;background:rgba(255,255,255,.07);border-radius:12px;padding:10px 12px;display:flex;align-items:center;gap:10px;box-sizing:border-box;">
+        <div style="width:32px;height:32px;border-radius:50%;background:#2FC98A;color:#06331F;font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;">CR</div>
+        <div style="min-width:0;flex:1;">
+          <div style="font-size:12.5px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Carolina Restrepo</div>
+          <div style="font-size:10.5px;color:rgba(255,255,255,.55);font-weight:600;">Staff Proinversores</div>
+        </div>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.5)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m18 15-6-6-6 6"></path></svg>
+      </div>
+
+      <div style="position:absolute;left:12px;bottom:78px;width:232px;background:#fff;border-radius:12px;box-shadow:0 1px 2px rgba(16,33,49,.06),0 12px 32px rgba(16,33,49,.12);padding:6px;box-sizing:border-box;">
+        <div style="padding:10px 10px 12px;border-bottom:1px solid #E4E8EC;margin-bottom:4px;">
+          <div style="font-size:13px;font-weight:700;">Carolina Restrepo</div>
+          <div style="font-size:11.5px;color:#9AA6B2;font-weight:500;margin-top:2px;">carolina@proinversores.co</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;background:#F6F7F9;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#45525E" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.6"></circle><path d="M5 20c0-3.5 3-6 7-6s7 2.5 7 6"></path></svg>
+          <div style="font-size:12.5px;font-weight:600;color:#16212B;">Mi perfil</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#45525E" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-2.7 1.1V21a2 2 0 1 1-4 0v-.1A1.6 1.6 0 0 0 7 19.4a1.6 1.6 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1A1.6 1.6 0 0 0 3 14.4H3a2 2 0 1 1 0-4h.1A1.6 1.6 0 0 0 4.6 7a1.6 1.6 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1A1.6 1.6 0 0 0 9.6 3H10a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 2.6 1.5"></path></svg>
+          <div style="font-size:12.5px;font-weight:600;color:#16212B;">Ajustes</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#45525E" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 6-3 7-3 7h18s-3-1-3-7"></path><path d="M10.5 20a2 2 0 0 0 3 0"></path></svg>
+          <div style="font-size:12.5px;font-weight:600;color:#16212B;flex:1;">Notificaciones</div>
+          <div style="width:7px;height:7px;border-radius:50%;background:#C23B2B;"></div>
+        </div>
+        <div style="height:1px;background:#E4E8EC;margin:4px 6px;"></div>
+        <div style="display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#45525E" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M9.5 9.5a2.6 2.6 0 1 1 3.4 2.5c-.6.2-.9.7-.9 1.3v.3"></path><path d="M12 17h.01"></path></svg>
+          <div style="font-size:12.5px;font-weight:600;color:#16212B;">Ayuda</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#45525E" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16"></path><path d="M4 12h16"></path><path d="M4 18h10"></path></svg>
+          <div style="font-size:12.5px;font-weight:600;color:#16212B;">Novedades</div>
+        </div>
+        <div style="height:1px;background:#E4E8EC;margin:4px 6px;"></div>
+        <div style="display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;background:#FBE7E4;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#C23B2B" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M15 17l5-5-5-5"></path><path d="M20 12H9"></path><path d="M12 20H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h6"></path></svg>
+          <div style="font-size:12.5px;font-weight:700;color:#C23B2B;">Cerrar sesión</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- 04 TABLET + 05/06 MOBILE -->
+  <div style="display:flex;gap:40px;align-items:flex-start;flex-wrap:wrap;">
+
+    <div style="display:flex;flex-direction:column;gap:14px;">
+      <div style="display:flex;align-items:baseline;gap:12px;">
+        <div style="font-size:13px;font-weight:800;color:#0A3D62;">04</div>
+        <div style="font-size:17px;font-weight:800;">Tablet</div>
+        <div style="font-size:12.5px;color:#5B6B79;">834px · riel por defecto</div>
+      </div>
+      <div id="f-tablet" style="width:834px;height:620px;background:#F6F7F9;border:1px solid #D7DCE1;border-radius:14px;overflow:hidden;display:flex;box-shadow:0 12px 40px rgba(16,33,49,.09);">
+        <div style="width:76px;flex-shrink:0;background:#0A3D62;display:flex;flex-direction:column;align-items:center;padding:13px 0;gap:6px;">
+          <div style="width:34px;height:34px;border-radius:10px;background:#fff;display:flex;align-items:center;justify-content:center;margin-bottom:12px;">
+            <div style="position:relative;width:16px;height:18px;">
+              <div style="position:absolute;left:2px;top:0;width:3px;height:18px;background:#0A3D62;border-radius:1px;"></div>
+              <div style="position:absolute;left:2px;top:1px;width:9px;height:7.5px;background:#0A3D62;border-radius:0 4px 4px 0;"></div>
+              <div style="position:absolute;left:4.5px;top:2.5px;width:5px;height:4.5px;background:#fff;border-radius:0 3px 3px 0;"></div>
+            </div>
+          </div>
+          <div style="width:60px;display:flex;flex-direction:column;align-items:center;gap:5px;padding:9px 0;border-radius:12px;color:rgba(255,255,255,.62);">
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"></path><path d="M5.5 9.5V21h13V9.5"></path></svg>
+            <div style="font-size:9.5px;font-weight:700;">Inicio</div>
+          </div>
+          <div style="width:60px;display:flex;flex-direction:column;align-items:center;gap:5px;padding:9px 0;border-radius:12px;color:rgba(255,255,255,.62);position:relative;">
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="6" height="16" rx="1.5"></rect><rect x="11" y="4" width="6" height="11" rx="1.5"></rect><rect x="19" y="4" width="2" height="7" rx="1"></rect></svg>
+            <div style="font-size:9.5px;font-weight:700;">Captación</div>
+            <div style="position:absolute;top:6px;right:7px;min-width:16px;height:16px;padding:0 4px;border-radius:8px;background:#2FC98A;color:#06331F;font-size:9.5px;font-weight:800;display:flex;align-items:center;justify-content:center;box-sizing:border-box;">8</div>
+          </div>
+          <div style="width:60px;display:flex;flex-direction:column;align-items:center;gap:5px;padding:9px 0;border-radius:12px;background:#fff;color:#0A3D62;">
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="14" rx="2"></rect><path d="M8 7V4.5h8V7"></path><path d="M3 13h18"></path></svg>
+            <div style="font-size:9.5px;font-weight:800;">Inventario</div>
+          </div>
+          <div style="width:60px;display:flex;flex-direction:column;align-items:center;gap:5px;padding:9px 0;border-radius:12px;color:rgba(255,255,255,.62);">
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5"></path><path d="m5 12 7-7 7 7"></path></svg>
+            <div style="font-size:9.5px;font-weight:700;">Publicación</div>
+          </div>
+          <div style="width:44px;height:1px;background:rgba(255,255,255,.14);margin:8px 0;"></div>
+          <div style="width:60px;display:flex;flex-direction:column;align-items:center;gap:5px;padding:9px 0;border-radius:12px;color:rgba(255,255,255,.34);">
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.4"></circle><path d="M3 20c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5"></path><path d="M17 11.5a3 3 0 1 0 0-6"></path><path d="M18.5 20c0-2.4-.9-4.2-2.4-5.2"></path></svg>
+            <div style="font-size:9.5px;font-weight:700;">Clientes</div>
+          </div>
+          <div style="flex:1;"></div>
+          <div style="width:36px;height:36px;border-radius:50%;background:#2FC98A;color:#06331F;font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center;">CR</div>
+        </div>
+        <div style="flex:1;display:flex;flex-direction:column;min-width:0;">
+          <div style="height:60px;flex-shrink:0;background:#fff;border-bottom:1px solid #E4E8EC;display:flex;align-items:center;gap:12px;padding:0 20px;">
+            <div style="font-size:15px;font-weight:800;white-space:nowrap;">Inventario</div>
+            <div style="flex:1;display:flex;align-items:center;gap:8px;background:#F6F7F9;border:1px solid #E4E8EC;border-radius:10px;padding:8px 12px;min-width:0;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#9AA6B2" stroke-width="2.1" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>
+              <div style="flex:1;font-size:12.5px;color:#9AA6B2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Buscar</div>
+            </div>
+            <div style="width:36px;height:36px;border-radius:10px;border:1px solid #E4E8EC;display:flex;align-items:center;justify-content:center;position:relative;flex-shrink:0;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#45525E" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 6-3 7-3 7h18s-3-1-3-7"></path><path d="M10.5 20a2 2 0 0 0 3 0"></path></svg>
+              <div style="position:absolute;top:7px;right:8px;width:7px;height:7px;border-radius:50%;background:#C23B2B;border:1.5px solid #fff;"></div>
+            </div>
+            <div style="background:#0A3D62;color:#fff;font-size:12.5px;font-weight:700;padding:10px 14px;border-radius:9px;white-space:nowrap;display:flex;align-items:center;gap:6px;flex-shrink:0;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg>
+              Nueva
+            </div>
+          </div>
+          <div style="flex:1;padding:24px;overflow:hidden;">
+            <div style="font-size:22px;font-weight:800;">Inventario</div>
+            <div style="font-size:12.5px;color:#5B6B79;margin-top:4px;">15 inmuebles</div>
+            <div style="background:#fff;border:1px solid #E4E8EC;border-radius:16px;margin-top:18px;overflow:hidden;">
+              <div style="display:grid;grid-template-columns:2fr 1fr 100px;gap:12px;padding:12px 16px;background:#FAFBFC;border-bottom:1px solid #E4E8EC;font-size:10.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#9AA6B2;">
+                <div>Inmueble</div><div>Precio</div><div>Estado</div>
+              </div>
+              <div style="display:grid;grid-template-columns:2fr 1fr 100px;gap:12px;padding:14px 16px;border-bottom:1px solid #EEF0F3;align-items:center;font-size:12.5px;">
+                <div style="font-weight:700;">Apto 302 · Torre Aura</div><div style="font-weight:600;">$ 780.000.000</div><div><span style="background:#E6F5EE;color:#1E8E5A;font-size:10.5px;font-weight:700;padding:4px 9px;border-radius:20px;">Publicado</span></div>
+              </div>
+              <div style="display:grid;grid-template-columns:2fr 1fr 100px;gap:12px;padding:14px 16px;align-items:center;font-size:12.5px;">
+                <div style="font-weight:700;">Local 5 · Ed. Nutibara</div><div style="font-weight:600;">$ 410.000.000</div><div><span style="background:#FCEEE0;color:#8A4E12;font-size:10.5px;font-weight:700;padding:4px 9px;border-radius:20px;">Borrador</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:32px;">
+      <div style="display:flex;flex-direction:column;gap:14px;">
+        <div style="display:flex;align-items:baseline;gap:10px;">
+          <div style="font-size:13px;font-weight:800;color:#0A3D62;">05</div>
+          <div style="font-size:17px;font-weight:800;">Mobile web</div>
+        </div>
+        <div id="f-mobile" style="width:390px;height:620px;background:#F6F7F9;border:1px solid #D7DCE1;border-radius:14px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 12px 40px rgba(16,33,49,.09);">
+          <div style="height:60px;flex-shrink:0;background:#fff;border-bottom:1px solid #E4E8EC;display:flex;align-items:center;gap:6px;padding:0 8px 0 4px;">
+            <div style="width:44px;height:44px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#16212B" stroke-width="2" stroke-linecap="round"><path d="M4 7h16"></path><path d="M4 12h16"></path><path d="M4 17h16"></path></svg>
+            </div>
+            <div style="font-size:15px;font-weight:800;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Inventario</div>
+            <div style="width:44px;height:44px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+              <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#45525E" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>
+            </div>
+            <div style="width:44px;height:44px;display:flex;align-items:center;justify-content:center;position:relative;flex-shrink:0;">
+              <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#45525E" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 6-3 7-3 7h18s-3-1-3-7"></path><path d="M10.5 20a2 2 0 0 0 3 0"></path></svg>
+              <div style="position:absolute;top:10px;right:11px;width:7px;height:7px;border-radius:50%;background:#C23B2B;border:1.5px solid #fff;"></div>
+            </div>
+            <div style="width:44px;height:44px;border-radius:50%;background:#0A3D62;color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg>
+            </div>
+          </div>
+          <div style="flex:1;padding:16px;overflow:hidden;">
+            <div style="font-size:20px;font-weight:800;">Inventario</div>
+            <div style="font-size:12.5px;color:#5B6B79;margin-top:3px;">15 inmuebles</div>
+            <div style="display:flex;gap:7px;margin-top:14px;">
+              <div style="background:#0A3D62;color:#fff;font-size:11.5px;font-weight:700;padding:8px 13px;border-radius:20px;">Todos</div>
+              <div style="border:1px solid #E4E8EC;background:#fff;color:#45525E;font-size:11.5px;font-weight:600;padding:8px 13px;border-radius:20px;">Publicados</div>
+              <div style="border:1px solid #E4E8EC;background:#fff;color:#45525E;font-size:11.5px;font-weight:600;padding:8px 13px;border-radius:20px;">Borradores</div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:10px;margin-top:14px;">
+              <div style="background:#fff;border:1px solid #E4E8EC;border-radius:14px;padding:14px;">
+                <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;">
+                  <div style="font-size:13.5px;font-weight:700;">Apto 302 · Torre Aura</div>
+                  <span style="background:#E6F5EE;color:#1E8E5A;font-size:10.5px;font-weight:700;padding:3px 8px;border-radius:20px;white-space:nowrap;">Publicado</span>
+                </div>
+                <div style="font-size:12px;color:#5B6B79;margin-top:5px;">El Poblado · 3 de 4 portales</div>
+                <div style="font-size:14px;font-weight:800;margin-top:8px;">$ 780.000.000</div>
+              </div>
+              <div style="background:#fff;border:1px solid #E4E8EC;border-radius:14px;padding:14px;">
+                <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;">
+                  <div style="font-size:13.5px;font-weight:700;">Local 5 · Ed. Nutibara</div>
+                  <span style="background:#FCEEE0;color:#8A4E12;font-size:10.5px;font-weight:700;padding:3px 8px;border-radius:20px;white-space:nowrap;">Borrador</span>
+                </div>
+                <div style="font-size:12px;color:#5B6B79;margin-top:5px;">Laureles · sin publicar</div>
+                <div style="font-size:14px;font-weight:800;margin-top:8px;">$ 410.000.000</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:14px;">
+        <div style="display:flex;align-items:baseline;gap:10px;">
+          <div style="font-size:13px;font-weight:800;color:#0A3D62;">06</div>
+          <div style="font-size:17px;font-weight:800;">Drawer abierto</div>
+        </div>
+        <div id="f-drawer" style="width:390px;height:620px;background:#F6F7F9;border:1px solid #D7DCE1;border-radius:14px;overflow:hidden;position:relative;box-shadow:0 12px 40px rgba(16,33,49,.09);">
+          <div style="position:absolute;inset:0;background:#F6F7F9;"></div>
+          <div style="position:absolute;left:0;right:0;top:0;height:60px;background:#fff;border-bottom:1px solid #E4E8EC;"></div>
+          <div style="position:absolute;inset:0;background:rgba(16,33,49,.45);"></div>
+          <div style="position:absolute;left:0;top:0;bottom:0;width:288px;background:#0A3D62;display:flex;flex-direction:column;box-shadow:0 0 40px rgba(16,33,49,.3);">
+            <div style="display:flex;align-items:center;gap:11px;padding:0 18px;height:60px;flex-shrink:0;">
+              <div style="width:34px;height:34px;border-radius:10px;background:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                <div style="position:relative;width:16px;height:18px;">
+                  <div style="position:absolute;left:2px;top:0;width:3px;height:18px;background:#0A3D62;border-radius:1px;"></div>
+                  <div style="position:absolute;left:2px;top:1px;width:9px;height:7.5px;background:#0A3D62;border-radius:0 4px 4px 0;"></div>
+                  <div style="position:absolute;left:4.5px;top:2.5px;width:5px;height:4.5px;background:#fff;border-radius:0 3px 3px 0;"></div>
+                </div>
+              </div>
+              <div style="flex:1;">
+                <div style="font-size:14.5px;font-weight:800;color:#fff;line-height:1.1;">ProAgent</div>
+                <div style="font-size:9.5px;font-weight:600;color:rgba(255,255,255,.5);letter-spacing:.06em;text-transform:uppercase;margin-top:2px;">by Proinversores</div>
+              </div>
+              <div style="width:44px;height:44px;display:flex;align-items:center;justify-content:center;">
+                <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.7)" stroke-width="2.2" stroke-linecap="round"><path d="m6 6 12 12"></path><path d="m18 6-12 12"></path></svg>
+              </div>
+            </div>
+            <div style="flex:1;padding:4px 12px;display:flex;flex-direction:column;gap:3px;">
+              <div style="font-size:10px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:rgba(255,255,255,.42);padding:14px 12px 8px;">Operación</div>
+              <div style="display:flex;align-items:center;gap:12px;padding:13px 12px;border-radius:10px;color:rgba(255,255,255,.72);">
+                <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"></path><path d="M5.5 9.5V21h13V9.5"></path></svg>
+                <div style="font-size:14px;font-weight:600;">Inicio</div>
+              </div>
+              <div style="display:flex;align-items:center;gap:12px;padding:13px 12px;border-radius:10px;color:rgba(255,255,255,.72);">
+                <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="6" height="16" rx="1.5"></rect><rect x="11" y="4" width="6" height="11" rx="1.5"></rect><rect x="19" y="4" width="2" height="7" rx="1"></rect></svg>
+                <div style="font-size:14px;font-weight:600;flex:1;">Captación</div>
+                <div style="background:#2FC98A;color:#06331F;font-size:10.5px;font-weight:800;padding:2px 7px;border-radius:20px;">8</div>
+              </div>
+              <div style="display:flex;align-items:center;gap:12px;padding:13px 12px;border-radius:10px;background:rgba(255,255,255,.12);color:#fff;position:relative;">
+                <div style="position:absolute;left:-12px;top:50%;transform:translateY(-50%);width:3px;height:22px;border-radius:0 3px 3px 0;background:#2FC98A;"></div>
+                <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="14" rx="2"></rect><path d="M8 7V4.5h8V7"></path><path d="M3 13h18"></path></svg>
+                <div style="font-size:14px;font-weight:700;flex:1;">Inventario</div>
+                <div style="font-size:12px;font-weight:700;color:rgba(255,255,255,.55);">15</div>
+              </div>
+              <div style="display:flex;align-items:center;gap:12px;padding:13px 12px;border-radius:10px;color:rgba(255,255,255,.72);">
+                <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5"></path><path d="m5 12 7-7 7 7"></path></svg>
+                <div style="font-size:14px;font-weight:600;">Publicación</div>
+              </div>
+              <div style="font-size:10px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:rgba(255,255,255,.42);padding:20px 12px 8px;">Cartera</div>
+              <div style="display:flex;align-items:center;gap:12px;padding:13px 12px;border-radius:10px;color:rgba(255,255,255,.34);">
+                <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.4"></circle><path d="M3 20c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5"></path><path d="M17 11.5a3 3 0 1 0 0-6"></path><path d="M18.5 20c0-2.4-.9-4.2-2.4-5.2"></path></svg>
+                <div style="font-size:14px;font-weight:600;flex:1;">Clientes</div>
+                <div style="border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.42);font-size:9.5px;font-weight:700;padding:2px 6px;border-radius:20px;">Pronto</div>
+              </div>
+            </div>
+            <div style="padding:12px;border-top:1px solid rgba(255,255,255,.12);">
+              <div style="background:rgba(255,255,255,.07);border-radius:12px;padding:12px;display:flex;align-items:center;gap:10px;">
+                <div style="width:36px;height:36px;border-radius:50%;background:#2FC98A;color:#06331F;font-size:12.5px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;">CR</div>
+                <div style="min-width:0;flex:1;">
+                  <div style="font-size:13px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Carolina Restrepo</div>
+                  <div style="font-size:11px;color:rgba(255,255,255,.55);font-weight:600;">Staff Proinversores</div>
+                </div>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.5)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"></path></svg>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- 07 STATES -->
+  <div style="display:flex;flex-direction:column;gap:14px;">
+    <div style="display:flex;align-items:baseline;gap:12px;">
+      <div style="font-size:13px;font-weight:800;color:#0A3D62;">07</div>
+      <div style="font-size:17px;font-weight:800;">Estados y componentes</div>
+      <div style="font-size:12.5px;color:#5B6B79;">referencia de implementación</div>
+    </div>
+    <div id="f-states" style="width:1180px;background:#fff;border:1px solid #D7DCE1;border-radius:14px;padding:32px;box-sizing:border-box;display:grid;grid-template-columns:1fr 1fr;gap:36px;box-shadow:0 12px 40px rgba(16,33,49,.09);">
+      <div>
+        <div style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:#9AA6B2;margin-bottom:14px;">Ítem nav expandido</div>
+        <div style="background:#0A3D62;border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:6px;">
+          <div style="display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:10px;color:rgba(255,255,255,.72);">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="14" rx="2"></rect><path d="M8 7V4.5h8V7"></path><path d="M3 13h18"></path></svg>
+            <div style="font-size:13px;font-weight:600;flex:1;">Default</div>
+            <div style="font-size:10px;font-weight:600;color:rgba(255,255,255,.4);font-family:monospace;">.72 alpha</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:10px;background:rgba(255,255,255,.07);color:#fff;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="14" rx="2"></rect><path d="M8 7V4.5h8V7"></path><path d="M3 13h18"></path></svg>
+            <div style="font-size:13px;font-weight:600;flex:1;">Hover</div>
+            <div style="font-size:10px;font-weight:600;color:rgba(255,255,255,.4);font-family:monospace;">bg .07</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:10px;background:rgba(255,255,255,.12);color:#fff;position:relative;margin-left:3px;">
+            <div style="position:absolute;left:-3px;top:50%;transform:translateY(-50%);width:3px;height:20px;border-radius:0 3px 3px 0;background:#2FC98A;"></div>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="14" rx="2"></rect><path d="M8 7V4.5h8V7"></path><path d="M3 13h18"></path></svg>
+            <div style="font-size:13px;font-weight:700;flex:1;">Active</div>
+            <div style="font-size:10px;font-weight:600;color:rgba(255,255,255,.4);font-family:monospace;">bg .12 + barra</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:10px;background:rgba(255,255,255,.07);color:#fff;outline:2px solid #7FE3B8;outline-offset:2px;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="14" rx="2"></rect><path d="M8 7V4.5h8V7"></path><path d="M3 13h18"></path></svg>
+            <div style="font-size:13px;font-weight:600;flex:1;">Focus visible</div>
+            <div style="font-size:10px;font-weight:600;color:rgba(255,255,255,.4);font-family:monospace;">ring #7FE3B8</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:10px;color:rgba(255,255,255,.34);">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.4"></circle><path d="M3 20c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5"></path><path d="M17 11.5a3 3 0 1 0 0-6"></path><path d="M18.5 20c0-2.4-.9-4.2-2.4-5.2"></path></svg>
+            <div style="font-size:13px;font-weight:600;flex:1;">Disabled</div>
+            <div style="border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.42);font-size:9.5px;font-weight:700;padding:2px 6px;border-radius:20px;">Pronto</div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:#9AA6B2;margin-bottom:14px;">Ítem nav en riel</div>
+        <div style="background:#0A3D62;border-radius:12px;padding:16px;display:flex;gap:10px;align-items:flex-start;">
+          <div style="width:60px;display:flex;flex-direction:column;align-items:center;gap:5px;padding:9px 0;border-radius:12px;color:rgba(255,255,255,.62);">
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="14" rx="2"></rect><path d="M8 7V4.5h8V7"></path><path d="M3 13h18"></path></svg>
+            <div style="font-size:9.5px;font-weight:700;">Default</div>
+          </div>
+          <div style="width:60px;display:flex;flex-direction:column;align-items:center;gap:5px;padding:9px 0;border-radius:12px;background:rgba(255,255,255,.08);color:#fff;">
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="14" rx="2"></rect><path d="M8 7V4.5h8V7"></path><path d="M3 13h18"></path></svg>
+            <div style="font-size:9.5px;font-weight:700;">Hover</div>
+          </div>
+          <div style="width:60px;display:flex;flex-direction:column;align-items:center;gap:5px;padding:9px 0;border-radius:12px;background:#fff;color:#0A3D62;">
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="14" rx="2"></rect><path d="M8 7V4.5h8V7"></path><path d="M3 13h18"></path></svg>
+            <div style="font-size:9.5px;font-weight:800;">Active</div>
+          </div>
+          <div style="width:60px;display:flex;flex-direction:column;align-items:center;gap:5px;padding:9px 0;border-radius:12px;color:rgba(255,255,255,.62);position:relative;">
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="6" height="16" rx="1.5"></rect><rect x="11" y="4" width="6" height="11" rx="1.5"></rect><rect x="19" y="4" width="2" height="7" rx="1"></rect></svg>
+            <div style="font-size:9.5px;font-weight:700;">Badge</div>
+            <div style="position:absolute;top:6px;right:7px;min-width:16px;height:16px;padding:0 4px;border-radius:8px;background:#2FC98A;color:#06331F;font-size:9.5px;font-weight:800;display:flex;align-items:center;justify-content:center;box-sizing:border-box;">8</div>
+          </div>
+          <div style="width:60px;display:flex;flex-direction:column;align-items:center;gap:5px;padding:9px 0;border-radius:12px;color:rgba(255,255,255,.34);">
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.4"></circle><path d="M3 20c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5"></path><path d="M17 11.5a3 3 0 1 0 0-6"></path><path d="M18.5 20c0-2.4-.9-4.2-2.4-5.2"></path></svg>
+            <div style="font-size:9.5px;font-weight:700;">Disabled</div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:#9AA6B2;margin-bottom:14px;">CTA header</div>
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+          <div style="background:#0A3D62;color:#fff;font-size:12.5px;font-weight:700;padding:10px 16px;border-radius:9px;display:flex;align-items:center;gap:7px;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg>Nueva propiedad</div>
+          <div style="background:#0C4A78;color:#fff;font-size:12.5px;font-weight:700;padding:10px 16px;border-radius:9px;">Hover</div>
+          <div style="background:#082F4C;color:#fff;font-size:12.5px;font-weight:700;padding:10px 16px;border-radius:9px;">Pressed</div>
+          <div style="background:#0A3D62;color:#fff;font-size:12.5px;font-weight:700;padding:10px 16px;border-radius:9px;outline:2px solid #0A3D62;outline-offset:2px;">Focus</div>
+        </div>
+        <div style="font-size:12px;color:#5B6B79;margin-top:12px;line-height:1.5;">En <code style="background:#F6F7F9;border:1px solid #E4E8EC;border-radius:4px;padding:1px 4px;">/captacion</code> el label cambia a “+ Nuevo lead”. En mobile se reduce a botón circular de 44px.</div>
+      </div>
+      <div>
+        <div style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:#9AA6B2;margin-bottom:14px;">Búsqueda (solo UI)</div>
+        <div style="display:flex;align-items:center;gap:9px;max-width:440px;background:#F6F7F9;border:1px solid #E4E8EC;border-radius:10px;padding:8px 12px;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#9AA6B2" stroke-width="2.1" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>
+          <div style="flex:1;font-size:12.5px;color:#9AA6B2;">Buscar propiedad, cliente o código</div>
+          <div style="font-size:10.5px;font-weight:700;color:#9AA6B2;background:#fff;border:1px solid #E4E8EC;border-radius:5px;padding:1.5px 5px;">⌘K</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:9px;max-width:440px;background:#fff;border:1px solid #0A3D62;border-radius:10px;padding:8px 12px;margin-top:8px;outline:2px solid #0A3D62;outline-offset:2px;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#0A3D62" stroke-width="2.1" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>
+          <div style="flex:1;font-size:12.5px;color:#16212B;">Focus</div>
+        </div>
+        <div style="font-size:12px;color:#5B6B79;margin-top:12px;line-height:1.5;">Abre un modal con estado vacío: “La búsqueda global llega en la próxima versión”. No se comporta como input roto.</div>
+      </div>
+      <div>
+        <div style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:#9AA6B2;margin-bottom:14px;">Tokens de superficie navy</div>
+        <div style="display:flex;flex-direction:column;gap:7px;font-size:12px;">
+          <div style="display:flex;align-items:center;gap:10px;"><div style="width:36px;height:24px;border-radius:6px;background:#0A3D62;"></div><code style="font-family:monospace;font-size:11.5px;">--pa-navy</code><span style="color:#9AA6B2;">#0A3D62</span></div>
+          <div style="display:flex;align-items:center;gap:10px;"><div style="width:36px;height:24px;border-radius:6px;background:#EAF0F5;border:1px solid #E4E8EC;"></div><code style="font-family:monospace;font-size:11.5px;">--pa-navy-050</code><span style="color:#9AA6B2;">#EAF0F5 · nuevo</span></div>
+          <div style="display:flex;align-items:center;gap:10px;"><div style="width:36px;height:24px;border-radius:6px;background:#2FC98A;"></div><code style="font-family:monospace;font-size:11.5px;">--pa-emerald</code><span style="color:#9AA6B2;">#2FC98A</span></div>
+          <div style="display:flex;align-items:center;gap:10px;"><div style="width:36px;height:24px;border-radius:6px;background:#06331F;"></div><code style="font-family:monospace;font-size:11.5px;">--pa-emerald-ink</code><span style="color:#9AA6B2;">#06331F · nuevo</span></div>
+          <div style="display:flex;align-items:center;gap:10px;"><div style="width:36px;height:24px;border-radius:6px;background:#C23B2B;"></div><code style="font-family:monospace;font-size:11.5px;">--pa-danger</code><span style="color:#9AA6B2;">#C23B2B · nuevo</span></div>
+          <div style="display:flex;align-items:center;gap:10px;"><div style="width:36px;height:24px;border-radius:6px;background:#7FE3B8;"></div><code style="font-family:monospace;font-size:11.5px;">--pa-focus-ring</code><span style="color:#9AA6B2;">#7FE3B8 · nuevo</span></div>
+        </div>
+      </div>
+      <div>
+        <div style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:#9AA6B2;margin-bottom:14px;">Bottom nav Expo (paridad)</div>
+        <div style="width:390px;height:80px;background:#fff;border:1px solid #E4E8EC;border-radius:12px;display:flex;align-items:flex-start;padding:8px 6px 14px;box-sizing:border-box;">
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;padding:7px 0;margin:0 2px;border-radius:12px;background:#EAF0F5;color:#0A3D62;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"></path><path d="M5.5 9.5V21h13V9.5"></path></svg>
+            <div style="font-size:10.5px;font-weight:800;">Inicio</div>
+          </div>
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;padding:7px 0;margin:0 2px;color:#9AA6B2;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="14" rx="2"></rect><path d="M8 7V4.5h8V7"></path><path d="M3 13h18"></path></svg>
+            <div style="font-size:10.5px;font-weight:600;">Inventario</div>
+          </div>
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;position:relative;top:-14px;">
+            <div style="width:52px;height:52px;border-radius:50%;background:#0A3D62;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 16px rgba(10,61,98,.35);">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg>
+            </div>
+            <div style="font-size:10.5px;font-weight:600;color:#9AA6B2;">Publicación</div>
+          </div>
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;padding:7px 0;margin:0 2px;color:#C9D0D7;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.4"></circle><path d="M3 20c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5"></path><path d="M17 11.5a3 3 0 1 0 0-6"></path><path d="M18.5 20c0-2.4-.9-4.2-2.4-5.2"></path></svg>
+            <div style="font-size:10.5px;font-weight:600;">Clientes</div>
+          </div>
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;padding:7px 0;margin:0 2px;color:#9AA6B2;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16"></path><path d="M4 12h16"></path><path d="M4 17h16"></path></svg>
+            <div style="font-size:10.5px;font-weight:600;">Más</div>
+          </div>
+        </div>
+        <div style="font-size:12px;color:#5B6B79;margin-top:12px;line-height:1.5;">Sin Captación (solo web staff). “Propiedades” pasa a “Inventario”. “Más” se conserva en mobile.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</x-dc>
+</body>
+</html>

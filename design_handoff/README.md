@@ -18,3 +18,17 @@
 
 ### Regla Owner
 - **ProAgent Mobile no incluye Captación/Kanban**, ni para staff Proinversores. Captación = Web staff (+ HTML hasta cutover).
+
+---
+
+## App Shell v2 (Claude Design, 2026-09-01)
+
+- Artifact: [`shell-v2.dc.html`](./shell-v2.dc.html) (+ [`support.js`](./support.js) stub para export Claude Design)
+- Spec técnica: [`shell-v2-README.md`](./shell-v2-README.md)
+- Screenshots: [`screenshots/`](./screenshots/) (`01`–`07`)
+- Sprint: **052** — mejoras nav/sidebar/header; ver `BRAND.md` § Superficie navy
+
+### Pantallas en el artifact (01–07)
+- Desktop sidebar expandida / riel colapsado
+- UserMenu, tablet, mobile web, drawer
+- Estados de componentes + bottom nav Expo (paridad)
