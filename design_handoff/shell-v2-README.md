@@ -3,7 +3,7 @@
 **Producto:** ProAgent (Web · Next.js 15 App Router) + ProAgent Mobile (Expo)
 **Alcance:** mejoras visuales y de UX sobre el `AppShell` existente. No es un rediseño de la app ni de Captación.
 **Versión:** shell-v2 · 2026-09-01
-**Artifact:** `design_handoff_shell_v2/shell-v2.dc.html`
+**Artifact:** `design_handoff/shell-v2.dc.html` (+ `support.js`)
 
 ---
 
