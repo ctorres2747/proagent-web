@@ -167,8 +167,4 @@ export interface PropertiesService {
     token?: string,
   ): Promise<Property>;
   deletePhoto(id: string, photoId: string, token?: string): Promise<Property>;
-  getSuggestedContent(
-    id: string,
-    token?: string,
-  ): Promise<{ title: string; body: string }>;
 }
