@@ -1,6 +1,7 @@
 import type {
   FichasService,
   Lead,
+  LeadCreate,
   LeadEstado,
   LeadsService,
 } from "@/services/interfaces/leads";
@@ -146,6 +147,35 @@ export const leadsService: LeadsService = {
     });
     mockLeads[idx] = updated;
     return updated;
+  },
+
+  async create(data: LeadCreate) {
+    await delay(300);
+    const id = Math.max(0, ...mockLeads.map((l) => l.id)) + 1;
+    const lead: Lead = {
+      id,
+      portal: "Manual",
+      municipio: data.municipio ?? null,
+      barrio: data.barrio ?? null,
+      tipoInmueble: data.tipoInmueble ?? null,
+      precio: data.precio ?? null,
+      precioNum: null,
+      areaM2: data.areaM2 ?? null,
+      habitaciones: data.habitaciones ?? null,
+      banos: data.banos ?? null,
+      telefono: data.telefono ?? null,
+      nombrePublicador: data.nombrePublicador ?? null,
+      linkPublicacion: data.linkPublicacion?.trim() || `manual-mock-${id}`,
+      imagenUrl: null,
+      fechaCaptura: new Date().toISOString(),
+      estado: data.estado ?? "Pendiente",
+      notas: data.notas ?? null,
+      fechaRecontacto: null,
+      fechaActualizacion: new Date().toISOString(),
+      ownerAgenteId: 1,
+    };
+    mockLeads.unshift(lead);
+    return lead;
   },
 };
 

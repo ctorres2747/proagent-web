@@ -1,6 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
+import { useCallback, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 
 import { useAgentView } from "@/features/agentView/AgentViewProvider";
@@ -19,6 +20,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const { viewAgenteId, setViewAgenteId, viewAgenteLabel } = useAgentView();
   const { collapsed, toggleCollapsed, drawerOpen, setDrawerOpen, hydrated } =
     useShellState();
+  const mainRef = useRef<HTMLElement>(null);
+  const [mainScrolled, setMainScrolled] = useState(false);
 
   const staff = canAccessCaptacion(session);
   const admin = session?.role === "admin";
@@ -31,6 +34,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     refetchInterval: 60_000,
     staleTime: 30_000,
   });
+
+  const onMainScroll = useCallback(() => {
+    const el = mainRef.current;
+    setMainScrolled(Boolean(el && el.scrollTop > 0));
+  }, []);
 
   return (
     <div className="flex min-h-screen bg-[var(--pa-bg)] text-[var(--pa-ink)]">
@@ -68,9 +76,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           onOpenDrawer={() => setDrawerOpen(true)}
           viewAgenteLabel={admin && viewAgenteId ? viewAgenteLabel : null}
           onExitViewAs={() => setViewAgenteId(null)}
+          mainScrolled={mainScrolled}
+          staff={staff}
         />
 
-        <main id="main" className="flex-1 overflow-y-auto">
+        <main
+          id="main"
+          ref={mainRef}
+          onScroll={onMainScroll}
+          className="flex-1 overflow-y-auto"
+        >
           <div className="mx-auto w-full max-w-[var(--pa-shell-content-max)] px-4 py-7 pb-[60px] md:px-6 xl:px-8">
             {children}
           </div>

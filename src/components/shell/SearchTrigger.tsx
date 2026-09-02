@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Search } from "lucide-react";
 
-export function SearchTrigger() {
+export function SearchTrigger({ staff = false }: { staff?: boolean }) {
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
@@ -66,13 +66,15 @@ export function SearchTrigger() {
               >
                 Ir a Inventario
               </Link>
-              <Link
-                href="/captacion"
-                className="rounded-[10px] bg-[var(--pa-navy-050)] px-3 py-2 text-[12.5px] font-bold text-[var(--pa-navy)]"
-                onClick={() => setOpen(false)}
-              >
-                Ir a Captación
-              </Link>
+              {staff ? (
+                <Link
+                  href="/captacion"
+                  className="rounded-[10px] bg-[var(--pa-navy-050)] px-3 py-2 text-[12.5px] font-bold text-[var(--pa-navy)]"
+                  onClick={() => setOpen(false)}
+                >
+                  Ir a Captación
+                </Link>
+              ) : null}
             </div>
             <button
               type="button"

@@ -37,10 +37,26 @@ export interface LeadUpdate {
   barrio?: string | null;
 }
 
+export interface LeadCreate {
+  municipio?: string | null;
+  barrio?: string | null;
+  tipoInmueble?: string | null;
+  precio?: string | null;
+  areaM2?: string | null;
+  habitaciones?: string | null;
+  banos?: string | null;
+  telefono?: string | null;
+  nombrePublicador?: string | null;
+  linkPublicacion?: string | null;
+  notas?: string | null;
+  estado?: LeadEstado;
+}
+
 export interface LeadsService {
   list(token?: string): Promise<Lead[]>;
   get(id: number, token?: string): Promise<Lead>;
   update(id: number, data: LeadUpdate, token?: string): Promise<Lead>;
+  create(data: LeadCreate, token?: string): Promise<Lead>;
 }
 
 export interface FichasService {

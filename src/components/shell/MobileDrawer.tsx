@@ -9,6 +9,9 @@ import { SidebarNavItem } from "./SidebarNavItem";
 import { ShellUserMenu } from "./ShellUserMenu";
 import { ViewingAsSelect } from "./ViewingAsSelect";
 
+const FOCUSABLE =
+  'a[href], button:not([disabled]), textarea, input, select, [tabindex]:not([tabindex="-1"])';
+
 export function MobileDrawer({
   open,
   onClose,
@@ -27,21 +30,46 @@ export function MobileDrawer({
   inventoryBadge?: number;
 }) {
   const panelRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLElement | null>(null);
   const activeId = resolveActiveNavId(pathname);
   const items = filterNavItems({ staff, admin });
 
   useEffect(() => {
     if (!open) return;
+    triggerRef.current = document.activeElement as HTMLElement | null;
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
+
+    const panel = panelRef.current;
+    const focusables = panel
+      ? Array.from(panel.querySelectorAll<HTMLElement>(FOCUSABLE)).filter(
+          (el) => !el.hasAttribute("disabled") && el.tabIndex !== -1,
+        )
+      : [];
+    const first = focusables[0];
+    const last = focusables[focusables.length - 1];
+    first?.focus();
+
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") {
+        onClose();
+        return;
+      }
+      if (e.key !== "Tab" || focusables.length === 0) return;
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last?.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first?.focus();
+      }
     };
+
     document.addEventListener("keydown", onKey);
-    panelRef.current?.querySelector<HTMLElement>("a,button")?.focus();
     return () => {
       document.body.style.overflow = prev;
       document.removeEventListener("keydown", onKey);
+      triggerRef.current?.focus();
     };
   }, [open, onClose]);
 

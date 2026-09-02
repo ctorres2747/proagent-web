@@ -3,6 +3,7 @@
 import Link from "next/link";
 import type { NavItemConfig } from "./nav-config";
 import { NavIcon } from "./NavIcon";
+import { useDelayedTooltip } from "./useDelayedTooltip";
 
 export function SidebarNavItem({
   item,
@@ -19,6 +20,7 @@ export function SidebarNavItem({
   inventoryBadge?: number;
   onNavigate?: () => void;
 }) {
+  const tooltip = useDelayedTooltip(400);
   const badgeCount =
     item.badge === "captacion"
       ? captacionBadge
@@ -139,17 +141,40 @@ export function SidebarNavItem({
         target="_blank"
         rel="noopener noreferrer"
         className={className}
-        title={item.label}
         onClick={onNavigate}
+        onPointerEnter={collapsed ? tooltip.onPointerEnter : undefined}
+        onPointerLeave={collapsed ? tooltip.onPointerLeave : undefined}
       >
         {content}
+        {collapsed && tooltip.visible ? (
+          <span
+            role="tooltip"
+            className="pointer-events-none absolute left-full top-1/2 z-50 ml-2 -translate-y-1/2 whitespace-nowrap rounded-md bg-[var(--pa-ink)] px-2 py-1 text-[11px] font-semibold text-white shadow-md"
+          >
+            {item.label}
+          </span>
+        ) : null}
       </a>
     );
   }
 
   return (
-    <Link href={item.href} className={className} title={item.label} onClick={onNavigate}>
+    <Link
+      href={item.href}
+      className={className}
+      onClick={onNavigate}
+      onPointerEnter={collapsed ? tooltip.onPointerEnter : undefined}
+      onPointerLeave={collapsed ? tooltip.onPointerLeave : undefined}
+    >
       {content}
+      {collapsed && tooltip.visible ? (
+        <span
+          role="tooltip"
+          className="pointer-events-none absolute left-full top-1/2 z-50 ml-2 -translate-y-1/2 whitespace-nowrap rounded-md bg-[var(--pa-ink)] px-2 py-1 text-[11px] font-semibold text-white shadow-md"
+        >
+          {item.label}
+        </span>
+      ) : null}
     </Link>
   );
 }
