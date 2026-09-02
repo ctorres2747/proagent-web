@@ -4,24 +4,43 @@
 :root {
   --pa-navy: #0a3d62;
   --pa-navy-hover: #0c4a78;
+  --pa-navy-pressed: #082f4c;
+  --pa-navy-050: #eaf0f5;
   --pa-accent: #1e8e5a;
-  --pa-warning: #d97b2b;
+  --pa-emerald-bright: #2fc98a;
+  --pa-emerald-ink: #06331f;
+  --pa-warning: #d9a227;
   --pa-warning-ink: #b5651d;
   --pa-danger: #c23b2b;
   --pa-ink: #16212b;
+  --pa-text: #16212b;
+  --pa-text-secondary: #45525e;
+  --pa-text-muted: #9aa6b2;
   --pa-muted: #5b6b79;
   --pa-faint: #9aa6b2;
   --pa-surface: #ffffff;
   --pa-bg: #f6f7f9;
   --pa-bg-alt: #eef0f3;
+  --pa-bg-subtle: #eef0f3;
   --pa-border: #e4e8ec;
   --pa-success-bg: #e6f5ec;
   --pa-warning-bg: #fceee0;
   --pa-danger-bg: #fbe7e4;
   --pa-info-bg: #e7eef4;
-  /* Fondo general de la app: degradado radial azulado muy sutil derivado del
-     navy de marca (#0A3D62, hue 240). Solo body + contenedor raíz; el resto de
-     superficies (tarjetas, inputs, chips) siguen usando --pa-bg sólido. */
+  --pa-on-navy-primary: #ffffff;
+  --pa-on-navy-secondary: rgba(255, 255, 255, 0.72);
+  --pa-on-navy-muted: rgba(255, 255, 255, 0.42);
+  --pa-on-navy-disabled: rgba(255, 255, 255, 0.34);
+  --pa-focus-ring: #7fe3b8;
+  --pa-shell-sidebar-w: 248px;
+  --pa-shell-rail-w: 76px;
+  --pa-shell-drawer-w: 288px;
+  --pa-shell-header-h: 60px;
+  --pa-shell-content-max: 1440px;
+  --pa-shadow-overlay: 0 1px 2px rgba(16, 33, 49, 0.06),
+    0 12px 32px rgba(16, 33, 49, 0.12);
+  --pa-shadow-header: 0 1px 0 rgba(16, 33, 49, 0.06);
+  /* Legacy Kanban / dashboard interno — no usar en ProAgent Web body */
   --pa-bg-app: radial-gradient(
     120% 100% at 0% 0%,
     oklch(97% 0.008 240) 0%,
@@ -35,9 +54,19 @@
 
 html,
 body {
-  background: var(--pa-bg-app);
+  background: var(--pa-bg);
   color: var(--pa-ink);
   font-family: var(--font-plus-jakarta), system-ui, sans-serif;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
 * {
