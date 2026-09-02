@@ -365,6 +365,18 @@ export default function PublishWizardPage() {
     queryKey: ["property", params.id],
     queryFn: () => propertiesService.get(params.id, token ?? undefined),
     enabled: Boolean(params.id),
+    // Bug real (2026-09-02): otro asesor (ej. Andreina) edita título/descripción
+    // de una ficha, pero quien la tenía abierta (o vuelve a ella luego) seguía
+    // viendo la versión vieja indefinidamente. El default global de la app
+    // (Providers.tsx: staleTime 30s + refetchOnWindowFocus:false, para no
+    // golpear la API de más en el resto del dashboard) hace que una pestaña ya
+    // montada nunca vuelva a pedir datos sola — nada dispara un refetch aunque
+    // pase el staleTime, salvo un mount real o foco de ventana. Varias personas
+    // editan la MISMA ficha en este dashboard, así que acá sí conviene refrescar
+    // al volver a la pestaña y al montar de verdad, sin esperar 30s de gracia.
+    refetchOnWindowFocus: true,
+    refetchOnMount: "always",
+    staleTime: 0,
   });
 
   // Seed form from property when loaded
