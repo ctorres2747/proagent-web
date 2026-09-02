@@ -43,6 +43,8 @@
 | 3 | Inventario | `/properties` | todos | `building-2` | conteo total, texto gris (no pill) |
 | 4 | Publicación | `/publications` | todos | `arrow-up-from-line` | — |
 
+**Ruta Publicación (web):** **`/publications`** — canónica en la app Next.js (`src/app/(app)/publications/`). El brief Claude Design original citaba `/publish` por error; **no renombrar rutas** en el repo.
+
 **Labels cortos en el riel.** Con la sidebar colapsada a 76px, el ítem usa un label corto para no truncar. Solo un ítem lo necesita:
 
 | Ítem | Label expandido / drawer | Label en riel (76px) |
@@ -253,9 +255,7 @@ Estados de ítem: hover `--pa-bg-subtle`; focus `outline: 2px solid --pa-navy; o
 | `/properties`, `/properties/[id]`, `/properties/new` | **Inventario** |
 | `/publications`, `/publications/*` | Publicación |
 
-**Corrección respecto al brief:** `/properties/[id]` marca **Inventario** activo, no Publicación — el detalle de una propiedad pertenece al inventario. El flujo de publicación se marca activo solo bajo `/publications/*`. Si el detalle abre el asistente de publicación como sub-ruta (`/properties/[id]/publish`), esa sub-ruta sí marca Publicación.
-
-**Nota rutas (Owner 2026-09-01):** la app usa `/publications` (no `/publish`); el handoff visual puede decir `/publish` — implementación = rutas reales del repo.
+**Corrección respecto al brief Claude Design:** el ítem **Publicación** en el nav web apunta a **`/publications`** (no `/publish`). `/properties/[id]` marca **Inventario** activo — el detalle de propiedad (incl. wizard embebido en esa pantalla) sigue siendo Inventario; solo rutas bajo `/publications/*` marcan Publicación activa.
 
 Matching: `pathname === href || pathname.startsWith(href + '/')`, evaluando primero la coincidencia más larga para que `/` no capture todo.
 
@@ -319,7 +319,7 @@ Orden y labels (5 ítems, **sin Captación**):
 |---|---|---|---|---|
 | 1 | Inicio | `/(tabs)/index` | `home` | — |
 | 2 | Inventario | `/(tabs)/properties` | `building-2` | **Cambia de "Propiedades" a "Inventario"** para igualar la web |
-| 3 | Publicación | `/(tabs)/publish` | `plus` | **Ítem central elevado — se conserva** |
+| 3 | Publicación | `/(tabs)/publish` (Expo) | `plus` | **Ítem central elevado — se conserva**. Web = `/publications`, no confundir con el tab Expo |
 | 4 | Clientes | `/(tabs)/clients` | `users` | disabled + chip "Pronto" |
 | 5 | Más | `/(tabs)/more` | `menu` | perfil, ajustes, ayuda, cerrar sesión |
 
