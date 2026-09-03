@@ -35,7 +35,7 @@ apruebe una dirección final.
 | Rol | Hex | Token |
 |---|---|---|
 | Éxito | `#1E8E5A` | `--pa-accent` |
-| Advertencia | `#D97B2B` | `--pa-warning` |
+| Advertencia | `#D9A227` | `--pa-warning` |
 | Error | `#C23B2B` | `--pa-danger` |
 
 ### Neutros / texto

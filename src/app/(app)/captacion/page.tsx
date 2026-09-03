@@ -10,6 +10,7 @@ import { CAPTACION_NATIVE, CAPTACION_URL } from "@/config/env";
 import { CaptacionDetailDrawer } from "@/features/captacion/CaptacionDetailDrawer";
 import { CriteriosCaptacionPanel } from "@/features/captacion/CriteriosCaptacionPanel";
 import { LeadCard } from "@/features/captacion/LeadCard";
+import { NewLeadModal } from "@/features/captacion/NewLeadModal";
 import { ScraperStatusBar } from "@/features/captacion/ScraperStatusBar";
 import { canAccessCaptacion } from "@/lib/agentDisplay";
 import { captacionSubtitle } from "@/lib/captacionSubtitle";
@@ -85,6 +86,7 @@ export default function CaptacionPage() {
   const [ownerSearch, setOwnerSearch] = useState("");
   const [openFilter, setOpenFilter] = useState<FilterKey | null>(null);
   const [criteriosOpen, setCriteriosOpen] = useState(false);
+  const [newLeadOpen, setNewLeadOpen] = useState(false);
 
   const staff = canAccessCaptacion(session);
   const isAdmin = session?.role === "admin";
@@ -94,6 +96,13 @@ export default function CaptacionPage() {
       router.replace("/");
     }
   }, [staff, router]);
+
+  useEffect(() => {
+    if (!CAPTACION_NATIVE || !staff) return;
+    const onNewLead = () => setNewLeadOpen(true);
+    window.addEventListener("pa:captacion-new-lead", onNewLead);
+    return () => window.removeEventListener("pa:captacion-new-lead", onNewLead);
+  }, [staff]);
 
   const {
     data: leads,
@@ -609,6 +618,19 @@ export default function CaptacionPage() {
             setToast({ message: "Criterios de captación guardados" })
           }
           onError={(message) => setToast({ message, type: "error" })}
+        />
+      ) : null}
+
+      {newLeadOpen ? (
+        <NewLeadModal
+          token={token ?? undefined}
+          onClose={() => setNewLeadOpen(false)}
+          onCreated={(leadId) => {
+            void queryClient.invalidateQueries({ queryKey: ["leads"] });
+            void queryClient.invalidateQueries({ queryKey: ["nav-counts"] });
+            setSelectedId(leadId);
+            setToast({ message: "Lead creado" });
+          }}
         />
       ) : null}
 

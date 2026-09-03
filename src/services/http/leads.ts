@@ -1,6 +1,7 @@
 import { API_URL } from "@/config/env";
 import type {
   Lead,
+  LeadCreate,
   LeadEstado,
   LeadUpdate,
   LeadsService,
@@ -76,6 +77,27 @@ function toRawUpdate(data: LeadUpdate): Record<string, unknown> {
   return out;
 }
 
+function toRawCreate(data: LeadCreate): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  if (data.municipio !== undefined) out.municipio = data.municipio;
+  if (data.barrio !== undefined) out.barrio = data.barrio;
+  if (data.tipoInmueble !== undefined) out.tipo_inmueble = data.tipoInmueble;
+  if (data.precio !== undefined) out.precio = data.precio;
+  if (data.areaM2 !== undefined) out.area_m2 = data.areaM2;
+  if (data.habitaciones !== undefined) out.habitaciones = data.habitaciones;
+  if (data.banos !== undefined) out.banos = data.banos;
+  if (data.telefono !== undefined) out.telefono = data.telefono;
+  if (data.nombrePublicador !== undefined) {
+    out.nombre_publicador = data.nombrePublicador;
+  }
+  if (data.linkPublicacion !== undefined) {
+    out.link_publicacion = data.linkPublicacion;
+  }
+  if (data.notas !== undefined) out.notas = data.notas;
+  if (data.estado !== undefined) out.estado = data.estado;
+  return out;
+}
+
 export const leadsService: LeadsService = {
   async list(token) {
     const raw = await apiFetch<RawLead[]>("/api/leads", { token });
@@ -92,6 +114,15 @@ export const leadsService: LeadsService = {
       method: "PATCH",
       token,
       body: toRawUpdate(data),
+    });
+    return mapLead(raw);
+  },
+
+  async create(data, token) {
+    const raw = await apiFetch<RawLead>("/api/leads", {
+      method: "POST",
+      token,
+      body: toRawCreate(data),
     });
     return mapLead(raw);
   },
