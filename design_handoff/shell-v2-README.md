@@ -19,8 +19,8 @@
 | A6 | Colapsado = sidebar angosta con dots | Colapsado = **riel de 76px** con ícono + label 9.5px debajo (mismo lenguaje que el bottom nav mobile) |
 | A7 | Botón colapsar sin etiqueta | Botón con ícono panel + label "Colapsar"; persistencia en `localStorage` |
 | A8 | Sin logo de marca en el riel | Logotipo P/I 34px persistente arriba, en ambos modos |
-| A9 | Header con búsqueda placeholder suelta a la izquierda | Header: **título de página** a la izquierda · búsqueda centrada máx. 440px con hint `⌘K` · acciones a la derecha |
-| A10 | Sin notificaciones | Campana con punto rojo (solo UI en esta iteración) |
+| A9 | Header con búsqueda placeholder suelta a la izquierda | Header: **breadcrumb** (`Operación / Inventario`) a la izquierda · búsqueda centrada máx. 440px con hint `⌘K` · campana + avatar 36px a la derecha (**Sprint 053** — sin título ni CTA en header) |
+| A10 | Sin notificaciones | Campana con punto rojo (solo UI en esta iteración) + avatar compacto en header (**Sprint 053**) |
 | A11 | UserMenu solo avatar | Avatar + nombre + rol; menú con secciones y separador destructivo |
 | A12 | Header 64px, sidebar 224px | Header 60px, sidebar 248px expandida / 76px riel |
 | A13 | `max-w-[1440px]` sin padding declarado | `max-w-[1440px]` + padding horizontal 32px (desktop) / 24px (tablet) / 16px (mobile) |
@@ -156,15 +156,13 @@ Transición de ancho de sidebar: `width 180ms cubic-bezier(.4,0,.2,1)`.
 - En `< 768px` la barra se sustituye por un botón-ícono lupa de `44 × 44px` que abre el mismo modal.
 
 ### D.6 CTA del header
-- Label: **"+ Nueva propiedad"** (se conserva). Ícono `plus` 14px + texto 12.5px/700.
-- Fondo `--pa-navy`, texto blanco, padding `10px 16px`, radio `9px`.
-- Hover `#0C4A78`, active `#082F4C`, focus `outline: 2px solid #0A3D62; outline-offset: 2px`.
-- Ruta `/properties/new`.
-- Contextual: en `/captacion` el CTA cambia a **"+ Nuevo lead"** → `/captacion/new`. En el resto de rutas se mantiene "+ Nueva propiedad".
-- `< 768px`: se reduce a botón circular `44 × 44px` solo con el `+`.
+
+> **Supersedido por Sprint 053** (`inventario-header-fixes-README.md`): el header **ya no lleva CTA global**. Los CTAs contextuales viven en el cuerpo de cada pantalla (Inventario: `+ Nueva propiedad` crea ficha; Captación: `+ Nuevo lead` abre modal manual).
 
 ### D.7 UserMenu
 Disparador (pie de sidebar, expandido): tarjeta `rgba(255,255,255,.07)` radio 12px con avatar 32px circular esmeralda + iniciales, nombre 12.5px/700 truncado, rol 10.5px/600 a `rgba(255,255,255,.55)`, chevron 14px. En riel: solo el avatar 36px.
+
+**Sprint 053:** avatar compacto **36px** también en el **header** (disparador `HeaderUserMenu`); el pie de sidebar conserva `ShellUserMenu`.
 
 Panel: ancho `232px`, fondo blanco, radio `12px`, sombra `--pa-shadow-overlay`, anclado arriba-derecha del disparador con `8px` de offset.
 
@@ -362,9 +360,9 @@ Explícitamente **no** entran en shell-v2:
 - [ ] **AC7** — El botón colapsar alterna entre 248px y 76px; el estado sobrevive a un refresh (`localStorage`) y no produce salto de hidratación visible.
 - [ ] **AC8** — En modo riel, cada ítem muestra tooltip con su label completo tras 400ms de hover; el tooltip nunca muestra el label corto.
 - [ ] **AC8b** — Los labels del riel coinciden exactamente con §B.1 (incluido "Publicación"); no hay strings divergentes entre sidebar, riel y drawer — los tres leen de `nav-config.ts`.
-- [ ] **AC9** — El header mide 60px, muestra el título de la página activa, y gana sombra al hacer scroll.
+- [ ] **AC9** — El header mide 60px, muestra **breadcrumb** (grupo / página), y gana sombra al hacer scroll en `<main>`.
 - [ ] **AC10** — `⌘K` (macOS) y `Ctrl+K` (Windows/Linux) abren el modal de búsqueda desde cualquier ruta del shell; `Esc` lo cierra y devuelve el foco.
-- [ ] **AC11** — En `/captacion` el CTA del header dice "+ Nuevo lead"; en el resto dice "+ Nueva propiedad".
+- [ ] **AC11** — *(Supersedido Sprint 053)* CTA contextual en cuerpo de pantalla, no en header.
 - [ ] **AC12** — El UserMenu abre con click y con `Enter`, se navega con flechas, cierra con `Esc` y devuelve el foco al disparador.
 - [ ] **AC13** — Por debajo de 768px la sidebar está oculta y el hamburger abre un drawer de 288px con overlay; el foco queda atrapado dentro mientras está abierto.
 - [ ] **AC14** — En mobile web, todo objetivo táctil del shell (hamburger, lupa, CTA, ítems del drawer) mide **≥ 44 × 44px**.

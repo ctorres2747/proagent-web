@@ -7,7 +7,6 @@ import { useAgentView } from "@/features/agentView/AgentViewProvider";
 import { useAuth } from "@/features/auth/AuthProvider";
 import { propertiesService } from "@/services";
 import type { Property } from "@/services/interfaces/properties";
-import { ChannelChips } from "@/components/ChannelChips";
 import { CompletenessBar } from "@/components/CompletenessBar";
 import { CoverImage } from "@/components/CoverImage";
 import { FilterDropdown } from "@/components/FilterDropdown";
@@ -158,7 +157,7 @@ export default function PropertiesPage() {
       {/* Header */}
       <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-[26px] font-extrabold text-[var(--pa-ink)]">
+          <h1 className="text-[24px] font-extrabold text-[var(--pa-ink)]">
             Inventario
           </h1>
           <p className="mt-1 text-[13px] text-[var(--pa-muted)]">
@@ -174,28 +173,34 @@ export default function PropertiesPage() {
             disabled={createMutation.isPending}
             className="rounded-[10px] bg-[var(--pa-navy)] px-4 py-2.5 text-[13px] font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
           >
-            {createMutation.isPending ? "Creando…" : "Nueva propiedad"}
+            {createMutation.isPending ? "Creando…" : "+ Nueva propiedad"}
           </button>
           <ViewToggle view={view} onView={setView} />
         </div>
       </div>
 
-      <div className="mb-4">
-        <PropertySearchInput value={search} onChange={setSearch} />
-      </div>
-      <div className="mb-6 flex flex-wrap items-center gap-2.5">
-        <button
-          type="button"
-          onClick={() => setShortcutFaltanDatos((v) => !v)}
-          className={`rounded-full px-4 py-2 text-[13px] font-semibold transition-colors ${
-            shortcutFaltanDatos
-              ? "bg-[var(--pa-navy)] text-white"
-              : "border border-[var(--pa-border)] bg-[var(--pa-surface)] text-[#45525E] hover:border-[var(--pa-navy)]"
-          }`}
-        >
-          Faltan datos
-        </button>
-        <FilterDropdown
+      <div className="mb-6 rounded-xl border border-[#E4E8EC] bg-[var(--pa-surface)] p-3">
+        <div className="mb-3">
+          <PropertySearchInput value={search} onChange={setSearch} />
+        </div>
+        <div className="flex flex-wrap items-center gap-2.5">
+          <button
+            type="button"
+            onClick={() => setShortcutFaltanDatos((v) => !v)}
+            className={`inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-[13px] font-semibold transition-colors ${
+              shortcutFaltanDatos
+                ? "bg-[#FCEEE0] text-[#8A4E12]"
+                : "bg-[#FCEEE0]/60 text-[#8A4E12] hover:bg-[#FCEEE0]"
+            }`}
+          >
+            <span
+              className="h-1.5 w-1.5 shrink-0 rounded-full bg-[#D97B2B]"
+              aria-hidden
+            />
+            Faltan datos
+          </button>
+          <span className="hidden h-6 w-px bg-[var(--pa-border)] sm:block" aria-hidden />
+          <FilterDropdown
           label={`Tipo${tipoFilter !== "Todos" ? `: ${tipoFilter}` : ""}`}
           active={tipoFilter !== "Todos"}
           open={openFilter === "tipo"}
@@ -259,6 +264,10 @@ export default function PropertiesPage() {
             Limpiar filtros
           </button>
         ) : null}
+          <span className="ml-auto hidden text-[12px] font-medium text-[var(--pa-muted)] lg:inline">
+            4 filtros disponibles
+          </span>
+        </div>
       </div>
 
       {deleteMutation.isError && (
@@ -290,20 +299,6 @@ export default function PropertiesPage() {
         <p className="text-sm text-[var(--pa-muted)]">
           Ningún inmueble coincide con los filtros.
         </p>
-      )}
-
-      {filtered.length > 0 && (
-        <div className="mb-4 overflow-hidden rounded-2xl border border-[var(--pa-border)]">
-          <PaginationBar
-            page={page}
-            totalPages={totalPages}
-            onPageChange={setPage}
-            pageSize={pageSize}
-            onPageSizeChange={setPageSize}
-            pageSizeOptions={PAGE_SIZE_OPTIONS}
-            total={filtered.length}
-          />
-        </div>
       )}
 
       {filtered.length > 0 && view === "cards" && (
@@ -406,7 +401,6 @@ function PropertyCard({
             </p>
           ) : null}
         </div>
-        <ChannelChips channels={p.channels} />
       </button>
       <button
         type="button"
@@ -434,21 +428,20 @@ function PropertyTable({
   deletingId: string | null;
 }) {
   const cols =
-    "grid-cols-[36px_64px_2fr_1.2fr_1fr_1.2fr_1.2fr_1.1fr_1.6fr_72px]";
+    "grid-cols-[36px_64px_minmax(0,2fr)_minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,1.2fr)_minmax(0,1.2fr)_minmax(0,1.1fr)_72px]";
   return (
     <div className="overflow-hidden rounded-2xl border border-[var(--pa-border)] bg-[var(--pa-surface)]">
       <div
         className={`grid ${cols} gap-3 border-b border-[var(--pa-border)] bg-[var(--pa-bg)] px-5 py-3.5 text-[11px] font-bold uppercase tracking-wide text-[var(--pa-muted)]`}
       >
-        <div>#</div>
+        <div className="truncate">#</div>
         <div />
-        <div>Título</div>
-        <div>Tipo</div>
-        <div>Precio</div>
-        <div>Ubicación</div>
-        <div>Barrio / zona / conjunto</div>
-        <div>Completitud</div>
-        <div>Canales</div>
+        <div className="truncate">Título</div>
+        <div className="truncate">Tipo</div>
+        <div className="truncate">Precio</div>
+        <div className="truncate">Ubicación</div>
+        <div className="truncate">Barrio / zona / conjunto</div>
+        <div className="truncate">Completitud</div>
         <div />
       </div>
       {properties.map((p, index) => (
@@ -473,30 +466,30 @@ function PropertyTable({
             />
           </button>
           <button type="button" onClick={() => onOpen(p)} className="min-w-0 text-left">
-            <div className="line-clamp-1 text-[13px] font-bold text-[var(--pa-ink)]">
+            <div className="truncate text-[13px] font-bold text-[var(--pa-ink)]">
               {p.titulo}
             </div>
-            <div className="text-[11px] text-[var(--pa-faint)]">{p.code}</div>
+            <div className="truncate text-[11px] text-[var(--pa-faint)]">{p.code}</div>
             {capturedAtLabel(p.capturedAt) ? (
-              <div className="text-[10px] text-[var(--pa-muted)]">
+              <div className="truncate text-[10px] text-[var(--pa-muted)]">
                 {capturedAtLabel(p.capturedAt)}
               </div>
             ) : null}
           </button>
-          <button type="button" onClick={() => onOpen(p)} className="text-left text-xs text-[var(--pa-muted)]">
+          <button type="button" onClick={() => onOpen(p)} className="truncate text-left text-xs text-[var(--pa-muted)]">
             {p.tipo} · {p.intent}
           </button>
-          <button type="button" onClick={() => onOpen(p)} className="text-left text-[13px] font-bold text-[var(--pa-navy)]">
+          <button type="button" onClick={() => onOpen(p)} className="truncate text-left text-[13px] font-bold text-[var(--pa-navy)]">
             {formatPrice(p.precio, p.esArriendo)}
           </button>
-          <button type="button" onClick={() => onOpen(p)} className="text-left text-xs text-[var(--pa-muted)]">
+          <button type="button" onClick={() => onOpen(p)} className="truncate text-left text-xs text-[var(--pa-muted)]">
             {p.municipio}
           </button>
-          <button type="button" onClick={() => onOpen(p)} className="text-left text-xs text-[var(--pa-muted)]">
+          <button type="button" onClick={() => onOpen(p)} className="truncate text-left text-xs text-[var(--pa-muted)]">
             {p.barrio || "—"}
           </button>
-          <button type="button" onClick={() => onOpen(p)} className="text-left">
-            <CompletenessBar value={p.completeness} showLabel={false} />
+          <button type="button" onClick={() => onOpen(p)} className="min-w-0 text-left">
+            <CompletenessBar value={p.completeness} compact />
             <span className="text-[11px] font-bold text-[var(--pa-muted)]">
               {p.completeness}%
             </span>
@@ -505,9 +498,6 @@ function PropertyTable({
                 Falta: {formatMissingFields(p.missingFields)}
               </p>
             ) : null}
-          </button>
-          <button type="button" onClick={() => onOpen(p)} className="text-left">
-            <ChannelChips channels={p.channels} />
           </button>
           <button
             type="button"

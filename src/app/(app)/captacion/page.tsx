@@ -97,13 +97,6 @@ export default function CaptacionPage() {
     }
   }, [staff, router]);
 
-  useEffect(() => {
-    if (!CAPTACION_NATIVE || !staff) return;
-    const onNewLead = () => setNewLeadOpen(true);
-    window.addEventListener("pa:captacion-new-lead", onNewLead);
-    return () => window.removeEventListener("pa:captacion-new-lead", onNewLead);
-  }, [staff]);
-
   const {
     data: leads,
     isLoading,
@@ -368,6 +361,13 @@ export default function CaptacionPage() {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            onClick={() => setNewLeadOpen(true)}
+            className="rounded-[10px] bg-[var(--pa-navy)] px-4 py-2.5 text-[13px] font-bold text-white transition-opacity hover:opacity-90"
+          >
+            + Nuevo lead
+          </button>
           <button
             type="button"
             onClick={() => setCriteriosOpen(true)}

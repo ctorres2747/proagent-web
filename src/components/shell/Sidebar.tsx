@@ -37,8 +37,8 @@ export function Sidebar({
       }`}
     >
       <div
-        className={`flex shrink-0 items-center border-b border-[rgba(255,255,255,.12)] ${
-          collapsed ? "justify-center px-2 py-4" : "gap-2.5 px-4 py-4"
+        className={`flex h-[var(--pa-shell-header-h)] shrink-0 items-center border-b border-[rgba(255,255,255,.12)] ${
+          collapsed ? "justify-center px-2" : "gap-2.5 px-4"
         }`}
       >
         <Link

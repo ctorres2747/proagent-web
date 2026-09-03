@@ -56,7 +56,7 @@ export function PropertySearchInput({
       value={value}
       onChange={(e) => onChange(e.target.value)}
       placeholder="Buscar por título, código, propietario o teléfono…"
-      className="w-full max-w-md rounded-[10px] border border-[var(--pa-border)] bg-[var(--pa-surface)] px-4 py-2.5 text-[13px] text-[var(--pa-ink)] outline-none focus:border-[var(--pa-navy)]"
+      className="w-full rounded-[10px] border border-[var(--pa-border)] bg-[var(--pa-surface)] px-4 py-2.5 text-[13px] text-[var(--pa-ink)] outline-none focus:border-[var(--pa-navy)]"
     />
   );
 }

@@ -124,3 +124,37 @@ export function pageTitleForPath(pathname: string): string {
   if (pathname.startsWith("/account")) return "Mi perfil";
   return "ProAgent";
 }
+
+export interface BreadcrumbCrumb {
+  group: string;
+  page: string;
+}
+
+const BREADCRUMB_GROUP_LABEL: Record<NavGroupId, string> = {
+  operacion: "Operación",
+  cartera: "Cartera",
+};
+
+export function breadcrumbForPath(pathname: string): BreadcrumbCrumb {
+  const id = resolveActiveNavId(pathname);
+  const item = NAV_ITEMS.find((n) => n.id === id);
+  if (item) {
+    return {
+      group: BREADCRUMB_GROUP_LABEL[item.group],
+      page: item.label,
+    };
+  }
+  if (pathname.startsWith("/settings")) {
+    return { group: "Cuenta", page: "Ajustes" };
+  }
+  if (pathname.startsWith("/account")) {
+    return { group: "Cuenta", page: "Mi perfil" };
+  }
+  if (pathname.startsWith("/help")) {
+    return { group: "Cuenta", page: "Ayuda" };
+  }
+  if (pathname.startsWith("/changelog")) {
+    return { group: "Cuenta", page: "Novedades" };
+  }
+  return { group: "Operación", page: "ProAgent" };
+}
