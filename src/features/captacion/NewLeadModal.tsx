@@ -7,10 +7,12 @@ import { X } from "lucide-react";
 import type { LeadCreate, LeadEstado } from "@/services/interfaces/leads";
 import { leadsService } from "@/services";
 
+// "Captado" queda fuera a propósito: esa transición exige nombre y teléfono
+// del propietario (regla de negocio ya existente en el Kanban) — el backend
+// la rechaza con 400 al crear un lead nuevo sin esos datos.
 const ESTADOS: LeadEstado[] = [
   "Pendiente",
   "En contacto",
-  "Captado",
   "Descartado",
 ];
 
