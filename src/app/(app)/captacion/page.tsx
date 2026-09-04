@@ -383,13 +383,12 @@ export default function CaptacionPage() {
         </div>
       </div>
 
-      <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <KpiCard value={totalKpi} label="Total leads" />
-        <KpiCard value={hoyKpi} label="Nuevos hoy" />
-      </div>
-
       <div className="mb-4 rounded-xl border border-[#E4E8EC] bg-[var(--pa-surface)] p-3">
-        <div className="mb-3 flex w-full items-center gap-2 rounded-[9px] border border-[var(--pa-border)] bg-[var(--pa-bg)] px-3 py-2.5 sm:max-w-sm">
+        <div className="mb-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <KpiCard value={totalKpi} label="Total leads" />
+          <KpiCard value={hoyKpi} label="Nuevos hoy" />
+        </div>
+        <div className="mb-3 flex w-full items-center gap-2 rounded-[9px] border border-[var(--pa-border)] bg-[var(--pa-bg)] px-3 py-2.5 focus-within:border-[var(--pa-navy)]">
           <Search
             size={15}
             strokeWidth={2.1}
