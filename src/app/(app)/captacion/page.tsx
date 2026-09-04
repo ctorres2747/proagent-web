@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Plus, Search } from "lucide-react";
 import { useAgentView } from "@/features/agentView/AgentViewProvider";
 import { useAuth } from "@/features/auth/AuthProvider";
 import { CAPTACION_NATIVE, CAPTACION_URL } from "@/config/env";
@@ -364,9 +365,10 @@ export default function CaptacionPage() {
           <button
             type="button"
             onClick={() => setNewLeadOpen(true)}
-            className="rounded-[10px] bg-[var(--pa-navy)] px-4 py-2.5 text-[13px] font-bold text-white transition-opacity hover:opacity-90"
+            className="inline-flex items-center gap-1.5 rounded-[10px] bg-[var(--pa-navy)] px-4 py-2.5 text-[13px] font-bold text-white transition-opacity hover:opacity-90"
           >
-            + Nuevo lead
+            <Plus size={14} strokeWidth={2.4} aria-hidden />
+            Nuevo lead
           </button>
           <button
             type="button"
@@ -386,7 +388,23 @@ export default function CaptacionPage() {
         <KpiCard value={hoyKpi} label="Nuevos hoy" />
       </div>
 
-      <div className="mb-4 flex flex-wrap items-center gap-2">
+      <div className="mb-4 rounded-xl border border-[#E4E8EC] bg-[var(--pa-surface)] p-3">
+        <div className="mb-3 flex w-full items-center gap-2 rounded-[9px] border border-[var(--pa-border)] bg-[var(--pa-bg)] px-3 py-2.5 sm:max-w-sm">
+          <Search
+            size={15}
+            strokeWidth={2.1}
+            className="shrink-0 text-[var(--pa-text-muted)]"
+            aria-hidden
+          />
+          <input
+            type="search"
+            value={ownerSearch}
+            onChange={(e) => setOwnerSearch(e.target.value)}
+            placeholder="Propietario / teléfono"
+            className="w-full bg-transparent text-[13px] text-[var(--pa-ink)] outline-none placeholder:text-[var(--pa-text-muted)]"
+          />
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
         <FilterDropdown
           label={`Municipio${
             municipioFilter !== "Todos"
@@ -467,13 +485,6 @@ export default function CaptacionPage() {
           }
           onClose={() => setOpenFilter(null)}
         />
-        <input
-          type="search"
-          value={ownerSearch}
-          onChange={(e) => setOwnerSearch(e.target.value)}
-          placeholder="Propietario / teléfono"
-          className="min-w-[160px] rounded-full border border-[var(--pa-border)] bg-[var(--pa-surface)] px-4 py-2 text-[13px] font-semibold text-[#45525E] placeholder:font-normal placeholder:text-[var(--pa-faint)]"
-        />
         {hasActiveFilters ? (
           <button
             type="button"
@@ -483,6 +494,7 @@ export default function CaptacionPage() {
             Limpiar filtros
           </button>
         ) : null}
+        </div>
       </div>
 
       {isAdmin ? (
