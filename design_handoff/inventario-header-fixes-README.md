@@ -4,7 +4,9 @@
 
 **Sprint:** 053 — ver [`proagent-mobile/sprints/053-inventario-header-ux.md`](https://github.com/ctorres2747/proagent-mobile/blob/main/sprints/053-inventario-header-ux.md).
 
-**Fuera de alcance (Owner 2026-09-03):** subnav lateral 228px ("Todos / Publicados / Faltan datos").
+**Artifact Owner:** [`inventario-ajustes.dc.html`](./inventario-ajustes.dc.html) (export Claude Design; nombre original: `Inventario - Ajustes.dc.html`).
+
+**Fuera de alcance (Owner 2026-09-03):** subnav lateral 228px ("Todos / Publicados / Faltan datos") — aparece en el mock solo como contexto visual.
 
 ---
 

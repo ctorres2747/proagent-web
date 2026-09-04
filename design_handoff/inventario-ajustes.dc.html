@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet"></link>
+  <style>
+    body { margin:0; background:#F6F7F9; font-family:'Plus Jakarta Sans',sans-serif; }
+    a { color:#0A3D62; } a:hover { color:#0C4A78; }
+    ::-webkit-scrollbar { width:8px; height:8px; }
+    ::-webkit-scrollbar-thumb { background:#D7DCE1; border-radius:4px; }
+  </style>
+</helmet>
+
+<div style="display:flex;min-height:100vh;background:#F6F7F9;color:#16212B;font-family:'Plus Jakarta Sans',sans-serif;">
+
+  <!-- RAIL -->
+  <div style="width:76px;flex-shrink:0;background:#0A3D62;display:flex;flex-direction:column;align-items:center;padding:16px 0;gap:6px;">
+    <div style="width:34px;height:34px;border-radius:10px;background:#FFFFFF;display:flex;align-items:center;justify-content:center;margin-bottom:14px;flex-shrink:0;">
+      <div style="position:relative;width:16px;height:18px;">
+        <div style="position:absolute;left:2px;top:0;width:3px;height:18px;background:#0A3D62;border-radius:1px;"></div>
+        <div style="position:absolute;left:2px;top:1px;width:9px;height:7.5px;background:#0A3D62;border-radius:0 4px 4px 0;"></div>
+        <div style="position:absolute;left:4.5px;top:2.5px;width:5px;height:4.5px;background:#FFFFFF;border-radius:0 3px 3px 0;"></div>
+      </div>
+    </div>
+    <div style="width:60px;display:flex;flex-direction:column;align-items:center;gap:5px;padding:9px 0;border-radius:12px;color:rgba(255,255,255,.62);">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"></path><path d="M5.5 9.5V21h13V9.5"></path></svg>
+      <div style="font-size:9.5px;font-weight:700;">Inicio</div>
+    </div>
+    <div style="width:60px;display:flex;flex-direction:column;align-items:center;gap:5px;padding:9px 0;border-radius:12px;color:rgba(255,255,255,.62);position:relative;">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="6" height="16" rx="1.5"></rect><rect x="11" y="4" width="6" height="11" rx="1.5"></rect><rect x="19" y="4" width="2" height="7" rx="1"></rect></svg>
+      <div style="font-size:9.5px;font-weight:700;">Captación</div>
+      <div style="position:absolute;top:6px;right:7px;min-width:16px;height:16px;padding:0 4px;border-radius:8px;background:#2FC98A;color:#06331F;font-size:9.5px;font-weight:800;display:flex;align-items:center;justify-content:center;box-sizing:border-box;">68</div>
+    </div>
+    <div style="width:60px;display:flex;flex-direction:column;align-items:center;gap:5px;padding:9px 0;border-radius:12px;background:#fff;color:#0A3D62;">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="14" rx="2"></rect><path d="M8 7V4.5h8V7"></path><path d="M3 13h18"></path></svg>
+      <div style="font-size:9.5px;font-weight:800;">Inventario</div>
+    </div>
+    <div style="width:60px;display:flex;flex-direction:column;align-items:center;gap:5px;padding:9px 0;border-radius:12px;color:rgba(255,255,255,.62);">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5"></path><path d="m5 12 7-7 7 7"></path></svg>
+      <div style="font-size:9.5px;font-weight:700;">Publicar</div>
+    </div>
+    <div style="width:44px;height:1px;background:rgba(255,255,255,.14);margin:8px 0;"></div>
+    <div style="width:60px;display:flex;flex-direction:column;align-items:center;gap:5px;padding:9px 0;border-radius:12px;color:rgba(255,255,255,.34);">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.4"></circle><path d="M3 20c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5"></path><path d="M17 11.5a3 3 0 1 0 0-6"></path><path d="M18.5 20c0-2.4-.9-4.2-2.4-5.2"></path></svg>
+      <div style="font-size:9.5px;font-weight:700;">Clientes</div>
+    </div>
+    <div style="flex:1;"></div>
+    <div style="width:36px;height:36px;border-radius:50%;background:#2FC98A;color:#06331F;font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center;">CR</div>
+  </div>
+
+  <!-- SUBNAV (contexto visual — fuera de alcance Sprint 053) -->
+  <div style="width:228px;flex-shrink:0;background:#FFFFFF;border-right:1px solid #E4E8EC;display:flex;flex-direction:column;padding:20px 14px;gap:4px;">
+    <div style="padding:0 8px 16px;">
+      <div style="font-size:16px;font-weight:800;">Inventario</div>
+      <div style="font-size:11.5px;color:#9AA6B2;font-weight:600;margin-top:3px;">48 en cartera</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:9px;background:#EAF0F5;color:#0A3D62;">
+      <div style="width:6px;height:6px;border-radius:50%;background:#0A3D62;"></div>
+      <div style="font-size:12.5px;font-weight:700;flex:1;">Todos</div><div style="font-size:11px;font-weight:700;">48</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:9px;color:#5B6B79;">
+      <div style="width:6px;height:6px;border-radius:50%;background:#1E8E5A;"></div>
+      <div style="font-size:12.5px;font-weight:600;flex:1;">Publicados</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:9px;color:#5B6B79;">
+      <div style="width:6px;height:6px;border-radius:50%;background:#D97B2B;"></div>
+      <div style="font-size:12.5px;font-weight:600;flex:1;">Faltan datos</div>
+    </div>
+    <div style="flex:1;"></div>
+  </div>
+
+  <!-- MAIN -->
+  <div style="flex:1;display:flex;flex-direction:column;min-width:0;">
+
+    <!-- TOPBAR: solo breadcrumb + campana + avatar. Sin título duplicado, sin buscador duplicado, sin CTA duplicado -->
+    <div style="height:60px;flex-shrink:0;background:#FFFFFF;border-bottom:1px solid #E4E8EC;display:flex;align-items:center;gap:8px;padding:0 28px;box-sizing:border-box;">
+      <div style="display:flex;align-items:center;gap:8px;font-size:13px;">
+        <div style="color:#9AA6B2;font-weight:600;">Operación</div>
+        <div style="color:#C9D0D7;">/</div>
+        <div style="color:#16212B;font-weight:700;">Inventario</div>
+      </div>
+      <div style="flex:1;"></div>
+      <div style="width:36px;height:36px;border-radius:10px;border:1px solid #E4E8EC;display:flex;align-items:center;justify-content:center;position:relative;flex-shrink:0;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#45525E" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 6-3 7-3 7h18s-3-1-3-7"></path><path d="M10.5 20a2 2 0 0 0 3 0"></path></svg>
+        <div style="position:absolute;top:7px;right:8px;width:7px;height:7px;border-radius:50%;background:#C23B2B;border:1.5px solid #fff;"></div>
+      </div>
+      <div style="width:36px;height:36px;border-radius:50%;background:#EEF0F3;color:#45525E;font-weight:700;font-size:12.5px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">CR</div>
+    </div>
+
+    <div style="flex:1;overflow-y:auto;padding:24px 32px 60px;">
+      <div style="max-width:1440px;">
+
+        <!-- H1 único + único CTA + toggle vista -->
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:18px;">
+          <div>
+            <div style="font-size:24px;font-weight:800;">Inventario</div>
+            <div style="font-size:13px;color:#5B6B79;margin-top:4px;">48 de 48 inmuebles · datos y completitud</div>
+          </div>
+          <div style="display:flex;gap:10px;align-items:center;flex-shrink:0;">
+            <div style="background:#0A3D62;color:#fff;font-size:12.5px;font-weight:700;padding:10px 16px;border-radius:9px;cursor:pointer;display:flex;align-items:center;gap:7px;white-space:nowrap;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg>
+              Nueva propiedad
+            </div>
+            <div style="display:flex;background:#EEF0F3;border-radius:10px;padding:3px;">
+              <div style="padding:7px 14px;border-radius:8px;color:#5B6B79;font-size:12px;font-weight:600;cursor:pointer;">Tarjetas</div>
+              <div style="padding:7px 14px;border-radius:8px;background:#fff;color:#0A3D62;font-size:12px;font-weight:700;cursor:pointer;box-shadow:0 1px 3px rgba(16,24,32,.12);">Tabla</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Buscador único (contextual a esta vista) + filtros como una sola barra -->
+        <div style="background:#fff;border:1px solid #E4E8EC;border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:10px;margin-bottom:16px;">
+          <div style="display:flex;align-items:center;gap:9px;background:#F6F7F9;border:1px solid #E4E8EC;border-radius:9px;padding:9px 12px;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#9AA6B2" stroke-width="2.1" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>
+            <div style="flex:1;font-size:12.5px;color:#9AA6B2;">Buscar por título, código, propietario o teléfono…</div>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+            <div style="display:flex;align-items:center;gap:6px;background:#FCEEE0;color:#8A4E12;font-size:12px;font-weight:700;padding:7px 12px;border-radius:8px;cursor:pointer;">
+              <div style="width:6px;height:6px;border-radius:50%;background:#D97B2B;"></div>Faltan datos
+            </div>
+            <div style="width:1px;height:20px;background:#E4E8EC;margin:0 2px;"></div>
+            <div style="display:flex;align-items:center;gap:5px;border:1px solid #E4E8EC;color:#45525E;font-size:12px;font-weight:600;padding:7px 12px;border-radius:8px;cursor:pointer;">Tipo<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#9AA6B2" stroke-width="2.3" stroke-linecap="round"><path d="m6 9 6 6 6-6"></path></svg></div>
+            <div style="display:flex;align-items:center;gap:5px;border:1px solid #E4E8EC;color:#45525E;font-size:12px;font-weight:600;padding:7px 12px;border-radius:8px;cursor:pointer;">Municipio<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#9AA6B2" stroke-width="2.3" stroke-linecap="round"><path d="m6 9 6 6 6-6"></path></svg></div>
+            <div style="display:flex;align-items:center;gap:5px;border:1px solid #E4E8EC;color:#45525E;font-size:12px;font-weight:600;padding:7px 12px;border-radius:8px;cursor:pointer;">Estado<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#9AA6B2" stroke-width="2.3" stroke-linecap="round"><path d="m6 9 6 6 6-6"></path></svg></div>
+            <div style="display:flex;align-items:center;gap:5px;border:1px solid #E4E8EC;color:#45525E;font-size:12px;font-weight:600;padding:7px 12px;border-radius:8px;cursor:pointer;">Precio<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#9AA6B2" stroke-width="2.3" stroke-linecap="round"><path d="m6 9 6 6 6-6"></path></svg></div>
+            <div style="flex:1;"></div>
+            <div style="font-size:12px;color:#9AA6B2;font-weight:600;">4 filtros disponibles</div>
+          </div>
+        </div>
+
+        <!-- Tabla: paginación movida abajo, sin banda vacía arriba -->
+        <div style="background:#fff;border:1px solid #E4E8EC;border-radius:16px;overflow:hidden;">
+          <div style="display:grid;grid-template-columns:minmax(0,2.4fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr) 74px;gap:12px;padding:13px 20px;background:#FAFBFC;border-bottom:1px solid #E4E8EC;font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#9AA6B2;">
+            <div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Título</div><div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Tipo</div><div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Precio</div><div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Ubicación</div><div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Completitud</div><div></div>
+          </div>
+          <div style="display:grid;grid-template-columns:minmax(0,2.4fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr) 74px;gap:12px;padding:14px 20px;border-bottom:1px solid #EEF0F3;align-items:center;font-size:13px;">
+            <div><div style="font-weight:700;">Casa en La Estrella</div><div style="font-size:11.5px;color:#9AA6B2;margin-top:2px;">F-52 · 16 ago 2026</div></div>
+            <div style="color:#5B6B79;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Casa · Venta</div><div style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">$ 400.000.000</div><div style="color:#5B6B79;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">La Estrella</div>
+            <div><div style="height:4px;width:60px;border-radius:2px;background:#F1D9D4;overflow:hidden;"><div style="height:100%;width:39%;background:#C23B2B;"></div></div><div style="font-size:11px;color:#C23B2B;font-weight:700;margin-top:3px;">39%</div></div>
+            <div style="color:#C23B2B;font-size:12px;font-weight:700;cursor:pointer;">Eliminar</div>
+          </div>
+          <div style="display:grid;grid-template-columns:minmax(0,2.4fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr) 74px;gap:12px;padding:14px 20px;border-bottom:1px solid #EEF0F3;align-items:center;font-size:13px;">
+            <div><div style="font-weight:700;">Lote en La Estrella</div><div style="font-size:11.5px;color:#9AA6B2;margin-top:2px;">F-51 · 26 ago 2026</div></div>
+            <div style="color:#5B6B79;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Lote · Venta</div><div style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">$ 650.000.000</div><div style="color:#5B6B79;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">La Estrella</div>
+            <div><div style="height:4px;width:60px;border-radius:2px;background:#F1D9D4;overflow:hidden;"><div style="height:100%;width:44%;background:#C23B2B;"></div></div><div style="font-size:11px;color:#C23B2B;font-weight:700;margin-top:3px;">44%</div></div>
+            <div style="color:#C23B2B;font-size:12px;font-weight:700;cursor:pointer;">Eliminar</div>
+          </div>
+          <div style="display:grid;grid-template-columns:minmax(0,2.4fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr) 74px;gap:12px;padding:14px 20px;align-items:center;font-size:13px;">
+            <div><div style="font-weight:700;">Cesión Apartamento en L…</div><div style="font-size:11.5px;color:#9AA6B2;margin-top:2px;">F-34 · 3 jul 2026</div></div>
+            <div style="color:#5B6B79;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Apartamento</div><div style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">$ 480.000.000</div><div style="color:#5B6B79;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">La Estrella</div>
+            <div><div style="height:4px;width:60px;border-radius:2px;background:#FCEEDD;overflow:hidden;"><div style="height:100%;width:50%;background:#D97B2B;"></div></div><div style="font-size:11px;color:#D97B2B;font-weight:700;margin-top:3px;">50%</div></div>
+            <div style="color:#C23B2B;font-size:12px;font-weight:700;cursor:pointer;">Eliminar</div>
+          </div>
+        </div>
+
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-top:14px;">
+          <div style="font-size:12.5px;color:#5B6B79;">Mostrar <strong style="color:#16212B;">20</strong> por página</div>
+          <div style="font-size:12.5px;color:#5B6B79;">1–20 de 48 · Página 1 de 3</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</x-dc>
+</body>
+</html>

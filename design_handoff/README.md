@@ -32,3 +32,12 @@
 - Desktop sidebar expandida / riel colapsado
 - UserMenu, tablet, mobile web, drawer
 - Estados de componentes + bottom nav Expo (paridad)
+
+---
+
+## Inventario — ajustes header + filtros (Claude Design, 2026-09-03)
+
+- Artifact: [`inventario-ajustes.dc.html`](./inventario-ajustes.dc.html) (+ [`support.js`](./support.js))
+- Spec: [`inventario-header-fixes-README.md`](./inventario-header-fixes-README.md)
+- Sprint: **053** — deduplicar header, tarjeta de filtros, quitar Canales en lista, paginación abajo
+- Origen: Owner (Claude Design); nombre original del export: `Inventario - Ajustes.dc.html`
