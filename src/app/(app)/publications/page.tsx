@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Plus } from "lucide-react";
 import { useAgentView } from "@/features/agentView/AgentViewProvider";
 import { useAuth } from "@/features/auth/AuthProvider";
 import { propertiesService, publicationsService, channelsService } from "@/services";
@@ -237,19 +238,20 @@ export default function PublicationsPage() {
             type="button"
             onClick={() => createMutation.mutate()}
             disabled={createMutation.isPending}
-            className="rounded-[10px] bg-[var(--pa-navy)] px-4 py-2.5 text-[13px] font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 rounded-[10px] bg-[var(--pa-navy)] px-4 py-2.5 text-[13px] font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
           >
+            <Plus size={14} strokeWidth={2.4} aria-hidden />
             {createMutation.isPending ? "Creando…" : "Nueva propiedad"}
           </button>
           <ViewToggle view={view} onView={setView} />
         </div>
       </div>
 
-      <div className="mb-4">
-        <PropertySearchInput value={search} onChange={setSearch} />
-      </div>
-
-      <div className="mb-6 flex flex-wrap items-center gap-2.5">
+      <div className="mb-6 rounded-xl border border-[#E4E8EC] bg-[var(--pa-surface)] p-3">
+        <div className="mb-3">
+          <PropertySearchInput value={search} onChange={setSearch} />
+        </div>
+        <div className="flex flex-wrap items-center gap-2.5">
         <button
           type="button"
           onClick={() => setShortcutSinPublicar((v) => !v)}
@@ -350,6 +352,7 @@ export default function PublicationsPage() {
             Limpiar filtros
           </button>
         ) : null}
+        </div>
       </div>
 
       {createMutation.isError && (
@@ -376,20 +379,6 @@ export default function PublicationsPage() {
         <p className="text-sm text-[var(--pa-muted)]">
           Ningún inmueble coincide con los filtros.
         </p>
-      )}
-
-      {filtered.length > 0 && (
-        <div className="mb-4 overflow-hidden rounded-2xl border border-[var(--pa-border)]">
-          <PaginationBar
-            page={page}
-            totalPages={totalPages}
-            onPageChange={setPage}
-            pageSize={pageSize}
-            onPageSizeChange={setPageSize}
-            pageSizeOptions={PAGE_SIZE_OPTIONS}
-            total={filtered.length}
-          />
-        </div>
       )}
 
       {filtered.length > 0 && view === "cards" && (
