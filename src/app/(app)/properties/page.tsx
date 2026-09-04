@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Plus } from "lucide-react";
 import { useAgentView } from "@/features/agentView/AgentViewProvider";
 import { useAuth } from "@/features/auth/AuthProvider";
 import { propertiesService } from "@/services";
@@ -171,9 +172,10 @@ export default function PropertiesPage() {
             type="button"
             onClick={onCreate}
             disabled={createMutation.isPending}
-            className="rounded-[10px] bg-[var(--pa-navy)] px-4 py-2.5 text-[13px] font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 rounded-[10px] bg-[var(--pa-navy)] px-4 py-2.5 text-[13px] font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
           >
-            {createMutation.isPending ? "Creando…" : "+ Nueva propiedad"}
+            <Plus size={14} strokeWidth={2.4} aria-hidden />
+            {createMutation.isPending ? "Creando…" : "Nueva propiedad"}
           </button>
           <ViewToggle view={view} onView={setView} />
         </div>
