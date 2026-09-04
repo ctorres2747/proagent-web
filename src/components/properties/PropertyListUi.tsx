@@ -1,5 +1,7 @@
 "use client";
 
+import { Search } from "lucide-react";
+
 export function SegBtn({
   active,
   onClick,
@@ -51,13 +53,21 @@ export function PropertySearchInput({
   onChange: (value: string) => void;
 }) {
   return (
-    <input
-      type="search"
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      placeholder="Buscar por título, código, propietario o teléfono…"
-      className="w-full rounded-[10px] border border-[var(--pa-border)] bg-[var(--pa-surface)] px-4 py-2.5 text-[13px] text-[var(--pa-ink)] outline-none focus:border-[var(--pa-navy)]"
-    />
+    <div className="flex w-full items-center gap-2 rounded-[9px] border border-[var(--pa-border)] bg-[var(--pa-bg)] px-3 py-2.5 focus-within:border-[var(--pa-navy)]">
+      <Search
+        size={15}
+        strokeWidth={2.1}
+        className="shrink-0 text-[var(--pa-text-muted)]"
+        aria-hidden
+      />
+      <input
+        type="search"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder="Buscar por título, código, propietario o teléfono…"
+        className="w-full bg-transparent text-[13px] text-[var(--pa-ink)] outline-none placeholder:text-[var(--pa-text-muted)]"
+      />
+    </div>
   );
 }
 

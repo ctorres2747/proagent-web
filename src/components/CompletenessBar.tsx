@@ -17,9 +17,19 @@ export function CompletenessBar({
         : "var(--pa-danger)";
 
   if (compact) {
+    // Track teñido según el estado (mock inventario-ajustes.dc.html): rosado
+    // bajo la barra roja, durazno bajo la ámbar, verde claro bajo la verde —
+    // en vez de un gris neutro fijo para los tres estados.
+    const trackColor =
+      value >= 80
+        ? "var(--pa-success-bg)"
+        : value >= 50
+          ? "var(--pa-warning-bg)"
+          : "var(--pa-danger-bg)";
     return (
       <div
-        className="h-1 w-full overflow-hidden rounded-full bg-[var(--pa-bg-alt)]"
+        className="h-1 w-full overflow-hidden rounded-full"
+        style={{ background: trackColor }}
         role="progressbar"
         aria-valuenow={value}
         aria-valuemin={0}
