@@ -56,15 +56,6 @@ function matchesOwnerSearch(lead: Lead, query: string): boolean {
   return name.includes(q) || (qDigits.length > 0 && tel.includes(qDigits));
 }
 
-function KpiCard({ value, label }: { value: number; label: string }) {
-  return (
-    <div className="rounded-xl border border-[var(--pa-border)] bg-[var(--pa-surface)] px-4 py-3">
-      <p className="text-[22px] font-extrabold text-[var(--pa-ink)]">{value}</p>
-      <p className="text-[11px] font-semibold text-[var(--pa-muted)]">{label}</p>
-    </div>
-  );
-}
-
 export default function CaptacionPage() {
   const { session, token } = useAuth();
   const { viewAgenteId, agentesList } = useAgentView();
@@ -384,10 +375,6 @@ export default function CaptacionPage() {
       </div>
 
       <div className="mb-4 rounded-xl border border-[#E4E8EC] bg-[var(--pa-surface)] p-3">
-        <div className="mb-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <KpiCard value={totalKpi} label="Total leads" />
-          <KpiCard value={hoyKpi} label="Nuevos hoy" />
-        </div>
         <div className="mb-3 flex w-full items-center gap-2 rounded-[9px] border border-[var(--pa-border)] bg-[var(--pa-bg)] px-3 py-2.5 focus-within:border-[var(--pa-navy)]">
           <Search
             size={15}
@@ -493,6 +480,15 @@ export default function CaptacionPage() {
             Limpiar filtros
           </button>
         ) : null}
+        <span className="ml-auto hidden items-center gap-3 text-[12px] font-semibold text-[var(--pa-muted)] lg:flex">
+          <span>
+            <strong className="text-[var(--pa-ink)]">{totalKpi}</strong> total leads
+          </span>
+          <span className="h-3 w-px bg-[var(--pa-border)]" aria-hidden />
+          <span>
+            <strong className="text-[var(--pa-ink)]">{hoyKpi}</strong> nuevos hoy
+          </span>
+        </span>
         </div>
       </div>
 
