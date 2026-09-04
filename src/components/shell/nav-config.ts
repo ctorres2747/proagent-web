@@ -116,15 +116,6 @@ export function filterNavItems(opts: {
   });
 }
 
-export function pageTitleForPath(pathname: string): string {
-  const id = resolveActiveNavId(pathname);
-  const item = NAV_ITEMS.find((n) => n.id === id);
-  if (item) return item.label;
-  if (pathname.startsWith("/settings")) return "Ajustes";
-  if (pathname.startsWith("/account")) return "Mi perfil";
-  return "ProAgent";
-}
-
 export interface BreadcrumbCrumb {
   group: string;
   page: string;
