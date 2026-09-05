@@ -2717,6 +2717,12 @@ function ResultsStep({
     try {
       await propertiesService.uploadDriveFile(property.id, file, token);
       setDriveUploadedName(file.name);
+      // Una propiedad nueva puede no tener carpeta de Drive todavía — el
+      // backend la crea sobre la marcha en este mismo upload, así que hay
+      // que refrescar para que la fila pase a "Publicado" con Quitar/
+      // Republicar disponibles.
+      const refreshed = await publicationsService.get(publicationId, token);
+      onPublicationRefresh(refreshed);
     } catch (err) {
       setDriveUploadError(
         err instanceof ApiError
@@ -2941,7 +2947,7 @@ function ResultsStep({
                 {mpLoginState === "pending" ? "Abriendo sesión…" : "🔑 Reintentar login"}
               </button>
             )}
-          {r.id === "entrega" && r.canRemove && (
+          {r.id === "entrega" && (
             <>
               <input
                 ref={driveFileInputRef}
