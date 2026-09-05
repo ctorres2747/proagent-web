@@ -398,4 +398,10 @@ export const propertiesService: PropertiesService = {
     MOCK_PROPERTIES[idx] = next;
     return next;
   },
+  async uploadDriveFile(id, file) {
+    await delay(300);
+    const prop = MOCK_PROPERTIES.find((p) => p.id === id);
+    if (!prop) throw new Error(`Propiedad ${id} no encontrada`);
+    void file;
+  },
 };
