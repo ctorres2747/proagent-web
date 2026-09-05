@@ -282,4 +282,13 @@ export const propertiesService: PropertiesService = {
     );
     return mapProperty(raw);
   },
+  async uploadDriveFile(id, file, token?: string): Promise<void> {
+    const form = new FormData();
+    form.append("file", file, file.name);
+    await apiUploadForm<{ ok: boolean }>(
+      `${detailPath(id)}/drive-files`,
+      form,
+      token,
+    );
+  },
 };

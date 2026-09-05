@@ -2592,6 +2592,10 @@ function ResultsStep({
   const [retryError, setRetryError] = useState<string | null>(null);
   const [republishError, setRepublishError] = useState<string | null>(null);
   const [removeError, setRemoveError] = useState<string | null>(null);
+  const [uploadingDriveFile, setUploadingDriveFile] = useState(false);
+  const [driveUploadError, setDriveUploadError] = useState<string | null>(null);
+  const [driveUploadedName, setDriveUploadedName] = useState<string | null>(null);
+  const driveFileInputRef = useRef<HTMLInputElement | null>(null);
   // Re-login de Marketplace: cuando falla "Sesión de Andreina no activa" en
   // el resultado de Facebook, se ofrece un botón que dispara/encola que la
   // PC abra el navegador de login — en vez de tener que correr el comando
@@ -2703,6 +2707,32 @@ function ResultsStep({
         // Red momentánea -- se reintenta en el próximo tick, no se corta el poll.
       }
     }, 5000);
+  };
+
+  const onDriveFileSelected = async (file: File | undefined) => {
+    if (!file) return;
+    setUploadingDriveFile(true);
+    setDriveUploadError(null);
+    setDriveUploadedName(null);
+    try {
+      await propertiesService.uploadDriveFile(property.id, file, token);
+      setDriveUploadedName(file.name);
+      // Una propiedad nueva puede no tener carpeta de Drive todavía — el
+      // backend la crea sobre la marcha en este mismo upload, así que hay
+      // que refrescar para que la fila pase a "Publicado" con Quitar/
+      // Republicar disponibles.
+      const refreshed = await publicationsService.get(publicationId, token);
+      onPublicationRefresh(refreshed);
+    } catch (err) {
+      setDriveUploadError(
+        err instanceof ApiError
+          ? err.message
+          : "No se pudo subir el archivo a Google Drive.",
+      );
+    } finally {
+      setUploadingDriveFile(false);
+      if (driveFileInputRef.current) driveFileInputRef.current.value = "";
+    }
   };
 
   const onRetry = async (channelId: ChannelId) => {
@@ -2873,6 +2903,14 @@ function ResultsStep({
                 No se pudo reiniciar la sesión: {mpLoginMessage}
               </div>
             ) : null}
+            {r.id === "entrega" && driveUploadedName ? (
+              <div className="mt-1 text-xs text-[var(--pa-success)]">
+                ✅ {driveUploadedName} subido a la carpeta de Drive.
+              </div>
+            ) : null}
+            {r.id === "entrega" && driveUploadError ? (
+              <div className="mt-1 text-xs text-[var(--pa-danger)]">{driveUploadError}</div>
+            ) : null}
           </div>
           <span
             className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-md px-2.5 py-1 text-[10px] font-bold ${STATUS_META[r.status].chip}`}
@@ -2909,6 +2947,26 @@ function ResultsStep({
                 {mpLoginState === "pending" ? "Abriendo sesión…" : "🔑 Reintentar login"}
               </button>
             )}
+          {r.id === "entrega" && (
+            <>
+              <input
+                ref={driveFileInputRef}
+                type="file"
+                accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.webp"
+                className="hidden"
+                onChange={(e) => void onDriveFileSelected(e.target.files?.[0])}
+              />
+              <button
+                type="button"
+                disabled={actionBusy || uploadingDriveFile}
+                onClick={() => driveFileInputRef.current?.click()}
+                title="Sube un contrato, cédula, certificado u otro archivo a la carpeta de Drive de esta propiedad"
+                className="whitespace-nowrap rounded-lg border border-[var(--pa-border)] px-3.5 py-1.5 text-[11px] font-bold text-[var(--pa-ink)] disabled:opacity-50"
+              >
+                {uploadingDriveFile ? "Subiendo…" : "+ Agregar archivo"}
+              </button>
+            </>
+          )}
           {r.canRepublish && (
             <button
               type="button"
