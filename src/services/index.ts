@@ -18,6 +18,7 @@ import { propertiesService as mockProperties } from "./mocks/properties";
 import { publicationsService as mockPublications } from "./mocks/publications";
 import { scraperService as mockScraper } from "./mocks/scraper";
 import { wasiFeaturesService as mockWasiFeatures } from "./mocks/wasiFeatures";
+import { wasiZonasService as mockWasiZonas } from "./mocks/wasiZonas";
 import { agentesService as httpAgentes } from "./http/agentes";
 import { authService as httpAuth } from "./http/auth";
 import { channelsService as httpChannels } from "./http/channels";
@@ -29,6 +30,7 @@ import { propertiesService as httpProperties } from "./http/properties";
 import { publicationsService as httpPublications } from "./http/publications";
 import { scraperService as httpScraper } from "./http/scraper";
 import { wasiFeaturesService as httpWasiFeatures } from "./http/wasiFeatures";
+import { wasiZonasService as httpWasiZonas } from "./http/wasiZonas";
 
 import type { AgentesService } from "./interfaces/agentes";
 import type { AuthService } from "./interfaces/auth";
@@ -69,6 +71,7 @@ export const scraperService: ScraperService = USE_HTTP_API
 export const wasiFeaturesService = USE_HTTP_API
   ? httpWasiFeatures
   : mockWasiFeatures;
+export const wasiZonasService = USE_HTTP_API ? httpWasiZonas : mockWasiZonas;
 
 export type { AgenteResumen, AgentesService } from "./interfaces/agentes";
 export type { AuthService } from "./interfaces/auth";
