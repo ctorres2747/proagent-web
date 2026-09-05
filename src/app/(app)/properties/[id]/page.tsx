@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/features/auth/AuthProvider";
-import { propertiesService, publicationsService, channelsService, wasiFeaturesService } from "@/services";
+import { propertiesService, publicationsService, channelsService, wasiFeaturesService, wasiZonasService } from "@/services";
 import type {
   Condition,
   Intent,
@@ -1179,6 +1179,8 @@ function ControlledField({
   onChange,
   missing = false,
   thousands = false,
+  listId,
+  suggestions,
 }: {
   label: string;
   value: string;
@@ -1189,6 +1191,11 @@ function ControlledField({
    * quita antes de mandar el número al backend, así que no cambia nada del
    * lado del guardado. */
   thousands?: boolean;
+  /** Sugerencias nativas (<datalist>) — el usuario puede seguir escribiendo
+   * cualquier texto, esto solo ayuda a elegir un valor ya reconocido (ej.
+   * zonas de WASI para "Barrio / zona / conjunto"). */
+  listId?: string;
+  suggestions?: string[];
 }) {
   return (
     <div>
@@ -1199,12 +1206,20 @@ function ControlledField({
       </div>
       <input
         inputMode={thousands ? "numeric" : undefined}
+        list={listId}
         className={`${input} ${missing ? "border-[var(--pa-danger)] focus:border-[var(--pa-danger)]" : ""}`}
         value={thousands ? formatThousands(value) : value}
         onChange={(e) =>
           onChange(thousands ? formatThousands(e.target.value) : e.target.value)
         }
       />
+      {listId && suggestions?.length ? (
+        <datalist id={listId}>
+          {suggestions.map((s) => (
+            <option key={s} value={s} />
+          ))}
+        </datalist>
+      ) : null}
     </div>
   );
 }
@@ -1282,6 +1297,18 @@ function ContentStep({
   } = useQuery({
     queryKey: ["wasi-features"],
     queryFn: () => wasiFeaturesService.list(token),
+  });
+  // Sugerencias para "Barrio / zona / conjunto" — WASI exige que ese campo
+  // coincida con un valor que ya reconoce, si no la ficha no sincroniza con
+  // portales aliados. Se resuelve por el municipio GUARDADO (no el que se
+  // esté escribiendo en el input, que dispararía una consulta por cada
+  // tecla); si el municipio todavía no resuelve en WASI o la ficha no tiene
+  // uno, simplemente no hay sugerencias — el campo sigue editable a mano.
+  const { data: wasiZonas } = useQuery({
+    queryKey: ["wasi-zonas", property.municipio],
+    queryFn: () => wasiZonasService.list(property.municipio, token),
+    enabled: Boolean(property.municipio),
+    retry: false,
   });
   const {
     data: driveFieldOptions,
@@ -1466,6 +1493,8 @@ function ContentStep({
               value={form.barrio}
               onChange={(v) => onPatch({ barrio: v })}
               missing={fieldMissing("neighborhood")}
+              listId="wasi-zonas-list"
+              suggestions={wasiZonas?.zonas}
             />
             <ControlledField
               label="Dirección *"
