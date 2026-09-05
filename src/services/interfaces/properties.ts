@@ -167,4 +167,7 @@ export interface PropertiesService {
     token?: string,
   ): Promise<Property>;
   deletePhoto(id: string, photoId: string, token?: string): Promise<Property>;
+  /** Sube un archivo suelto (contrato, cédula, certificado…) a la carpeta de
+   * Google Drive ya publicada de la propiedad. */
+  uploadDriveFile(id: string, file: File, token?: string): Promise<void>;
 }
