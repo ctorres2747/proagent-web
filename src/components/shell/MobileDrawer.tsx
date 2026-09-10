@@ -6,7 +6,6 @@ import Link from "next/link";
 
 import { filterNavItems, NAV_GROUPS, resolveActiveNavId } from "./nav-config";
 import { SidebarNavItem } from "./SidebarNavItem";
-import { ShellUserMenu } from "./ShellUserMenu";
 import { ViewingAsSelect } from "./ViewingAsSelect";
 
 const FOCUSABLE =
@@ -141,7 +140,6 @@ export function MobileDrawer({
 
         <div className="border-t border-[rgba(255,255,255,.12)] p-3">
           {admin ? <ViewingAsSelect collapsed={false} /> : null}
-          <ShellUserMenu collapsed={false} />
         </div>
       </div>
     </div>

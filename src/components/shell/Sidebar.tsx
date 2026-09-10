@@ -5,7 +5,6 @@ import Link from "next/link";
 
 import { filterNavItems, NAV_GROUPS, resolveActiveNavId } from "./nav-config";
 import { SidebarNavItem } from "./SidebarNavItem";
-import { ShellUserMenu } from "./ShellUserMenu";
 import { ViewingAsSelect } from "./ViewingAsSelect";
 
 export function Sidebar({
@@ -111,7 +110,6 @@ export function Sidebar({
       <div className="shrink-0 border-t border-[rgba(255,255,255,.12)] p-3">
         {admin && !collapsed ? <ViewingAsSelect collapsed={false} /> : null}
         {admin && collapsed ? <ViewingAsSelect collapsed /> : null}
-        <ShellUserMenu collapsed={collapsed} />
         <button
           type="button"
           onClick={onToggleCollapsed}
