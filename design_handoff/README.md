@@ -41,3 +41,12 @@
 - Spec: [`inventario-header-fixes-README.md`](./inventario-header-fixes-README.md)
 - Sprint: **053** — deduplicar header, tarjeta de filtros, quitar Canales en lista, paginación abajo
 - Origen: Owner (Claude Design); nombre original del export: `Inventario - Ajustes.dc.html`
+
+---
+
+## Asistente IA — shell + avatar único (Claude Design, 2026-09-10)
+
+- Artifact: [`inventario-ajustes.dc.html`](./inventario-ajustes.dc.html) (clic en FAB esmeralda → panel chat)
+- Screenshot: [`screenshots/08-asistente-panel.jpg`](./screenshots/08-asistente-panel.jpg)
+- Sprint: **055** — quitar avatar del riel; FAB + drawer Asistente (UI shell, sin backend IA)
+- Spec mobile: [`sprints/055-asistente-ia-shell.md`](https://github.com/ctorres2747/proagent-mobile/blob/main/sprints/055-asistente-ia-shell.md)

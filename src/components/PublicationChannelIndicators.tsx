@@ -1,3 +1,5 @@
+import { Check, Clock, Loader2, Minus, X } from "lucide-react";
+
 import { CHANNEL_META } from "@/design-system/channels";
 import type { ChannelId } from "@/design-system/channels";
 import { ChannelLogo } from "@/components/ChannelLogo";
@@ -9,55 +11,60 @@ import {
 } from "@/lib/publicationDisplay";
 import type { Publication } from "@/services/interfaces/publications";
 
-const INDICATOR_CLASS: Record<ChannelIndicatorKind, string> = {
-  published: "text-[var(--pa-accent)]",
-  pending: "text-[#D97706]",
-  error: "text-[var(--pa-danger)]",
-  progress: "text-[#D97706]",
-  scheduled: "text-[#D97706]",
-};
+const BADGE_BASE =
+  "absolute -bottom-0.5 -right-1 flex items-center justify-center rounded-full ring-2 ring-[var(--pa-surface)]";
 
-function IndicatorIcon({ kind }: { kind: ChannelIndicatorKind }) {
-  const className = `h-3.5 w-3.5 shrink-0 ${INDICATOR_CLASS[kind]}`;
-  if (kind === "published") {
-    return (
-      <svg viewBox="0 0 20 20" className={className} aria-hidden>
-        <path
-          fill="currentColor"
-          d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm3.857-9.809a.75.75 0 0 0-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 1 0-1.06 1.061l2.5 2.5a.75.75 0 0 0 1.137-.089l4-5.5Z"
-        />
-      </svg>
-    );
+function ChannelStatusBadge({ kind }: { kind: ChannelIndicatorKind }) {
+  switch (kind) {
+    case "published":
+      return (
+        <span
+          className={`${BADGE_BASE} h-[18px] w-[18px] bg-[#1E8E5A] shadow-[0_1px_3px_rgba(30,142,90,.35)]`}
+          aria-hidden
+        >
+          <Check size={11} strokeWidth={3} className="text-white" />
+        </span>
+      );
+    case "error":
+      return (
+        <span
+          className={`${BADGE_BASE} h-[18px] w-[18px] bg-[var(--pa-danger)] shadow-[0_1px_3px_rgba(194,59,43,.3)]`}
+          aria-hidden
+        >
+          <X size={11} strokeWidth={3} className="text-white" />
+        </span>
+      );
+    case "progress":
+      return (
+        <span
+          className={`${BADGE_BASE} h-[18px] w-[18px] bg-white shadow-[0_1px_3px_rgba(16,33,49,.12)]`}
+          aria-hidden
+        >
+          <Loader2 size={12} className="animate-spin text-[#D97706]" />
+        </span>
+      );
+    case "scheduled":
+      return (
+        <span
+          className={`${BADGE_BASE} h-[18px] w-[18px] bg-[#D97706] shadow-[0_1px_3px_rgba(217,119,6,.3)]`}
+          aria-hidden
+        >
+          <Clock size={10} strokeWidth={2.5} className="text-white" />
+        </span>
+      );
+    default:
+      return (
+        <span
+          className={`${BADGE_BASE} h-[18px] w-[18px] bg-[#9AA6B2] shadow-[0_1px_2px_rgba(16,33,49,.1)]`}
+          aria-hidden
+        >
+          <Minus size={11} strokeWidth={3} className="text-white" />
+        </span>
+      );
   }
-  if (kind === "error") {
-    return (
-      <svg viewBox="0 0 20 20" className={className} aria-hidden>
-        <path
-          fill="currentColor"
-          d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16ZM8.28 7.22a.75.75 0 0 0-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 1 0 1.06 1.06L10 11.06l1.72 1.72a.75.75 0 1 0 1.06-1.06L11.06 10l1.72-1.72a.75.75 0 0 0-1.06-1.06L10 8.94 8.28 7.22Z"
-        />
-      </svg>
-    );
-  }
-  if (kind === "progress") {
-    return (
-      <span
-        className={`inline-block h-3.5 w-3.5 shrink-0 animate-spin rounded-full border-2 border-current border-t-transparent ${INDICATOR_CLASS[kind]}`}
-        aria-hidden
-      />
-    );
-  }
-  return (
-    <svg viewBox="0 0 20 20" className={className} aria-hidden>
-      <path
-        fill="currentColor"
-        d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495ZM10 5.75a.75.75 0 0 0-.75.75v4.5a.75.75 0 0 0 1.5 0v-4.5A.75.75 0 0 0 10 5.75Zm0 8a1 1 0 1 0 0 2 1 1 0 0 0 0-2Z"
-      />
-    </svg>
-  );
 }
 
-/** Íconos de canal con check / alerta / error para la lista de Publicación. */
+/** Íconos de canal con badge de estado para la lista de Publicación. */
 export function PublicationChannelIndicators({
   publication,
   connectedChannelIds,
@@ -71,7 +78,7 @@ export function PublicationChannelIndicators({
   }
 
   return (
-    <div className="flex flex-wrap gap-2.5">
+    <div className="flex flex-wrap gap-3">
       {channels.map((channelId) => {
         const kind = channelIndicatorForPublication(
           channelId,
@@ -85,10 +92,10 @@ export function PublicationChannelIndicators({
             key={channelId}
             title={label}
             aria-label={label}
-            className="inline-flex flex-col items-center gap-0.5"
+            className="relative inline-flex shrink-0"
           >
-            <ChannelLogo channelId={channelId} size={26} />
-            <IndicatorIcon kind={kind} />
+            <ChannelLogo channelId={channelId} size={28} />
+            <ChannelStatusBadge kind={kind} />
             <span className="sr-only">{CHANNEL_META[channelId].name}</span>
           </span>
         );

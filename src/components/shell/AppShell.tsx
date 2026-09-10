@@ -9,6 +9,7 @@ import { useAuth } from "@/features/auth/AuthProvider";
 import { canAccessCaptacion } from "@/lib/agentDisplay";
 import { navCountsService } from "@/services/http/navCounts";
 
+import { AssistantShellFromSession } from "./AssistantShell";
 import { MobileDrawer } from "./MobileDrawer";
 import { Sidebar } from "./Sidebar";
 import { ShellHeader } from "./ShellHeader";
@@ -90,6 +91,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             {children}
           </div>
         </main>
+
+        {sessionReady ? (
+          <AssistantShellFromSession
+            pathname={pathname}
+            session={session}
+            inventoryCount={navCounts?.inventoryCount}
+            captacionPending={navCounts?.captacionPending}
+          />
+        ) : null}
       </div>
     </div>
   );
