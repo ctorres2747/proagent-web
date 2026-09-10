@@ -1576,6 +1576,7 @@ function ContentStep({
               label="Administración (COP)"
               value={form.administracion}
               onChange={(v) => onPatch({ administracion: v })}
+              missing={driveMissing.includes("adminFee")}
               thousands
             />
             <ControlledField
