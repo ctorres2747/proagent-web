@@ -1,3 +1,13 @@
+/** "280000000" -> "280.000.000" (formato COP) — para inputs de precio
+ * mientras se escribe; el valor se sigue guardando con los puntos, quitados
+ * después por el parser correspondiente (parsePrecioInput/parsePriceInput)
+ * antes de mandar el número al backend o comparar contra un filtro. */
+export function formatThousandsInput(raw: string): string {
+  const digits = raw.replace(/\D/g, "");
+  if (!digits) return "";
+  return Number(digits).toLocaleString("es-CO");
+}
+
 const cop = new Intl.NumberFormat("es-CO", {
   style: "currency",
   currency: "COP",

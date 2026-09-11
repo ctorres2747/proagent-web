@@ -5,6 +5,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import type { AgentSession } from "@/features/auth/types";
 import type { ParqueaderoPreferencia } from "@/services/interfaces/criterios";
 import { criteriosService } from "@/services";
+import { formatThousandsInput } from "@/lib/format";
 
 const TIPOS = ["Casa", "Apartamento"] as const;
 
@@ -34,6 +35,17 @@ function parseOptionalNumber(value: string): number | null {
   const trimmed = value.trim();
   if (!trimmed) return null;
   const n = Number(trimmed);
+  return Number.isFinite(n) ? n : null;
+}
+
+/** Para precioMin/precioMax: el input muestra el valor con puntos de mil
+ * (formatThousandsInput), así que hay que quitarlos antes de parsear —
+ * a diferencia de metrajeMin/metrajeMax, que sí pueden traer un decimal
+ * real (ej. "45.5" m2) y usan parseOptionalNumber tal cual. */
+function parsePrecioInput(value: string): number | null {
+  const digits = value.replace(/\D/g, "");
+  if (!digits) return null;
+  const n = Number(digits);
   return Number.isFinite(n) ? n : null;
 }
 
@@ -72,8 +84,8 @@ export function CriteriosCaptacionPanel({
     mutationFn: () =>
       criteriosService.update(
         {
-          precioMin: parseOptionalNumber(form?.precioMin ?? ""),
-          precioMax: parseOptionalNumber(form?.precioMax ?? ""),
+          precioMin: parsePrecioInput(form?.precioMin ?? ""),
+          precioMax: parsePrecioInput(form?.precioMax ?? ""),
           metrajeMin: parseOptionalNumber(form?.metrajeMin ?? ""),
           metrajeMax: parseOptionalNumber(form?.metrajeMax ?? ""),
           tipoInmueble: form?.tipoInmueble ?? [],
@@ -154,12 +166,14 @@ export function CriteriosCaptacionPanel({
                     Precio mín. (COP)
                   </span>
                   <input
-                    type="number"
-                    min={0}
-                    step={5_000_000}
-                    value={form.precioMin}
+                    type="text"
+                    inputMode="numeric"
+                    value={formatThousandsInput(form.precioMin)}
                     onChange={(e) =>
-                      setForm((f) => f && { ...f, precioMin: e.target.value })
+                      setForm(
+                        (f) =>
+                          f && { ...f, precioMin: formatThousandsInput(e.target.value) },
+                      )
                     }
                     placeholder="Sin mínimo"
                     className="w-full rounded-[10px] border border-[var(--pa-border)] bg-[var(--pa-bg)] px-3 py-2 text-[13px]"
@@ -170,12 +184,14 @@ export function CriteriosCaptacionPanel({
                     Precio máx. (COP)
                   </span>
                   <input
-                    type="number"
-                    min={0}
-                    step={5_000_000}
-                    value={form.precioMax}
+                    type="text"
+                    inputMode="numeric"
+                    value={formatThousandsInput(form.precioMax)}
                     onChange={(e) =>
-                      setForm((f) => f && { ...f, precioMax: e.target.value })
+                      setForm(
+                        (f) =>
+                          f && { ...f, precioMax: formatThousandsInput(e.target.value) },
+                      )
                     }
                     placeholder="Sin máximo"
                     className="w-full rounded-[10px] border border-[var(--pa-border)] bg-[var(--pa-bg)] px-3 py-2 text-[13px]"
