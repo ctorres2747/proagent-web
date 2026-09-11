@@ -11,54 +11,58 @@ import {
 } from "@/lib/publicationDisplay";
 import type { Publication } from "@/services/interfaces/publications";
 
+// El logo de canal mide 28px (ver <ChannelLogo> abajo) — un badge de 18px
+// (64% del ícono) tapaba buena parte del logo en vez de leerse como un
+// acento de esquina. 13px (~45%, proporción típica de un badge de
+// notificación) + más offset negativo lo deja mayormente afuera del ícono.
 const BADGE_BASE =
-  "absolute -bottom-0.5 -right-1 flex items-center justify-center rounded-full ring-2 ring-[var(--pa-surface)]";
+  "absolute -bottom-1 -right-1 flex items-center justify-center rounded-full ring-2 ring-[var(--pa-surface)]";
 
 function ChannelStatusBadge({ kind }: { kind: ChannelIndicatorKind }) {
   switch (kind) {
     case "published":
       return (
         <span
-          className={`${BADGE_BASE} h-[18px] w-[18px] bg-[#1E8E5A] shadow-[0_1px_3px_rgba(30,142,90,.35)]`}
+          className={`${BADGE_BASE} h-[13px] w-[13px] bg-[#1E8E5A] shadow-[0_1px_3px_rgba(30,142,90,.35)]`}
           aria-hidden
         >
-          <Check size={11} strokeWidth={3} className="text-white" />
+          <Check size={8} strokeWidth={3.2} className="text-white" />
         </span>
       );
     case "error":
       return (
         <span
-          className={`${BADGE_BASE} h-[18px] w-[18px] bg-[var(--pa-danger)] shadow-[0_1px_3px_rgba(194,59,43,.3)]`}
+          className={`${BADGE_BASE} h-[13px] w-[13px] bg-[var(--pa-danger)] shadow-[0_1px_3px_rgba(194,59,43,.3)]`}
           aria-hidden
         >
-          <X size={11} strokeWidth={3} className="text-white" />
+          <X size={8} strokeWidth={3.2} className="text-white" />
         </span>
       );
     case "progress":
       return (
         <span
-          className={`${BADGE_BASE} h-[18px] w-[18px] bg-white shadow-[0_1px_3px_rgba(16,33,49,.12)]`}
+          className={`${BADGE_BASE} h-[13px] w-[13px] bg-white shadow-[0_1px_3px_rgba(16,33,49,.12)]`}
           aria-hidden
         >
-          <Loader2 size={12} className="animate-spin text-[#D97706]" />
+          <Loader2 size={9} className="animate-spin text-[#D97706]" />
         </span>
       );
     case "scheduled":
       return (
         <span
-          className={`${BADGE_BASE} h-[18px] w-[18px] bg-[#D97706] shadow-[0_1px_3px_rgba(217,119,6,.3)]`}
+          className={`${BADGE_BASE} h-[13px] w-[13px] bg-[#D97706] shadow-[0_1px_3px_rgba(217,119,6,.3)]`}
           aria-hidden
         >
-          <Clock size={10} strokeWidth={2.5} className="text-white" />
+          <Clock size={7.5} strokeWidth={2.8} className="text-white" />
         </span>
       );
     default:
       return (
         <span
-          className={`${BADGE_BASE} h-[18px] w-[18px] bg-[#9AA6B2] shadow-[0_1px_2px_rgba(16,33,49,.1)]`}
+          className={`${BADGE_BASE} h-[13px] w-[13px] bg-[#9AA6B2] shadow-[0_1px_2px_rgba(16,33,49,.1)]`}
           aria-hidden
         >
-          <Minus size={11} strokeWidth={3} className="text-white" />
+          <Minus size={8} strokeWidth={3.2} className="text-white" />
         </span>
       );
   }
