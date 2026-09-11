@@ -2,6 +2,8 @@
 
 import { useEffect, useRef } from "react";
 
+import { formatThousandsInput } from "@/lib/format";
+
 export interface PriceRange {
   min: string;
   max: string;
@@ -104,8 +106,10 @@ export function PriceRangeFilter({
                 type="text"
                 inputMode="numeric"
                 placeholder="Sin mínimo"
-                value={range.min}
-                onChange={(e) => onChange({ ...range, min: e.target.value })}
+                value={formatThousandsInput(range.min)}
+                onChange={(e) =>
+                  onChange({ ...range, min: formatThousandsInput(e.target.value) })
+                }
                 className="w-full rounded-[10px] border border-[var(--pa-border)] bg-[var(--pa-bg)] px-3 py-2 text-[13px]"
               />
             </label>
@@ -117,8 +121,10 @@ export function PriceRangeFilter({
                 type="text"
                 inputMode="numeric"
                 placeholder="Sin máximo"
-                value={range.max}
-                onChange={(e) => onChange({ ...range, max: e.target.value })}
+                value={formatThousandsInput(range.max)}
+                onChange={(e) =>
+                  onChange({ ...range, max: formatThousandsInput(e.target.value) })
+                }
                 className="w-full rounded-[10px] border border-[var(--pa-border)] bg-[var(--pa-bg)] px-3 py-2 text-[13px]"
               />
             </label>

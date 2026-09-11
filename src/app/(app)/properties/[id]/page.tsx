@@ -34,7 +34,7 @@ import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { Spinner } from "@/components/Spinner";
 import { WasiFeaturesCheckboxes } from "@/components/properties/WasiFeaturesCheckboxes";
 import { DeletePropertyDialog } from "@/components/DeletePropertyDialog";
-import { formatPrice } from "@/lib/format";
+import { formatPrice, formatThousandsInput } from "@/lib/format";
 import { capturedAtLabel } from "@/lib/formatCapturedAt";
 import {
   checklistForTipo,
@@ -1166,13 +1166,6 @@ function Chip({
   return <span className={className}>{children}</span>;
 }
 
-/** "280000000" -> "280.000.000" (formato COP, sin obligar al agente a tipear los puntos). */
-function formatThousands(raw: string): string {
-  const digits = raw.replace(/\D/g, "");
-  if (!digits) return "";
-  return Number(digits).toLocaleString("es-CO");
-}
-
 function ControlledField({
   label: l,
   value,
@@ -1208,9 +1201,9 @@ function ControlledField({
         inputMode={thousands ? "numeric" : undefined}
         list={listId}
         className={`${input} ${missing ? "border-[var(--pa-danger)] focus:border-[var(--pa-danger)]" : ""}`}
-        value={thousands ? formatThousands(value) : value}
+        value={thousands ? formatThousandsInput(value) : value}
         onChange={(e) =>
-          onChange(thousands ? formatThousands(e.target.value) : e.target.value)
+          onChange(thousands ? formatThousandsInput(e.target.value) : e.target.value)
         }
       />
       {listId && suggestions?.length ? (
