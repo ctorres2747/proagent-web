@@ -1255,6 +1255,74 @@ function PrimaryBlock({
   );
 }
 
+/** Subir un archivo suelto (contrato, cédula, certificado…) a la carpeta de
+ * Drive de la propiedad — vive en el bloque "Google Drive (Entrega)" de
+ * Contenido, no en la pestaña Resultados (pedido de Cristhian: el paso a
+ * Resultados no es obvio para una propiedad recién creada). Funciona incluso
+ * si Drive nunca se publicó — el backend crea la carpeta en el momento. */
+function DriveFileUploadField({
+  propertyId,
+  token,
+}: {
+  propertyId: string;
+  token?: string;
+}) {
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [uploadedName, setUploadedName] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  const onFileSelected = async (file: File | undefined) => {
+    if (!file) return;
+    setUploading(true);
+    setError(null);
+    setUploadedName(null);
+    try {
+      await propertiesService.uploadDriveFile(propertyId, file, token);
+      setUploadedName(file.name);
+    } catch (err) {
+      setError(
+        err instanceof ApiError
+          ? err.message
+          : "No se pudo subir el archivo a Google Drive.",
+      );
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  return (
+    <div className="sm:col-span-3 border-t border-[var(--pa-border)] pt-3">
+      <div className={label}>Archivos adicionales (contrato, cédula, certificado…)</div>
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.webp"
+        className="hidden"
+        onChange={(e) => void onFileSelected(e.target.files?.[0])}
+      />
+      <button
+        type="button"
+        disabled={uploading}
+        onClick={() => fileInputRef.current?.click()}
+        title="Sube un contrato, cédula, certificado u otro archivo a la carpeta de Drive de esta propiedad"
+        className="rounded-lg border border-[var(--pa-border)] px-3.5 py-1.5 text-[11px] font-bold text-[var(--pa-ink)] disabled:opacity-50"
+      >
+        {uploading ? "Subiendo…" : "+ Agregar archivo"}
+      </button>
+      {uploadedName ? (
+        <p className="mt-1.5 text-xs font-semibold text-[var(--pa-success)]">
+          ✅ {uploadedName} subido a la carpeta de Drive.
+        </p>
+      ) : null}
+      {error ? (
+        <p className="mt-1.5 text-xs font-semibold text-[var(--pa-danger)]">{error}</p>
+      ) : null}
+    </div>
+  );
+}
+
 const PROPERTY_TYPES = ["Apartamento", "Casa", "Apartaestudio", "Oficina", "Local"];
 const INTENTS = ["Venta", "Arriendo"] as const satisfies readonly Intent[];
 const CONDITIONS = [
@@ -1671,6 +1739,7 @@ function ContentStep({
                 }
               />
             </div>
+            <DriveFileUploadField propertyId={property.id} token={token} />
           </div>
         </Card>
 
