@@ -53,6 +53,7 @@ interface RawProperty {
   descripcion?: string | null;
   telefono_contacto?: string | null;
   nombre_contacto?: string | null;
+  numero_apartamento?: string | null;
   completeness?: number | null;
   missing_fields?: string[] | null;
   completeness_drive?: { is_complete?: boolean; missing_fields?: string[] } | null;
@@ -144,6 +145,9 @@ function mapProperty(raw: RawProperty): Property {
     nombreContacto: raw.nombre_contacto?.trim()
       ? raw.nombre_contacto.trim()
       : null,
+    numeroApartamento: raw.numero_apartamento?.trim()
+      ? raw.numero_apartamento.trim()
+      : null,
     completeness: typeof raw.completeness === "number" ? raw.completeness : 0,
     missingFields: Array.isArray(raw.missing_fields) ? raw.missing_fields : [],
     completenessDrive: {
@@ -204,6 +208,9 @@ function toWriteBody(
     body.telefono_contacto = data.telefonoContacto;
   }
   if (data.nombreContacto !== undefined) body.nombre_contacto = data.nombreContacto;
+  if (data.numeroApartamento !== undefined) {
+    body.numero_apartamento = data.numeroApartamento;
+  }
   if (data.predial !== undefined) body.predial = data.predial;
   if (data.afectacionesInmueble !== undefined) {
     body.afectaciones_inmueble = data.afectacionesInmueble;

@@ -132,6 +132,7 @@ type ContentFormSnapshot = {
   descripcion: string;
   telefonoContacto: string;
   nombreContacto: string;
+  numeroApartamento: string;
   municipio: string;
   barrio: string;
   tipo: string;
@@ -167,6 +168,7 @@ function emptyContentForm(): ContentFormSnapshot {
     descripcion: "",
     telefonoContacto: "",
     nombreContacto: "",
+    numeroApartamento: "",
     municipio: "",
     barrio: "",
     tipo: "",
@@ -203,6 +205,7 @@ function snapshotFromProperty(property: Property): ContentFormSnapshot {
     descripcion: property.descripcion ?? "",
     telefonoContacto: property.telefonoContacto ?? "",
     nombreContacto: property.nombreContacto ?? "",
+    numeroApartamento: property.numeroApartamento ?? "",
     municipio: property.municipio ?? "",
     barrio: property.barrio ?? "",
     tipo: property.tipo ?? "",
@@ -265,6 +268,7 @@ function contentFormsEqual(a: ContentFormSnapshot, b: ContentFormSnapshot): bool
     a.descripcion === b.descripcion &&
     a.telefonoContacto === b.telefonoContacto &&
     a.nombreContacto === b.nombreContacto &&
+    a.numeroApartamento === b.numeroApartamento &&
     a.municipio === b.municipio &&
     a.barrio === b.barrio &&
     a.tipo === b.tipo &&
@@ -613,6 +617,7 @@ export default function PublishWizardPage() {
           descripcion: contentForm.descripcion,
           telefonoContacto: contentForm.telefonoContacto,
           nombreContacto: contentForm.nombreContacto,
+          numeroApartamento: contentForm.numeroApartamento || null,
           municipio: contentForm.municipio,
           barrio: contentForm.barrio || null,
           tipo: contentForm.tipo || undefined,
@@ -887,6 +892,7 @@ export default function PublishWizardPage() {
     descripcion: sharedBody || contentForm.descripcion || property.descripcion,
     telefonoContacto: contentForm.telefonoContacto || property.telefonoContacto,
     nombreContacto: contentForm.nombreContacto || property.nombreContacto,
+    numeroApartamento: contentForm.numeroApartamento || property.numeroApartamento,
     municipio: contentForm.municipio || property.municipio,
     barrio: contentForm.barrio || property.barrio,
     tipo: contentForm.tipo || property.tipo,
@@ -1614,6 +1620,11 @@ function ContentStep({
               label="Piso"
               value={form.piso}
               onChange={(v) => onPatch({ piso: v })}
+            />
+            <ControlledField
+              label="N° Apartamento (uso interno, no se publica)"
+              value={form.numeroApartamento}
+              onChange={(v) => onPatch({ numeroApartamento: v })}
             />
             <ControlledField
               label="Área (m²) *"
