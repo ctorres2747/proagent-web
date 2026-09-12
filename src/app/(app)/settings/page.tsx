@@ -14,6 +14,8 @@ import {
   getFacebookConnectStatus,
   triggerFacebookConnect,
 } from "@/services/http/facebookConnect";
+import { createWorkerEnrollCode, getWorkerStatus } from "@/services/http/workerEnroll";
+import { API_URL } from "@/config/env";
 import type { AgentProfile } from "@/services/interfaces/profile";
 import type { ChannelConnection } from "@/services/interfaces/channels";
 
@@ -281,6 +283,85 @@ function ToggleSwitch({
         }`}
       />
     </button>
+  );
+}
+
+function WorkerInstallSection({ token }: { token?: string }) {
+  const [code, setCode] = useState<string | null>(null);
+  const [expiraEnMinutos, setExpiraEnMinutos] = useState<number | null>(null);
+
+  const statusQuery = useQuery({
+    queryKey: ["worker-status"],
+    queryFn: () => getWorkerStatus(token),
+    refetchInterval: 15000,
+  });
+
+  const enrollMutation = useMutation({
+    mutationFn: () => createWorkerEnrollCode(token),
+    onSuccess: (data) => {
+      setCode(data.code);
+      setExpiraEnMinutos(data.expiraEnMinutos);
+    },
+  });
+
+  const status = statusQuery.data;
+  const installerUrl = `${API_URL}/downloads/instalador-worker-marketplace.exe`;
+
+  return (
+    <div className="mt-3 space-y-2.5 rounded-lg border border-[var(--pa-border)] bg-[var(--pa-bg-alt)] p-3">
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-[12px] font-semibold text-[var(--pa-ink)]">
+          Worker de Marketplace en esta PC
+        </p>
+        {status?.configurado ? (
+          <span
+            className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
+              status.conectado
+                ? "bg-[var(--pa-success-bg)] text-[var(--pa-accent)]"
+                : "bg-[var(--pa-warning-bg)] text-[var(--pa-warning-ink)]"
+            }`}
+          >
+            {status.conectado ? "Activo" : "Sin actividad reciente"}
+          </span>
+        ) : null}
+      </div>
+      <p className="text-[11px] text-[var(--pa-muted)]">
+        Marketplace necesita un programa corriendo en tu propia PC (usa tu
+        sesión de Facebook e IP residencial). Genera un código, descarga el
+        instalador y pégalo cuando te lo pida — el resto queda listo solo.
+      </p>
+
+      {code ? (
+        <div className="space-y-2 rounded-lg border border-dashed border-[var(--pa-border)] bg-[var(--pa-bg)] p-3">
+          <p className="text-[11px] text-[var(--pa-muted)]">
+            Código de instalación (válido {expiraEnMinutos} min):
+          </p>
+          <p className="text-center font-mono text-[20px] font-bold tracking-[0.3em] text-[var(--pa-ink)]">
+            {code}
+          </p>
+          <a
+            href={installerUrl}
+            className="block rounded-lg bg-[var(--pa-navy)] px-4 py-2 text-center text-[12px] font-bold text-white"
+          >
+            Descargar instalador (Windows)
+          </a>
+        </div>
+      ) : (
+        <button
+          type="button"
+          disabled={enrollMutation.isPending}
+          onClick={() => enrollMutation.mutate()}
+          className="rounded-lg bg-[var(--pa-navy)] px-4 py-2 text-[12px] font-bold text-white disabled:opacity-60"
+        >
+          {status?.configurado ? "Generar código nuevo" : "Instalar en esta PC"}
+        </button>
+      )}
+      {enrollMutation.isError ? (
+        <p className="text-[11px] text-[var(--pa-danger)]">
+          No se pudo generar el código. Intenta de nuevo.
+        </p>
+      ) : null}
+    </div>
   );
 }
 
@@ -618,6 +699,8 @@ function ChannelRow({
             ))}
         </div>
       ) : null}
+
+      {id === "facebook" && fbPerAgent ? <WorkerInstallSection token={token} /> : null}
 
       {expanded && canConfigure ? (
         <div className="mt-4 space-y-3 border-t border-[var(--pa-border)] pt-4">
