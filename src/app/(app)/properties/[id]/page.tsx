@@ -1622,7 +1622,7 @@ function ContentStep({
               onChange={(v) => onPatch({ piso: v })}
             />
             <ControlledField
-              label="N° Apartamento (uso interno, no se publica)"
+              label="N° Apartamento"
               value={form.numeroApartamento}
               onChange={(v) => onPatch({ numeroApartamento: v })}
             />
