@@ -54,6 +54,8 @@ export interface Property {
   /** Teléfono de contacto del propietario (persistido en ficha). */
   telefonoContacto: string | null;
   nombreContacto: string | null;
+  /** N° de apartamento — dato interno del inmueble, nunca se publica en ningún canal. */
+  numeroApartamento: string | null;
   /** 0..100 completeness indicator (mirrors mobile). */
   completeness: number;
   /** Required fields still missing (mobile keys: title, photos, …). */
@@ -108,6 +110,7 @@ export interface PropertiesService {
         | "featureIds"
         | "telefonoContacto"
         | "nombreContacto"
+        | "numeroApartamento"
         | "predial"
         | "afectacionesInmueble"
         | "afectacionesDetalle"
@@ -147,6 +150,7 @@ export interface PropertiesService {
         | "featureIds"
         | "telefonoContacto"
         | "nombreContacto"
+        | "numeroApartamento"
         | "predial"
         | "afectacionesInmueble"
         | "afectacionesDetalle"

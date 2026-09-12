@@ -14,6 +14,7 @@ function channels(map: Partial<Record<ChannelId, ChannelStatus>>): PropertyChann
 }
 
 const DRIVE_FIELDS_DEFAULT = {
+  numeroApartamento: null,
   completenessDrive: { isComplete: false, missingFields: [] as string[] },
   predial: null,
   afectacionesInmueble: null,
@@ -25,6 +26,7 @@ const DRIVE_FIELDS_DEFAULT = {
   frenteFondoM: null,
 } satisfies Pick<
   Property,
+  | "numeroApartamento"
   | "completenessDrive"
   | "predial"
   | "afectacionesInmueble"
