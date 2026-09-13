@@ -2995,7 +2995,18 @@ function ResultsStep({
               <div className="mt-1 text-xs text-[var(--pa-danger)]">{r.error}</div>
             ) : null}
             {r.note ? (
-              <div className="mt-1 text-xs text-[var(--pa-muted)]">{r.note}</div>
+              r.id === "entrega" && /^https?:\/\//.test(r.note) ? (
+                <a
+                  href={r.note}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-1 inline-block text-xs font-semibold text-[var(--pa-navy)] underline"
+                >
+                  Ver carpeta en Google Drive ↗
+                </a>
+              ) : (
+                <div className="mt-1 text-xs text-[var(--pa-muted)]">{r.note}</div>
+              )
             ) : null}
             {r.id === "facebook" && mpLoginState === "done" ? (
               <div className="mt-1 text-xs text-[var(--pa-success)]">
