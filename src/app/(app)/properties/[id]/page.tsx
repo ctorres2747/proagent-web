@@ -1680,6 +1680,7 @@ function ContentStep({
               label="Predial *"
               value={form.predial}
               onChange={(v) => onPatch({ predial: v })}
+              thousands
             />
             <div className="sm:col-span-2">
               <div className={label}>Afectaciones *</div>
