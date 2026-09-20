@@ -432,9 +432,9 @@ function PropertyTable({
   const cols =
     "grid-cols-[36px_64px_minmax(0,2fr)_minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,1.2fr)_minmax(0,1.2fr)_minmax(0,1.1fr)_72px]";
   return (
-    <div className="overflow-hidden rounded-2xl border border-[var(--pa-border)] bg-[var(--pa-surface)]">
+    <div className="rounded-2xl border border-[var(--pa-border)] bg-[var(--pa-surface)]">
       <div
-        className={`grid ${cols} gap-3 border-b border-[var(--pa-border)] bg-[var(--pa-bg)] px-5 py-3.5 text-[11px] font-bold uppercase tracking-wide text-[var(--pa-muted)]`}
+        className={`sticky top-0 z-10 grid ${cols} gap-3 rounded-t-2xl border-b border-[var(--pa-border)] bg-[var(--pa-bg)] px-5 py-3.5 text-[11px] font-bold uppercase tracking-wide text-[var(--pa-muted)]`}
       >
         <div className="truncate">#</div>
         <div />
@@ -449,7 +449,7 @@ function PropertyTable({
       {properties.map((p, index) => (
         <div
           key={p.id}
-          className={`grid w-full ${cols} items-center gap-3 border-b border-[var(--pa-bg-alt)] px-5 py-3 last:border-b-0 hover:bg-[var(--pa-bg)]`}
+          className={`grid w-full ${cols} items-center gap-3 border-b border-[var(--pa-bg-alt)] px-5 py-3 last:rounded-b-2xl last:border-b-0 hover:bg-[var(--pa-bg)]`}
         >
           <div className="text-[12px] font-bold tabular-nums text-[var(--pa-faint)]">
             {startIndex + index + 1}
