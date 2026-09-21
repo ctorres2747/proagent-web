@@ -42,7 +42,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }, []);
 
   return (
-    <div className="flex min-h-screen bg-[var(--pa-bg)] text-[var(--pa-ink)]">
+    <div className="flex h-screen overflow-hidden bg-[var(--pa-bg)] text-[var(--pa-ink)]">
       <a
         href="#main"
         className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[100] focus:rounded-lg focus:bg-white focus:px-4 focus:py-2 focus:shadow-lg"
