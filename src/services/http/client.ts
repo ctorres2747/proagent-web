@@ -16,6 +16,22 @@ interface RequestOptions {
   query?: Record<string, string | number | boolean | undefined | null>;
 }
 
+const SLOW_API_MS = 2000;
+
+function logSlowApiCall(
+  path: string,
+  method: string,
+  totalMs: number,
+  serverMs: string | null,
+  status: number,
+) {
+  if (process.env.NODE_ENV === "production") return;
+  console.warn(
+    `[ProAgent API lenta] ${method} ${path} → ${status} en ${totalMs.toFixed(0)}ms` +
+      (serverMs ? ` (servidor: ${serverMs}ms)` : ""),
+  );
+}
+
 async function parseError(res: Response): Promise<never> {
   if (res.status === 401) {
     throw new ApiError(401, "No autorizado");
@@ -55,11 +71,16 @@ export async function apiFetch<T>(
     if (qs) url += `?${qs}`;
   }
 
+  const started = performance.now();
   const res = await fetch(url, {
     method,
     headers,
     body: body !== undefined ? JSON.stringify(body) : undefined,
   });
+  const totalMs = performance.now() - started;
+  if (totalMs >= SLOW_API_MS) {
+    logSlowApiCall(path, method, totalMs, res.headers.get("x-process-time-ms"), res.status);
+  }
 
   if (!res.ok) await parseError(res);
   if (res.status === 204) return undefined as T;
