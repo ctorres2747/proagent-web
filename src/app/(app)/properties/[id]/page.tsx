@@ -4,13 +4,14 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/features/auth/AuthProvider";
-import { propertiesService, publicationsService, channelsService, wasiFeaturesService, wasiZonasService } from "@/services";
+import { propertiesService, publicationsService, channelsService, wasiFeaturesService, wasiZonasService, wasiCiudadesService } from "@/services";
 import type {
   Condition,
   Intent,
   Property,
 } from "@/services/interfaces/properties";
 import { applyIntentToTitle } from "@/lib/intent";
+import { matchesWasiOption, optionInList } from "@/lib/wasiLocation";
 import {
   applyToggleRepublishDefaults,
   publishedOptInChannelsFromProperty,
@@ -33,6 +34,7 @@ import { ChannelLogo } from "@/components/ChannelLogo";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { Spinner } from "@/components/Spinner";
 import { WasiFeaturesCheckboxes } from "@/components/properties/WasiFeaturesCheckboxes";
+import { WasiLocationCombobox } from "@/components/properties/WasiLocationCombobox";
 import { DeletePropertyDialog } from "@/components/DeletePropertyDialog";
 import { formatPrice, formatThousandsInput } from "@/lib/format";
 import { capturedAtLabel } from "@/lib/formatCapturedAt";
@@ -1339,6 +1341,15 @@ const CONDITIONS = [
   "En construcción",
 ] as const satisfies readonly Condition[];
 
+function useDebouncedValue<T>(value: T, delayMs: number): T {
+  const [debounced, setDebounced] = useState(value);
+  useEffect(() => {
+    const timer = window.setTimeout(() => setDebounced(value), delayMs);
+    return () => window.clearTimeout(timer);
+  }, [value, delayMs]);
+  return debounced;
+}
+
 function ContentStep({
   property,
   form,
@@ -1358,6 +1369,45 @@ function ContentStep({
   onSave: () => void;
   onNext: () => void;
 }) {
+  const [ciudadValida, setCiudadValida] = useState(false);
+  const [barrioValido, setBarrioValido] = useState(false);
+  const [ciudadQuery, setCiudadQuery] = useState(form.municipio);
+  const [locationError, setLocationError] = useState<string | null>(null);
+  const [legacyCiudad, setLegacyCiudad] = useState<string | null>(null);
+  const [legacyBarrio, setLegacyBarrio] = useState<string | null>(null);
+
+  useEffect(() => {
+    setCiudadQuery(form.municipio);
+  }, [form.municipio]);
+
+  useEffect(() => {
+    let active = true;
+    const saved = (property.municipio || form.municipio || "").trim();
+    if (!saved) {
+      setCiudadValida(false);
+      setLegacyCiudad(null);
+      return;
+    }
+    void wasiCiudadesService.resolve(saved, token).then((result) => {
+      if (!active) return;
+      if (result.canonical) {
+        if (!matchesWasiOption(saved, result.canonical)) {
+          onPatch({ municipio: result.canonical });
+        }
+        setCiudadValida(true);
+        setLegacyCiudad(null);
+      } else {
+        setCiudadValida(false);
+        setLegacyCiudad(saved);
+      }
+    });
+    return () => {
+      active = false;
+    };
+  }, [property.id, token]);
+
+  const debouncedCiudadQuery = useDebouncedValue(ciudadQuery, 300);
+
   const {
     data: wasiCatalog,
     isLoading: wasiCatalogLoading,
@@ -1366,18 +1416,68 @@ function ContentStep({
     queryKey: ["wasi-features"],
     queryFn: () => wasiFeaturesService.list(token),
   });
-  // Sugerencias para "Barrio / zona / conjunto" — WASI exige que ese campo
-  // coincida con un valor que ya reconoce, si no la ficha no sincroniza con
-  // portales aliados. Se resuelve por el municipio GUARDADO (no el que se
-  // esté escribiendo en el input, que dispararía una consulta por cada
-  // tecla); si el municipio todavía no resuelve en WASI o la ficha no tiene
-  // uno, simplemente no hay sugerencias — el campo sigue editable a mano.
-  const { data: wasiZonas } = useQuery({
-    queryKey: ["wasi-zonas", property.municipio],
-    queryFn: () => wasiZonasService.list(property.municipio, token),
-    enabled: Boolean(property.municipio),
+
+  const { data: ciudadesData, isFetching: ciudadesLoading } = useQuery({
+    queryKey: ["wasi-ciudades", debouncedCiudadQuery],
+    queryFn: () => wasiCiudadesService.search(debouncedCiudadQuery, token),
+    enabled: debouncedCiudadQuery.trim().length >= 2,
     retry: false,
   });
+
+  const ciudadOptions = useMemo(
+    () => (ciudadesData?.ciudades ?? []).map((c) => c.name),
+    [ciudadesData],
+  );
+
+  const { data: wasiZonas, isFetching: zonasLoading } = useQuery({
+    queryKey: ["wasi-zonas", form.municipio],
+    queryFn: () => wasiZonasService.list(form.municipio, token),
+    enabled: ciudadValida && Boolean(form.municipio.trim()),
+    retry: false,
+  });
+
+  const barrioOptions = wasiZonas?.zonas ?? [];
+
+  useEffect(() => {
+    if (!ciudadValida) return;
+    const savedBarrio = (form.barrio || "").trim();
+    if (!savedBarrio) {
+      setBarrioValido(false);
+      setLegacyBarrio(null);
+      return;
+    }
+    if (barrioOptions.length === 0) return;
+    if (optionInList(savedBarrio, barrioOptions)) {
+      setBarrioValido(true);
+      setLegacyBarrio(null);
+    } else {
+      setBarrioValido(false);
+      setLegacyBarrio(savedBarrio);
+    }
+  }, [ciudadValida, form.barrio, barrioOptions]);
+
+  const validateLocation = (): boolean => {
+    if (!form.municipio.trim() || !ciudadValida) {
+      setLocationError("Selecciona una ciudad del catálogo WASI.");
+      return false;
+    }
+    if (!form.barrio.trim() || !barrioValido) {
+      setLocationError("Selecciona un barrio del catálogo WASI.");
+      return false;
+    }
+    setLocationError(null);
+    return true;
+  };
+
+  const handleSave = () => {
+    if (!validateLocation()) return;
+    onSave();
+  };
+
+  const handleNext = () => {
+    if (!validateLocation()) return;
+    onNext();
+  };
   const {
     data: driveFieldOptions,
     isLoading: driveOptionsLoading,
@@ -1554,19 +1654,49 @@ function ContentStep({
 
         <Card title="Ubicación">
           <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
-            <ControlledField
+            <WasiLocationCombobox
               label="Ciudad"
               value={form.municipio}
-              onChange={(v) => onPatch({ municipio: v })}
-              missing={fieldMissing("city")}
+              onChange={(value) => {
+                setCiudadQuery(value);
+                if (!matchesWasiOption(value, form.municipio)) {
+                  onPatch({ municipio: value, barrio: "" });
+                  setBarrioValido(false);
+                  setLegacyBarrio(null);
+                } else {
+                  onPatch({ municipio: value });
+                }
+              }}
+              onValidChange={setCiudadValida}
+              options={ciudadOptions}
+              loading={ciudadesLoading}
+              missing={fieldMissing("city") || !ciudadValida}
+              helperText={
+                legacyCiudad
+                  ? "No reconocido por WASI — selecciona de la lista"
+                  : null
+              }
+              placeholder="Escribe para buscar ciudad…"
             />
-            <ControlledField
+            <WasiLocationCombobox
               label="Barrio / zona / conjunto *"
               value={form.barrio}
-              onChange={(v) => onPatch({ barrio: v })}
-              missing={fieldMissing("neighborhood")}
-              listId="wasi-zonas-list"
-              suggestions={wasiZonas?.zonas}
+              onChange={(value) => onPatch({ barrio: value })}
+              onValidChange={setBarrioValido}
+              options={barrioOptions}
+              loading={zonasLoading}
+              disabled={!ciudadValida}
+              missing={fieldMissing("neighborhood") || !barrioValido}
+              helperText={
+                legacyBarrio
+                  ? "No reconocido por WASI — selecciona de la lista"
+                  : !ciudadValida
+                    ? "Selecciona primero una ciudad válida"
+                    : null
+              }
+              placeholder={
+                ciudadValida ? "Escribe para buscar barrio…" : "Elige ciudad primero"
+              }
             />
             <ControlledField
               label="Dirección *"
@@ -1841,16 +1971,22 @@ function ContentStep({
             </p>
           )}
         </Card>
+        {locationError ? (
+          <p className="text-xs font-semibold text-[var(--pa-danger)]">{locationError}</p>
+        ) : null}
         <div className="flex flex-col gap-2">
           <button
             type="button"
-            onClick={onSave}
-            disabled={!isDirty || busy || titleBlocked}
+            onClick={handleSave}
+            disabled={!isDirty || busy || titleBlocked || !ciudadValida || !barrioValido}
             className="rounded-xl border border-[var(--pa-navy)] bg-[var(--pa-surface)] px-6 py-3.5 text-center text-[13px] font-bold text-[var(--pa-navy)] transition-opacity hover:bg-[var(--pa-bg)] disabled:cursor-not-allowed disabled:opacity-50"
           >
             {busy ? "Guardando…" : "Guardar cambios"}
           </button>
-          <PrimaryBlock onClick={onNext} disabled={busy || titleBlocked}>
+          <PrimaryBlock
+            onClick={handleNext}
+            disabled={busy || titleBlocked || !ciudadValida || !barrioValido}
+          >
             {busy ? "Guardando…" : "Continuar a fotos"}
           </PrimaryBlock>
         </div>
