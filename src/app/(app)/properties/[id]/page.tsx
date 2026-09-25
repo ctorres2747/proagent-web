@@ -1786,7 +1786,7 @@ function ContentStep({
         </Card>
       </div>
 
-      <div className="flex flex-col gap-4 lg:sticky lg:top-6">
+      <div className="flex flex-col gap-4">
         <Card>
           <div className="mb-3 text-xs font-bold uppercase tracking-wide text-[var(--pa-muted)]">
             Completitud

@@ -50,24 +50,22 @@ function PopularFeatures({
       </p>
       <div className="flex flex-wrap gap-2">
         {items.map((feat) => {
+          const label = feat.nombre?.trim() ?? "";
           const checked = selectedIds.includes(feat.id);
           return (
-            <label
+            <button
               key={feat.id}
-              className={`inline-flex cursor-pointer items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
+              type="button"
+              aria-pressed={checked}
+              onClick={() => onToggle(feat.id)}
+              className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
                 checked
                   ? "border-[var(--pa-navy)] bg-[var(--pa-navy)] text-white"
                   : "border-[var(--pa-border)] bg-[var(--pa-bg)] text-[#45525E] hover:border-[var(--pa-navy)]"
               }`}
             >
-              <input
-                type="checkbox"
-                checked={checked}
-                onChange={() => onToggle(feat.id)}
-                className="sr-only"
-              />
-              {feat.nombre}
-            </label>
+              {label || `Característica ${feat.id}`}
+            </button>
           );
         })}
       </div>
@@ -107,7 +105,7 @@ function CollapsibleGroup({
             <FeatureRow
               key={feat.id}
               id={feat.id}
-              nombre={feat.nombre}
+              nombre={feat.nombre?.trim() ?? ""}
               checked={selectedIds.includes(feat.id)}
               onToggle={onToggle}
             />
@@ -126,18 +124,17 @@ export function WasiFeaturesCheckboxes({
   error,
 }: {
   catalog: WasiFeaturesCatalog | null;
-  selectedIds: number[];
+  selectedIds: number[] | null | undefined;
   onChange: (ids: number[]) => void;
   loading?: boolean;
   error?: string | null;
 }) {
   const [query, setQuery] = useState("");
+  const ids = selectedIds ?? [];
 
   const toggle = (id: number) => {
     onChange(
-      selectedIds.includes(id)
-        ? selectedIds.filter((x) => x !== id)
-        : [...selectedIds, id],
+      ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id],
     );
   };
 
@@ -149,7 +146,7 @@ export function WasiFeaturesCheckboxes({
     };
   }, [catalog, query]);
 
-  const summary = formatWasiSelectionSummary(selectedIds, catalog);
+  const summary = formatWasiSelectionSummary(ids, catalog);
 
   const popularItems = useMemo(() => {
     if (!catalog) return [];
@@ -207,19 +204,19 @@ export function WasiFeaturesCheckboxes({
         <div className="flex flex-col gap-3">
           <PopularFeatures
             items={popularItems}
-            selectedIds={selectedIds}
+            selectedIds={ids}
             onToggle={toggle}
           />
           <CollapsibleGroup
             title="Internas"
             items={filtered.internal}
-            selectedIds={selectedIds}
+            selectedIds={ids}
             onToggle={toggle}
           />
           <CollapsibleGroup
             title="Externas"
             items={filtered.external}
-            selectedIds={selectedIds}
+            selectedIds={ids}
             onToggle={toggle}
           />
         </div>
