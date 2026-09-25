@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus, Search } from "lucide-react";
+import { Eye, Plus, Search } from "lucide-react";
 import { useAgentView } from "@/features/agentView/AgentViewProvider";
 import { useAuth } from "@/features/auth/AuthProvider";
 import { CAPTACION_NATIVE, CAPTACION_URL } from "@/config/env";
@@ -76,6 +76,7 @@ export default function CaptacionPage() {
   const [priceRange, setPriceRange] = useState<PriceRange>({ min: "", max: "" });
   const [dateRange, setDateRange] = useState<DateRange>({ from: "", to: "" });
   const [ownerSearch, setOwnerSearch] = useState("");
+  const [enRevisionFilter, setEnRevisionFilter] = useState(false);
   const [openFilter, setOpenFilter] = useState<FilterKey | null>(null);
   const [criteriosOpen, setCriteriosOpen] = useState(false);
   const [newLeadOpen, setNewLeadOpen] = useState(false);
@@ -198,8 +199,54 @@ export default function CaptacionPage() {
       if (!matchesPriceRange(lead.precioNum, priceRange)) return false;
       if (!matchesDateRange(lead.fechaCaptura, dateRange)) return false;
       if (!matchesOwnerSearch(lead, ownerSearch)) return false;
+      if (
+        enRevisionFilter &&
+        !(lead.estado === "Pendiente" && lead.enRevision)
+      ) {
+        return false;
+      }
       return true;
     });
+  }, [
+    leads,
+    municipioFilter,
+    tipoFilter,
+    portalFilter,
+    estadoFilter,
+    viewAgenteId,
+    priceRange,
+    dateRange,
+    ownerSearch,
+    enRevisionFilter,
+  ]);
+
+  const enRevisionMarkedCount = useMemo(() => {
+    return (leads ?? []).filter((lead) => {
+      if (
+        !leadMatchesMunicipio(
+          lead.municipio ?? "",
+          municipioFilter === "Todos" ? null : municipioFilter,
+        )
+      ) {
+        return false;
+      }
+      if (tipoFilter !== "Todos" && !leadMatchesTipo(lead.tipoInmueble, tipoFilter)) {
+        return false;
+      }
+      if (portalFilter !== "Todos" && lead.portal !== portalFilter) {
+        return false;
+      }
+      if (estadoFilter !== "Todos" && lead.estado !== estadoFilter) {
+        return false;
+      }
+      if (viewAgenteId && lead.ownerAgenteId !== Number(viewAgenteId)) {
+        return false;
+      }
+      if (!matchesPriceRange(lead.precioNum, priceRange)) return false;
+      if (!matchesDateRange(lead.fechaCaptura, dateRange)) return false;
+      if (!matchesOwnerSearch(lead, ownerSearch)) return false;
+      return lead.estado === "Pendiente" && lead.enRevision;
+    }).length;
   }, [
     leads,
     municipioFilter,
@@ -219,7 +266,8 @@ export default function CaptacionPage() {
     estadoFilter !== "Todos" ||
     isPriceRangeActive(priceRange) ||
     isDateRangeActive(dateRange) ||
-    ownerSearch.trim().length > 0;
+    ownerSearch.trim().length > 0 ||
+    enRevisionFilter;
 
   const clearFilters = () => {
     setMunicipioFilter("Todos");
@@ -229,6 +277,7 @@ export default function CaptacionPage() {
     setPriceRange({ min: "", max: "" });
     setDateRange({ from: "", to: "" });
     setOwnerSearch("");
+    setEnRevisionFilter(false);
     setOpenFilter(null);
   };
 
@@ -330,6 +379,11 @@ export default function CaptacionPage() {
     }
     setEstadoBlocked(false);
     updateMutation.mutate({ estado: nuevoEstado });
+  };
+
+  const handleEnRevisionChange = (enRevision: boolean) => {
+    if (!selectedId) return;
+    updateMutation.mutate({ enRevision });
   };
 
   const canPublish =
@@ -453,6 +507,23 @@ export default function CaptacionPage() {
           selected={estadoFilter}
           onSelect={setEstadoFilter}
         />
+        <button
+          type="button"
+          title="En revisión"
+          aria-pressed={enRevisionFilter}
+          onClick={() => setEnRevisionFilter((active) => !active)}
+          className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[13px] font-semibold transition-colors ${
+            enRevisionFilter
+              ? "border-[var(--pa-navy)] bg-[var(--pa-navy)] text-white"
+              : "border-[var(--pa-border)] bg-[var(--pa-surface)] text-[var(--pa-ink)] hover:bg-[var(--pa-bg)]"
+          }`}
+        >
+          <Eye size={14} strokeWidth={2.2} aria-hidden />
+          En revisión
+          {enRevisionMarkedCount > 0 ? (
+            <span className="text-[11px] opacity-90">({enRevisionMarkedCount})</span>
+          ) : null}
+        </button>
         <PriceRangeFilter
           range={priceRange}
           onChange={setPriceRange}
@@ -600,6 +671,8 @@ export default function CaptacionPage() {
           draft={draft}
           onDraftChange={(patch) => setDraft((d) => ({ ...d, ...patch }))}
           onEstadoChange={handleEstadoChange}
+          onEnRevisionChange={handleEnRevisionChange}
+          enRevisionPending={updateMutation.isPending}
           estadoBlockedMessage={
             estadoBlocked
               ? "Para captar el lead completa el nombre y el teléfono del propietario."

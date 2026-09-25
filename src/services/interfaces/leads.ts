@@ -26,6 +26,7 @@ export interface Lead {
   fechaRecontacto: string | null;
   fechaActualizacion: string;
   ownerAgenteId: number | null;
+  enRevision: boolean;
 }
 
 export interface LeadUpdate {
@@ -35,6 +36,7 @@ export interface LeadUpdate {
   nombrePublicador?: string | null;
   fechaRecontacto?: string | null;
   barrio?: string | null;
+  enRevision?: boolean;
 }
 
 export interface LeadCreate {

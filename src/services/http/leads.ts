@@ -29,6 +29,7 @@ interface RawLead {
   fecha_recontacto?: string | null;
   fecha_actualizacion: string;
   owner_agente_id?: number | null;
+  en_revision?: boolean | number;
 }
 
 function resolveImageUrl(url: string | null | undefined): string | null {
@@ -59,6 +60,7 @@ function mapLead(raw: RawLead): Lead {
     fechaRecontacto: raw.fecha_recontacto ?? null,
     fechaActualizacion: raw.fecha_actualizacion,
     ownerAgenteId: raw.owner_agente_id ?? null,
+    enRevision: Boolean(raw.en_revision),
   };
 }
 
@@ -74,6 +76,7 @@ function toRawUpdate(data: LeadUpdate): Record<string, unknown> {
     out.fecha_recontacto = data.fechaRecontacto;
   }
   if (data.barrio !== undefined) out.barrio = data.barrio;
+  if (data.enRevision !== undefined) out.en_revision = data.enRevision;
   return out;
 }
 

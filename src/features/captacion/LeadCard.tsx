@@ -1,5 +1,6 @@
 "use client";
 
+import { Eye } from "lucide-react";
 import { LeadCoverImage } from "@/components/LeadCoverImage";
 import { PortalLogo } from "@/components/PortalLogo";
 import { formatLeadPrice } from "@/lib/format";
@@ -26,7 +27,18 @@ export function LeadCard({
           : "border-[var(--pa-border)]"
       }`}
     >
-      <LeadCoverImage url={lead.imagenUrl} variant="compact" />
+      <div className="relative">
+        <LeadCoverImage url={lead.imagenUrl} variant="compact" />
+        {lead.estado === "Pendiente" && lead.enRevision ? (
+          <span
+            title="En revisión"
+            className="absolute right-1 top-1 inline-flex rounded-md bg-[var(--pa-surface)]/95 p-1 text-[var(--pa-warning)] shadow-sm"
+          >
+            <Eye size={14} strokeWidth={2.2} aria-hidden />
+            <span className="sr-only">En revisión</span>
+          </span>
+        ) : null}
+      </div>
       <div className="line-clamp-2 text-[12px] font-bold leading-snug text-[var(--pa-ink)]">
         {lead.tipoInmueble ?? "Inmueble"}
         {lead.municipio ? ` · ${lead.municipio}` : ""}
