@@ -37,6 +37,7 @@ import { DeletePropertyDialog } from "@/components/DeletePropertyDialog";
 import { formatPrice, formatThousandsInput } from "@/lib/format";
 import { capturedAtLabel } from "@/lib/formatCapturedAt";
 import {
+  adminFeeMissingFromDraft,
   checklistForTipo,
   formatDriveMissingFields,
   formatMissingFields,
@@ -1418,6 +1419,10 @@ function ContentStep({
     photoCount: property.fotos.length,
   });
   const fieldMissing = (key: string) => liveMissing.includes(key);
+  const adminFeeMissing = adminFeeMissingFromDraft(
+    form.administracion,
+    form.tipo || property.tipo,
+  );
   const wasiTitleLen = wasiTitleLength(form.titulo);
   const wasiTitleError = validateWasiTitle(form.titulo);
   const wasiTitleTone = wasiTitleCounterTone(wasiTitleLen);
@@ -1648,7 +1653,7 @@ function ContentStep({
               label="Administración (COP)"
               value={form.administracion}
               onChange={(v) => onPatch({ administracion: v })}
-              missing={driveMissing.includes("adminFee")}
+              missing={adminFeeMissing}
               thousands
             />
             <ControlledField
