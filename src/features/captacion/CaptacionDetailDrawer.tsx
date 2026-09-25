@@ -26,6 +26,8 @@ export function CaptacionDetailDrawer({
   draft,
   onDraftChange,
   onEstadoChange,
+  onEnRevisionChange,
+  enRevisionPending,
   estadoBlockedMessage,
   onClose,
   onSave,
@@ -40,6 +42,8 @@ export function CaptacionDetailDrawer({
   draft: CaptacionDraft;
   onDraftChange: (patch: Partial<CaptacionDraft>) => void;
   onEstadoChange: (estado: LeadEstado) => void;
+  onEnRevisionChange: (enRevision: boolean) => void;
+  enRevisionPending: boolean;
   estadoBlockedMessage: string | null;
   onClose: () => void;
   onSave: () => void;
@@ -146,6 +150,26 @@ export function CaptacionDetailDrawer({
                 </p>
               ) : null}
             </label>
+
+            {lead.estado === "Pendiente" ? (
+              <label className="flex cursor-pointer items-start gap-2.5 rounded-[10px] border border-[var(--pa-border)] bg-[var(--pa-bg)] px-3 py-2.5">
+                <input
+                  type="checkbox"
+                  checked={lead.enRevision}
+                  disabled={enRevisionPending}
+                  onChange={(e) => onEnRevisionChange(e.target.checked)}
+                  className="mt-0.5 h-4 w-4 shrink-0 accent-[var(--pa-navy)]"
+                />
+                <span>
+                  <span className="block text-[13px] font-semibold text-[var(--pa-ink)]">
+                    En revisión
+                  </span>
+                  <span className="mt-0.5 block text-[11px] leading-snug text-[var(--pa-muted)]">
+                    Separa este lead del resto de Pendiente sin moverlo de columna.
+                  </span>
+                </span>
+              </label>
+            ) : null}
 
             <label className="block">
               <span className="mb-1 block text-[12px] font-semibold text-[var(--pa-muted)]">

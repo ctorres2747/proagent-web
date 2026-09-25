@@ -37,6 +37,7 @@ const mockLeads: Lead[] = [
     fechaRecontacto: null,
     fechaActualizacion: "2026-08-14T10:00:00",
     ownerAgenteId: 1,
+    enRevision: true,
   },
   {
     id: 102,
@@ -59,6 +60,7 @@ const mockLeads: Lead[] = [
     fechaRecontacto: "2026-08-16",
     fechaActualizacion: "2026-08-14T09:00:00",
     ownerAgenteId: 1,
+    enRevision: false,
   },
   {
     id: 103,
@@ -81,6 +83,7 @@ const mockLeads: Lead[] = [
     fechaRecontacto: null,
     fechaActualizacion: "2026-08-14T11:00:00",
     ownerAgenteId: 1,
+    enRevision: false,
   },
   {
     id: 104,
@@ -103,6 +106,7 @@ const mockLeads: Lead[] = [
     fechaRecontacto: null,
     fechaActualizacion: "2026-08-11T16:00:00",
     ownerAgenteId: 1,
+    enRevision: false,
   },
 ];
 
@@ -144,6 +148,10 @@ export const leadsService: LeadsService = {
       ...current,
       ...data,
       estado: data.estado ?? current.estado,
+      enRevision:
+        (data.estado ?? current.estado) !== "Pendiente"
+          ? false
+          : data.enRevision ?? current.enRevision,
     });
     mockLeads[idx] = updated;
     return updated;
@@ -173,6 +181,7 @@ export const leadsService: LeadsService = {
       fechaRecontacto: null,
       fechaActualizacion: new Date().toISOString(),
       ownerAgenteId: 1,
+      enRevision: false,
     };
     mockLeads.unshift(lead);
     return lead;
