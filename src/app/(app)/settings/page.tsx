@@ -305,7 +305,7 @@ function WorkerInstallSection({ token }: { token?: string }) {
   });
 
   const status = statusQuery.data;
-  const installerUrl = `${API_URL}/downloads/instalador-worker-marketplace.exe`;
+  const installerUrl = `${API_URL}/downloads/instalador-worker-marketplace-v2.exe`;
 
   return (
     <div className="mt-3 space-y-2.5 rounded-lg border border-[var(--pa-border)] bg-[var(--pa-bg-alt)] p-3">
