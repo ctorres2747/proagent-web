@@ -63,6 +63,7 @@ interface RawProperty {
   observaciones_inmueble?: string | null;
   precio_minimo_cliente?: string | null;
   puntos_favorables_externos?: string | null;
+  puntos_favorables_internos?: string | null;
   detalle_parqueadero?: string | null;
   frente_fondo_m?: string | null;
   portada_url?: string | null;
@@ -162,6 +163,7 @@ function mapProperty(raw: RawProperty): Property {
     observacionesInmueble: raw.observaciones_inmueble ?? null,
     precioMinimoCliente: raw.precio_minimo_cliente ?? null,
     puntosFavorablesExternos: raw.puntos_favorables_externos ?? null,
+    puntosFavorablesInternos: raw.puntos_favorables_internos ?? null,
     detalleParqueadero: raw.detalle_parqueadero ?? null,
     frenteFondoM: raw.frente_fondo_m ?? null,
     portadaUrl: raw.portada_url ?? fotos[0]?.url ?? null,
@@ -226,6 +228,9 @@ function toWriteBody(
   }
   if (data.puntosFavorablesExternos !== undefined) {
     body.puntos_favorables_externos = data.puntosFavorablesExternos;
+  }
+  if (data.puntosFavorablesInternos !== undefined) {
+    body.puntos_favorables_internos = data.puntosFavorablesInternos;
   }
   if (data.detalleParqueadero !== undefined) {
     body.detalle_parqueadero = data.detalleParqueadero;
