@@ -161,6 +161,7 @@ type ContentFormSnapshot = {
   observacionesInmueble: string;
   precioMinimoCliente: string;
   puntosFavorablesExternos: string;
+  puntosFavorablesInternos: string;
   detalleParqueadero: string;
   frenteFondoM: string;
 };
@@ -197,6 +198,7 @@ function emptyContentForm(): ContentFormSnapshot {
     observacionesInmueble: "",
     precioMinimoCliente: "",
     puntosFavorablesExternos: "",
+    puntosFavorablesInternos: "",
     detalleParqueadero: "",
     frenteFondoM: "",
   };
@@ -239,6 +241,7 @@ function snapshotFromProperty(property: Property): ContentFormSnapshot {
     observacionesInmueble: property.observacionesInmueble ?? "",
     precioMinimoCliente: property.precioMinimoCliente ?? "",
     puntosFavorablesExternos: property.puntosFavorablesExternos ?? "",
+    puntosFavorablesInternos: property.puntosFavorablesInternos ?? "",
     detalleParqueadero: property.detalleParqueadero ?? "",
     frenteFondoM: property.frenteFondoM ?? "",
   };
@@ -297,6 +300,7 @@ function contentFormsEqual(a: ContentFormSnapshot, b: ContentFormSnapshot): bool
     a.observacionesInmueble === b.observacionesInmueble &&
     a.precioMinimoCliente === b.precioMinimoCliente &&
     a.puntosFavorablesExternos === b.puntosFavorablesExternos &&
+    a.puntosFavorablesInternos === b.puntosFavorablesInternos &&
     a.detalleParqueadero === b.detalleParqueadero &&
     a.frenteFondoM === b.frenteFondoM
   );
@@ -645,6 +649,7 @@ export default function PublishWizardPage() {
           observacionesInmueble: contentForm.observacionesInmueble || null,
           precioMinimoCliente: contentForm.precioMinimoCliente || null,
           puntosFavorablesExternos: contentForm.puntosFavorablesExternos || null,
+          puntosFavorablesInternos: contentForm.puntosFavorablesInternos || null,
           detalleParqueadero: contentForm.detalleParqueadero || null,
           frenteFondoM: contentForm.frenteFondoM || null,
         },
@@ -1873,6 +1878,16 @@ function ContentStep({
                 value={form.puntosFavorablesExternos}
                 onChange={(e) =>
                   onPatch({ puntosFavorablesExternos: e.target.value })
+                }
+              />
+            </div>
+            <div className="sm:col-span-3">
+              <div className={label}>Puntos favorables internos</div>
+              <textarea
+                className={`${input} min-h-[48px] resize-y`}
+                value={form.puntosFavorablesInternos}
+                onChange={(e) =>
+                  onPatch({ puntosFavorablesInternos: e.target.value })
                 }
               />
             </div>

@@ -22,6 +22,7 @@ const DRIVE_FIELDS_DEFAULT = {
   observacionesInmueble: null,
   precioMinimoCliente: null,
   puntosFavorablesExternos: null,
+  puntosFavorablesInternos: null,
   detalleParqueadero: null,
   frenteFondoM: null,
 } satisfies Pick<
@@ -34,6 +35,7 @@ const DRIVE_FIELDS_DEFAULT = {
   | "observacionesInmueble"
   | "precioMinimoCliente"
   | "puntosFavorablesExternos"
+  | "puntosFavorablesInternos"
   | "detalleParqueadero"
   | "frenteFondoM"
 >;

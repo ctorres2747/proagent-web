@@ -68,6 +68,7 @@ export interface Property {
   observacionesInmueble: string | null;
   precioMinimoCliente: string | null;
   puntosFavorablesExternos: string | null;
+  puntosFavorablesInternos: string | null;
   detalleParqueadero: string | null;
   frenteFondoM: string | null;
   portadaUrl: string | null;
@@ -117,6 +118,7 @@ export interface PropertiesService {
         | "observacionesInmueble"
         | "precioMinimoCliente"
         | "puntosFavorablesExternos"
+        | "puntosFavorablesInternos"
         | "detalleParqueadero"
         | "frenteFondoM"
       >
@@ -157,6 +159,7 @@ export interface PropertiesService {
         | "observacionesInmueble"
         | "precioMinimoCliente"
         | "puntosFavorablesExternos"
+        | "puntosFavorablesInternos"
         | "detalleParqueadero"
         | "frenteFondoM"
       >
