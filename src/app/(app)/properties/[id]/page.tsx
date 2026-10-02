@@ -1377,7 +1377,6 @@ function ContentStep({
   const [ciudadValida, setCiudadValida] = useState(false);
   const [barrioValido, setBarrioValido] = useState(false);
   const [ciudadQuery, setCiudadQuery] = useState(form.municipio);
-  const [locationError, setLocationError] = useState<string | null>(null);
   const [legacyCiudad, setLegacyCiudad] = useState<string | null>(null);
   const [legacyBarrio, setLegacyBarrio] = useState<string | null>(null);
 
@@ -1461,26 +1460,20 @@ function ContentStep({
     }
   }, [ciudadValida, form.barrio, barrioOptions]);
 
-  const validateLocation = (): boolean => {
-    if (!form.municipio.trim() || !ciudadValida) {
-      setLocationError("Selecciona una ciudad del catálogo WASI.");
-      return false;
-    }
-    if (!form.barrio.trim() || !barrioValido) {
-      setLocationError("Selecciona un barrio del catálogo WASI.");
-      return false;
-    }
-    setLocationError(null);
-    return true;
-  };
-
+  // Bug real 2026-10-01 (ficha F-114, Nataly): WASI nunca valida el barrio
+  // contra un catalogo fijo — "zone" viaja como texto libre y WASI crea la
+  // zona sola si no existe (ver wasi_client.py). El catalogo de
+  // zones-from-city es solo una lista de sugerencias de lo ya usado antes;
+  // para una ciudad nueva (Bogota, zona de Nataly) arranca vacia, asi que
+  // ciudadValida/barrioValido nunca podian dar true — bloqueaba guardar
+  // CUALQUIER campo, ni siquiera relacionado con ubicacion. El combobox con
+  // sugerencias se mantiene (ayuda a escribir consistente con lo ya usado),
+  // pero ya no es un requisito para guardar ni continuar.
   const handleSave = () => {
-    if (!validateLocation()) return;
     onSave();
   };
 
   const handleNext = () => {
-    if (!validateLocation()) return;
     onNext();
   };
   const {
@@ -1986,22 +1979,16 @@ function ContentStep({
             </p>
           )}
         </Card>
-        {locationError ? (
-          <p className="text-xs font-semibold text-[var(--pa-danger)]">{locationError}</p>
-        ) : null}
         <div className="flex flex-col gap-2">
           <button
             type="button"
             onClick={handleSave}
-            disabled={!isDirty || busy || titleBlocked || !ciudadValida || !barrioValido}
+            disabled={!isDirty || busy || titleBlocked}
             className="rounded-xl border border-[var(--pa-navy)] bg-[var(--pa-surface)] px-6 py-3.5 text-center text-[13px] font-bold text-[var(--pa-navy)] transition-opacity hover:bg-[var(--pa-bg)] disabled:cursor-not-allowed disabled:opacity-50"
           >
             {busy ? "Guardando…" : "Guardar cambios"}
           </button>
-          <PrimaryBlock
-            onClick={handleNext}
-            disabled={busy || titleBlocked || !ciudadValida || !barrioValido}
-          >
+          <PrimaryBlock onClick={handleNext} disabled={busy || titleBlocked}>
             {busy ? "Guardando…" : "Continuar a fotos"}
           </PrimaryBlock>
         </div>
