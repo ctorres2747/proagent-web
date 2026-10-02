@@ -29,6 +29,9 @@ export const dashboardService: DashboardService = {
               captadas: [6, 5, 7, 8, 6, 7, 8, 7],
               publicadas: [8, 9, 10, 9, 11, 10, 9, 9],
               metaMensual: { leads: 60, captadas: 8, publicadas: 10 },
+              metaLeads: [60, 60, 60, 60, 60, 60, 60, 60],
+              metaCaptadas: [8, 8, 8, 8, 8, 8, 8, 8],
+              metaPublicadas: [10, 10, 10, 10, 10, 10, 10, 10],
             }
           : null,
       pendientes: {

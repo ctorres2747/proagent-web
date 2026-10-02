@@ -31,6 +31,9 @@ interface RawDashboard {
     captadas: number[];
     publicadas: number[];
     meta_mensual: { leads: number; captadas: number; publicadas: number } | null;
+    meta_leads?: (number | null)[];
+    meta_captadas?: (number | null)[];
+    meta_publicadas?: (number | null)[];
   } | null;
   pendientes: {
     leads_sin_contactar: { total: number; mas_de_48h: number };
@@ -60,6 +63,9 @@ function mapDashboard(raw: RawDashboard): DesempenoDashboard {
           captadas: raw.serie_mensual.captadas,
           publicadas: raw.serie_mensual.publicadas,
           metaMensual: raw.serie_mensual.meta_mensual,
+          metaLeads: raw.serie_mensual.meta_leads ?? [],
+          metaCaptadas: raw.serie_mensual.meta_captadas ?? [],
+          metaPublicadas: raw.serie_mensual.meta_publicadas ?? [],
         }
       : null,
     pendientes: {

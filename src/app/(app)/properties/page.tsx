@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus } from "lucide-react";
@@ -19,7 +19,7 @@ import {
 } from "@/components/PriceRangeFilter";
 import { formatPrice } from "@/lib/format";
 import { capturedAtLabel } from "@/lib/formatCapturedAt";
-import { formatMissingFields } from "@/lib/completeness";
+import { formatMissingFields, INICIO_PENDIENTES_COMPLETENESS_MAX } from "@/lib/completeness";
 import {
   buildMunicipioOptions,
   propertyMatchesMunicipio,
@@ -54,6 +54,16 @@ export default function PropertiesPage() {
   const [priceRange, setPriceRange] = useState<PriceRange>({ min: "", max: "" });
   const [openFilter, setOpenFilter] = useState<FilterKey | null>(null);
   const [shortcutFaltanDatos, setShortcutFaltanDatos] = useState(false);
+  const [debajo50Inicio, setDebajo50Inicio] = useState(false);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const filtro = params.get("filtro");
+    const umbral = params.get("umbral");
+    if (filtro === "incompletas" || umbral === "50") {
+      setDebajo50Inicio(true);
+    }
+  }, []);
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ["properties"],
@@ -72,6 +82,8 @@ export default function PropertiesPage() {
       if (tipoFilter !== "Todos" && p.tipo !== tipoFilter) return false;
       if (!propertyMatchesMunicipio(p.municipio, municipioKey)) return false;
       if (estadoFilter === "Incompleto" && p.completeness >= 70) return false;
+      if (debajo50Inicio && p.completeness >= INICIO_PENDIENTES_COMPLETENESS_MAX)
+        return false;
       if (estadoFilter === "Casi listo" && (p.completeness < 70 || p.completeness >= 100))
         return false;
       if (estadoFilter === "Completo" && p.completeness < 100) return false;
@@ -89,6 +101,7 @@ export default function PropertiesPage() {
     priceRange,
     viewAgenteId,
     shortcutFaltanDatos,
+    debajo50Inicio,
   ]);
 
   // Menor completitud primero — son las que más urge completar.
@@ -110,7 +123,8 @@ export default function PropertiesPage() {
     estadoFilter !== "Todos" ||
     isPriceRangeActive(priceRange) ||
     search.trim().length > 0 ||
-    shortcutFaltanDatos;
+    shortcutFaltanDatos ||
+    debajo50Inicio;
 
   const clearFilters = () => {
     setTipoFilter("Todos");
@@ -119,6 +133,7 @@ export default function PropertiesPage() {
     setPriceRange({ min: "", max: "" });
     setSearch("");
     setShortcutFaltanDatos(false);
+    setDebajo50Inicio(false);
     setOpenFilter(null);
   };
 
@@ -201,6 +216,11 @@ export default function PropertiesPage() {
             />
             Faltan datos
           </button>
+          {debajo50Inicio ? (
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-[#FCEEE0] px-4 py-2 text-[13px] font-semibold text-[#8A4E12]">
+              Debajo de {INICIO_PENDIENTES_COMPLETENESS_MAX}%
+            </span>
+          ) : null}
           <span className="hidden h-6 w-px bg-[var(--pa-border)] sm:block" aria-hidden />
           <FilterDropdown
           label={`Tipo${tipoFilter !== "Todos" ? `: ${tipoFilter}` : ""}`}

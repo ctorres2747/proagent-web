@@ -1,5 +1,8 @@
 /** Completeness helpers — aligned with API `backend/completeness.py` (Sprint 032). */
 
+/** Sprint 062 — pendientes Inicio + deep link `?filtro=incompletas` (≠ filtro Inventario Incompleto &lt;70%). */
+export const INICIO_PENDIENTES_COMPLETENESS_MAX = 50;
+
 export const FIELD_LABELS: Record<string, string> = {
   title: "título",
   description: "descripción",

@@ -471,8 +471,17 @@ function ComparativoBlock({
     );
   }
   const values = serie[chartMetric];
-  const metaVal = serie.metaMensual?.[chartMetric] ?? 0;
-  const max = Math.max(...values, metaVal, 1) * 1.18;
+  const metaSeries =
+    chartMetric === "leads"
+      ? serie.metaLeads
+      : chartMetric === "captadas"
+        ? serie.metaCaptadas
+        : serie.metaPublicadas;
+  const metaForLabel =
+    metaSeries.find((m) => m != null && m > 0) ??
+    serie.metaMensual?.[chartMetric] ??
+    0;
+  const max = Math.max(...values, ...metaSeries.filter((m): m is number => m != null), metaForLabel, 1) * 1.18;
 
   return (
     <div className="rounded-2xl border border-[#E4E8EC] bg-white px-[22px] py-5">
@@ -496,26 +505,34 @@ function ComparativoBlock({
         ))}
       </div>
       <div className="relative mt-6 flex h-[220px] items-end gap-3.5 overflow-x-auto pb-6">
-        {metaVal > 0 ? (
-          <div
-            className="pointer-events-none absolute left-0 right-0 border-t-[1.5px] border-dashed border-[#1E8E5A]"
-            style={{ bottom: `${(metaVal / max) * 82 + 8}%` }}
-          >
-            <span className="absolute -top-3 left-0 bg-white px-1 text-[10.5px] font-bold text-[#1E8E5A]">
-              Meta mensual {formatInteger(metaVal)}
-            </span>
-          </div>
+        {metaForLabel > 0 ? (
+          <span className="pointer-events-none absolute left-0 top-0 text-[10.5px] font-bold text-[#1E8E5A]">
+            Meta mensual (por mes)
+          </span>
         ) : null}
         {values.map((v, i) => {
           const h = (v / max) * 82;
           const isLast = i === values.length - 1;
+          const metaMonth = metaSeries[i];
           return (
-            <div key={i} className="flex max-w-[44px] flex-1 flex-col items-center gap-1">
+            <div
+              key={i}
+              className="relative flex max-w-[44px] flex-1 flex-col items-center justify-end gap-1"
+              style={{ height: "100%" }}
+            >
               <span className="text-[11px] font-bold">{formatInteger(v)}</span>
-              <div
-                className={`w-full rounded-t-md ${isLast ? "bg-[#0A3D62]" : "bg-[#9DB4C7]"}`}
-                style={{ height: `${h}%`, minHeight: v > 0 ? 4 : 0 }}
-              />
+              <div className="relative flex w-full flex-1 items-end">
+                {metaMonth != null && metaMonth > 0 ? (
+                  <div
+                    className="pointer-events-none absolute left-0 right-0 z-10 border-t-[1.5px] border-dashed border-[#1E8E5A]"
+                    style={{ bottom: `${(metaMonth / max) * 82}%` }}
+                  />
+                ) : null}
+                <div
+                  className={`w-full rounded-t-md ${isLast ? "bg-[#0A3D62]" : "bg-[#9DB4C7]"}`}
+                  style={{ height: `${h}%`, minHeight: v > 0 ? 4 : 0 }}
+                />
+              </div>
               <span className="text-[11px] font-semibold text-[#9AA6B2]">{monthAbbr(i + 1)}</span>
             </div>
           );
@@ -536,7 +553,7 @@ function PendientesBlock({
           color: "#C23B2B",
           title: `${pendientes.leadsSinContactar.total} leads sin contactar`,
           sub: `${pendientes.leadsSinContactar.masDe48h} llevan más de 48 horas`,
-          href: "/captacion?estado=pendiente",
+          href: "/captacion?estado=Pendiente",
           action: "Ir a Captación",
         }
       : null,
@@ -549,7 +566,7 @@ function PendientesBlock({
             (pendientes.fichasIncompletas.total > 2
               ? ` y ${pendientes.fichasIncompletas.total - 2} más`
               : ""),
-          href: "/properties?filtro=incompletas",
+          href: "/properties?filtro=incompletas&umbral=50",
           action: "Completar",
         }
       : null,
@@ -560,7 +577,7 @@ function PendientesBlock({
           sub: "Aún no están en Inventario",
           href:
             pendientes.captadosSinRegistrar.total > 1
-              ? "/captacion?estado=captado"
+              ? "/captacion?estado=Captado"
               : "/properties/new",
           action: "Registrar",
         }
@@ -570,7 +587,7 @@ function PendientesBlock({
           color: "#1E8E5A",
           title: `${pendientes.sinPublicar.total} propiedades sin publicar`,
           sub: "Fichas completas, listas para portales",
-          href: "/publish",
+          href: "/publications",
           action: "Publicar",
         }
       : null,

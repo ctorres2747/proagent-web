@@ -56,8 +56,18 @@ export function MetasDesempenoSection({ token }: { token?: string }) {
   }, [data]);
 
   const saveMutation = useMutation({
-    mutationFn: () =>
-      metasService.put({ anio, agenteId, meses: rows }, token),
+    mutationFn: () => {
+      const persisted = new Set((data?.meses ?? []).map((m) => m.mes));
+      const mesesToSave = rows.filter(
+        (row) =>
+          persisted.has(row.mes) ||
+          row.captadas > 0 ||
+          row.publicadas > 0 ||
+          row.leads > 0 ||
+          row.conversionPct > 0,
+      );
+      return metasService.put({ anio, agenteId, meses: mesesToSave }, token);
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["metas"] });
       qc.invalidateQueries({ queryKey: ["dashboard-desempeno"] });

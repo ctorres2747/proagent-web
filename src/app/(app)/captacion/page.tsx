@@ -90,6 +90,14 @@ export default function CaptacionPage() {
     }
   }, [staff, router]);
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const raw = params.get("estado");
+    if (!raw) return;
+    const match = COLUMNS.find((e) => e.toLowerCase() === raw.toLowerCase());
+    if (match) setEstadoFilter(match);
+  }, []);
+
   const {
     data: leads,
     isLoading,

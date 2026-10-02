@@ -23,6 +23,9 @@ export interface DesempenoSerieMensual {
   captadas: number[];
   publicadas: number[];
   metaMensual: { leads: number; captadas: number; publicadas: number } | null;
+  metaLeads: (number | null)[];
+  metaCaptadas: (number | null)[];
+  metaPublicadas: (number | null)[];
 }
 
 export interface DesempenoPendientes {
