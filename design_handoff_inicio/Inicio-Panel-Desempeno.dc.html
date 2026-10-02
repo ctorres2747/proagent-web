@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Inicio — Panel de desempeño (1a) · ProAgent handoff</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  body { margin:0; background:#E9EDF1; font-family:'Plus Jakarta Sans',sans-serif; color:#16212B; }
+  .note { max-width:900px; margin:24px auto; padding:16px 20px; background:#fff; border:1px solid #D7DCE1; border-radius:12px; font-size:13px; line-height:1.5; }
+  .note a { color:#0A3D62; font-weight:700; }
+</style>
+</head>
+<body>
+<p class="note">
+  <strong>Handoff Sprint 062 — variante 1a.</strong>
+  El mock Claude Design completo (canvas 1440px, 1a + 1b) vive en el commit / export del Owner;
+  la especificación pixel-perfect para implementación está en
+  <a href="./README.md">README.md</a> (secciones 1–6) y capturas en <code>screenshots/</code>.
+  <strong>Implementar solo 1a «Tarjetas de meta + comparativo».</strong>
+</p>
+<p class="note">
+  Datos de referencia del mock (septiembre 2026): captadas 7/8, publicadas 9/10, leads 64/60,
+  conversión 14,1%/15%. Ver script embebido abajo (misma lógica que el export Claude Design).
+</p>
+<script type="text/x-dc" id="inicio-desempeno-logic">
+const MONTHS = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep'];
+const SERIES = { leads: [42,48,55,53,60,66,54,56,64], conv: [4,5,7,6,8,9,6,6,9], captadas: [5,6,7,5,6,7,4,5,7], publicadas: [7,8,9,8,10,9,7,11,9] };
+const MONTHLY_META = { leads: 60, captadas: 8, publicadas: 10 };
+const KPIS = [
+  { key:'captadas', label:'Propiedades captadas', m:{act:7,meta:8,prev:5}, y:{act:52,meta:72,annual:96}, sub:'Registradas en Inventario' },
+  { key:'publicadas', label:'Propiedades publicadas', m:{act:9,meta:10,prev:11}, y:{act:78,meta:90,annual:120}, sub:'Enviadas a portales' },
+  { key:'leads', label:'Leads recibidos', m:{act:64,meta:60,prev:56}, y:{act:498,meta:540,annual:720}, sub:'Entraron por Captación' },
+  { key:'conversion', label:'Tasa de conversión', pct:true, m:{act:14.1,meta:15,prev:10.7}, y:{act:12.0,meta:15,annual:15}, subM:'9 de 64 leads captados', subY:'60 de 498 leads captados' },
+];
+const PEND = [
+  { title:'12 leads sin contactar', sub:'5 llevan más de 48 horas', action:'Ir a Captación', color:'#C23B2B' },
+  { title:'3 fichas por debajo de 50%', sub:'Casa en La Estrella, Lote en La Estrella y 1 más', action:'Completar', color:'#D97B2B' },
+  { title:'2 leads captados sin registrar', sub:'Aún no están en Inventario', action:'Registrar', color:'#0A3D62' },
+  { title:'4 propiedades sin publicar', sub:'Fichas completas, listas para portales', action:'Publicar', color:'#1E8E5A' },
+];
+// % global = avg(min(pct,100)) over 4 KPIs — ver README §3
+</script>
+</body>
+</html>
