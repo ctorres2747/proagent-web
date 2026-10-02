@@ -66,13 +66,25 @@ Promedio simple de los 4 `pct`, cada uno con **tope en 100** antes de promediar.
 
 ## 4. Metas
 
-**TBD (bloqueante para datos reales):** hoy no existe un modelo de metas. Se necesita:
+### Modelo
 
-- Tabla `asesor_metas`: `asesor_id`, `anio`, `mes`, `captadas`, `publicadas`, `leads`, `conversion_pct`.
-- Quién las define: **TBD.** Recomendación: admin/staff, desde una pantalla de ajustes (fuera de alcance de esta iteración; mientras tanto, carga por seed o script).
-- Si un mes no tiene meta: la tarjeta muestra el valor actual, oculta la barra y el %, y el subtexto dice "Sin meta definida". Ese KPI queda fuera del promedio global.
+Tabla `asesor_metas`: `agente_id`, `anio`, `mes` (1–12), `captadas`, `publicadas`, `leads`, `conversion_pct` — clave única `(agente_id, anio, mes)`.
 
-Valores de referencia del mock: captadas 8/mes · publicadas 10/mes · leads 60/mes · conversión 15%.
+### Configuración (Sprint 062)
+
+**Ruta:** `/settings` → pestaña **Perfil** → sección **«Metas de desempeño»** (debajo de datos personales).
+
+| Rol | UI |
+|-----|-----|
+| **Admin / staff** | Selector **asesor** + **año**; tabla 12 meses × 4 KPIs; **Guardar metas**. Atajo «Mismas metas todo el año». |
+| **Asesor** | Tabla **solo lectura**. Texto: las define coordinación. |
+
+API: `GET/PUT /api/web/metas` (admin escribe por `agente_id`; asesor solo lectura propia).
+
+### Comportamiento en Inicio
+
+- Mes sin meta: «Sin meta definida», sin barra ni %; KPI excluido del % global.
+- Mock de referencia: captadas **8**/mes · publicadas **10**/mes · leads **60**/mes · conversión **15%**.
 
 ---
 
@@ -176,8 +188,7 @@ Todos los cálculos se hacen en el servidor y quedan **filtrados por el asesor a
 
 ## 8. Fuera de alcance
 
-- Vista de equipo, ranking entre asesores y filtro "Viendo como" en esta página.
-- Pantalla para administrar metas (ver §4).
+- Vista de equipo, ranking entre asesores y filtro "Viendo como" en **Inicio** (`/`).
 - Comparación contra el año anterior y tendencia de 12 meses.
 - Exportar a PDF o Excel.
 - Contenido del Asistente IA (solo se mantiene el botón).
@@ -198,3 +209,5 @@ Todos los cálculos se hacen en el servidor y quedan **filtrados por el asesor a
 - [ ] Las filas de Pendientes con 0 no aparecen, y cada enlace lleva a la ruta y el filtro indicados.
 - [ ] Ningún dato de otro asesor llega al cliente.
 - [ ] Si falta la meta de un KPI, se ve "Sin meta definida" y ese KPI queda fuera del % global.
+- [ ] En **Ajustes → Perfil**, admin edita metas por asesor/año; asesor ve solo lectura.
+- [ ] Tras guardar metas, Inicio del asesor refleja los valores (invalidación de datos).
