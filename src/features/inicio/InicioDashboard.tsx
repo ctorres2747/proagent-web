@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/features/auth/AuthProvider";
@@ -148,6 +148,18 @@ export function InicioDashboard() {
   const anioQuery = anioParam ? Number(anioParam) : undefined;
   const mesQuery = mesParam ? Number(mesParam) : undefined;
   const [monthOpen, setMonthOpen] = useState(false);
+  const monthPickerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!monthOpen) return;
+    const onPointerDown = (e: PointerEvent) => {
+      if (!monthPickerRef.current?.contains(e.target as Node)) {
+        setMonthOpen(false);
+      }
+    };
+    document.addEventListener("pointerdown", onPointerDown);
+    return () => document.removeEventListener("pointerdown", onPointerDown);
+  }, [monthOpen]);
 
   const displayAnio = anioQuery ?? 0;
   const displayMes = mesQuery ?? 0;
@@ -199,12 +211,10 @@ export function InicioDashboard() {
   const monthOptions = useMemo(() => {
     const opts: { anio: number; mes: number; label: string }[] = [];
     const now = new Date();
-    const years = [now.getFullYear(), now.getFullYear() - 1];
-    for (const y of years) {
-      const maxM = y === now.getFullYear() ? now.getMonth() + 1 : 12;
-      for (let m = 1; m <= maxM; m++) {
-        opts.push({ anio: y, mes: m, label: `${MESES_LARGO[m - 1]} ${y}` });
-      }
+    const y = now.getFullYear();
+    const maxM = now.getMonth() + 1;
+    for (let m = 1; m <= maxM; m++) {
+      opts.push({ anio: y, mes: m, label: `${MESES_LARGO[m - 1]} ${y}` });
     }
     return opts.reverse();
   }, []);
@@ -271,7 +281,7 @@ export function InicioDashboard() {
         </div>
         <div className="flex flex-wrap items-center gap-3">
           {periodo === "mes" ? (
-            <div className="relative">
+            <div className="relative" ref={monthPickerRef}>
               <button
                 type="button"
                 onClick={() => setMonthOpen((o) => !o)}
@@ -507,6 +517,7 @@ function ComparativoBlock({
     serie.metaMensual?.[chartMetric] ??
     0;
   const max = Math.max(...values, ...metaSeries.filter((m): m is number => m != null), metaForLabel, 1) * 1.18;
+  const firstMetaIndex = metaSeries.findIndex((m) => m != null && m > 0);
 
   return (
     <div className="rounded-2xl border border-[#E4E8EC] bg-white px-[22px] py-5">
@@ -530,11 +541,6 @@ function ComparativoBlock({
         ))}
       </div>
       <div className="relative mt-6 flex h-[220px] items-end gap-3.5 overflow-x-auto pb-6">
-        {metaForLabel > 0 ? (
-          <span className="pointer-events-none absolute left-0 top-0 text-[10.5px] font-bold text-[#1E8E5A]">
-            Meta mensual (por mes)
-          </span>
-        ) : null}
         {values.map((v, i) => {
           const h = (v / max) * 82;
           const isLast = i === values.length - 1;
@@ -551,7 +557,13 @@ function ComparativoBlock({
                   <div
                     className="pointer-events-none absolute left-0 right-0 z-10 border-t-[1.5px] border-dashed border-[#1E8E5A]"
                     style={{ bottom: `${(metaMonth / max) * 82}%` }}
-                  />
+                  >
+                    {i === firstMetaIndex ? (
+                      <span className="pointer-events-none absolute left-0 bottom-[3px] whitespace-nowrap text-[10.5px] font-bold text-[#1E8E5A]">
+                        Meta mensual (por mes)
+                      </span>
+                    ) : null}
+                  </div>
                 ) : null}
                 <div
                   className={`w-full rounded-t-md ${isLast ? "bg-[#0A3D62]" : "bg-[#9DB4C7]"}`}
