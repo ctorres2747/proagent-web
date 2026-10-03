@@ -9,6 +9,7 @@ import { ChannelLogo } from "@/components/ChannelLogo";
 import { PasswordInput } from "@/components/PasswordInput";
 import { ProfilePhotoCropModal } from "@/components/ProfilePhotoCropModal";
 import { Toast } from "@/components/Toast";
+import { MetasDesempenoSection } from "@/features/inicio/MetasDesempenoSection";
 import { channelsService, profileService } from "@/services";
 import {
   getFacebookConnectStatus,
@@ -250,6 +251,13 @@ function ProfileTab({
       >
         {saveMutation.isPending ? "Guardando…" : "Guardar perfil"}
       </button>
+
+      <MetasDesempenoSection
+        token={token}
+        onFeedback={(message, type) =>
+          type === "error" ? onError(message) : onSaved(message)
+        }
+      />
     </div>
   );
 }
@@ -1047,7 +1055,7 @@ export default function SettingsPage() {
         ))}
       </div>
 
-      <div className="max-w-2xl">
+      <div className="max-w-4xl">
         {tab === "perfil" ? (
           <ProfileTab
             token={token ?? undefined}
