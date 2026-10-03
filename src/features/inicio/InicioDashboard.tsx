@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/features/auth/AuthProvider";
@@ -77,11 +77,11 @@ function ProgressRing({
 
 type MetricKey = "captadas" | "publicadas" | "leads" | "conversion";
 
-const KPI_DEFS: { key: MetricKey; label: string; sub: string }[] = [
-  { key: "captadas", label: "Propiedades captadas", sub: "Registradas en Inventario" },
-  { key: "publicadas", label: "Propiedades publicadas", sub: "Enviadas a portales" },
-  { key: "leads", label: "Leads recibidos", sub: "Entraron por Captación" },
-  { key: "conversion", label: "Tasa de conversión", sub: "" },
+const KPI_DEFS: { key: MetricKey; label: string; sub: string; ring: string }[] = [
+  { key: "captadas", label: "Propiedades captadas", sub: "Registradas en Inventario", ring: "Captadas" },
+  { key: "publicadas", label: "Propiedades publicadas", sub: "Enviadas a portales", ring: "Publicadas" },
+  { key: "leads", label: "Leads recibidos", sub: "Entraron por Captación", ring: "Leads" },
+  { key: "conversion", label: "Tasa de conversión", sub: "", ring: "Conversión" },
 ];
 
 function KpiChip({
@@ -148,9 +148,29 @@ export function InicioDashboard() {
   const anioQuery = anioParam ? Number(anioParam) : undefined;
   const mesQuery = mesParam ? Number(mesParam) : undefined;
   const [monthOpen, setMonthOpen] = useState(false);
+  const monthPickerRef = useRef<HTMLDivElement>(null);
 
-  const displayAnio = anioQuery ?? 0;
-  const displayMes = mesQuery ?? 0;
+  useEffect(() => {
+    if (!monthOpen) return;
+    const onPointerDown = (e: PointerEvent) => {
+      if (!monthPickerRef.current?.contains(e.target as Node)) {
+        setMonthOpen(false);
+      }
+    };
+    document.addEventListener("pointerdown", onPointerDown);
+    return () => document.removeEventListener("pointerdown", onPointerDown);
+  }, [monthOpen]);
+
+  const today = useMemo(() => {
+    const n = new Date();
+    return { anio: n.getFullYear(), mes: n.getMonth() + 1 };
+  }, []);
+
+  // Sin anio/mes en la URL, el panel arranca en el mes/anio EN CURSO (no el
+  // ultimo mes cerrado) -- pedido explicito, aunque el mes actual tenga
+  // pocos datos todavia.
+  const effectiveAnio = anioQuery ?? today.anio;
+  const effectiveMes = mesQuery ?? today.mes;
 
   const setParams = useCallback(
     (next: Partial<{ periodo: DesempenoPeriodoTipo; anio: number; mes: number }>) => {
@@ -169,13 +189,19 @@ export function InicioDashboard() {
   );
 
   const { data, isLoading, isError, refetch } = useQuery({
-    queryKey: ["dashboard-desempeno", periodo, anioQuery, mesQuery, token],
+    queryKey: [
+      "dashboard-desempeno",
+      periodo,
+      effectiveAnio,
+      periodo === "mes" ? effectiveMes : undefined,
+      token,
+    ],
     queryFn: () =>
       dashboardService.getDesempeno(
         {
           periodo,
-          anio: anioQuery,
-          mes: periodo === "mes" ? mesQuery : undefined,
+          anio: effectiveAnio,
+          mes: periodo === "mes" ? effectiveMes : undefined,
         },
         token ?? undefined,
       ),
@@ -193,18 +219,16 @@ export function InicioDashboard() {
     });
   }, [data, anioParam, mesParam, periodo, setParams]);
 
-  const anio = data?.periodo.anio ?? anioQuery ?? displayAnio;
-  const mes = data?.periodo.mes ?? mesQuery ?? displayMes;
+  const anio = data?.periodo.anio ?? effectiveAnio;
+  const mes = data?.periodo.mes ?? effectiveMes;
 
   const monthOptions = useMemo(() => {
     const opts: { anio: number; mes: number; label: string }[] = [];
     const now = new Date();
-    const years = [now.getFullYear(), now.getFullYear() - 1];
-    for (const y of years) {
-      const maxM = y === now.getFullYear() ? now.getMonth() + 1 : 12;
-      for (let m = 1; m <= maxM; m++) {
-        opts.push({ anio: y, mes: m, label: `${MESES_LARGO[m - 1]} ${y}` });
-      }
+    const y = now.getFullYear();
+    const maxM = now.getMonth() + 1;
+    for (let m = 1; m <= maxM; m++) {
+      opts.push({ anio: y, mes: m, label: `${MESES_LARGO[m - 1]} ${y}` });
     }
     return opts.reverse();
   }, []);
@@ -221,9 +245,9 @@ export function InicioDashboard() {
 
   const ringItems = useMemo(() => {
     if (!data) return [];
-    return KPI_DEFS.map(({ key, label }) => ({
+    return KPI_DEFS.map(({ key, ring }) => ({
       key,
-      label: label.split(" ").slice(-1)[0] ?? label,
+      label: ring,
       pct: kpiPct(data.kpis[key]),
     }));
   }, [data]);
@@ -271,7 +295,7 @@ export function InicioDashboard() {
         </div>
         <div className="flex flex-wrap items-center gap-3">
           {periodo === "mes" ? (
-            <div className="relative">
+            <div className="relative" ref={monthPickerRef}>
               <button
                 type="button"
                 onClick={() => setMonthOpen((o) => !o)}
@@ -426,9 +450,9 @@ function ComparativoBlock({
     const title = prev
       ? `${monthLabel(data.periodo.mes)} vs. ${monthLabel(prev.mes)}`
       : "Comparativo mensual";
-    const rows = KPI_DEFS.filter((k) => k.key !== "conversion").concat([
-      { key: "conversion" as const, label: "Tasa de conversión", sub: "" },
-    ]);
+    const rows = KPI_DEFS.filter((k) => k.key !== "conversion").concat(
+      KPI_DEFS.filter((k) => k.key === "conversion"),
+    );
     return (
       <div className="rounded-2xl border border-[#E4E8EC] bg-white px-[22px] py-5">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
@@ -507,6 +531,7 @@ function ComparativoBlock({
     serie.metaMensual?.[chartMetric] ??
     0;
   const max = Math.max(...values, ...metaSeries.filter((m): m is number => m != null), metaForLabel, 1) * 1.18;
+  const firstMetaIndex = metaSeries.findIndex((m) => m != null && m > 0);
 
   return (
     <div className="rounded-2xl border border-[#E4E8EC] bg-white px-[22px] py-5">
@@ -530,11 +555,6 @@ function ComparativoBlock({
         ))}
       </div>
       <div className="relative mt-6 flex h-[220px] items-end gap-3.5 overflow-x-auto pb-6">
-        {metaForLabel > 0 ? (
-          <span className="pointer-events-none absolute left-0 top-0 text-[10.5px] font-bold text-[#1E8E5A]">
-            Meta mensual (por mes)
-          </span>
-        ) : null}
         {values.map((v, i) => {
           const h = (v / max) * 82;
           const isLast = i === values.length - 1;
@@ -551,7 +571,13 @@ function ComparativoBlock({
                   <div
                     className="pointer-events-none absolute left-0 right-0 z-10 border-t-[1.5px] border-dashed border-[#1E8E5A]"
                     style={{ bottom: `${(metaMonth / max) * 82}%` }}
-                  />
+                  >
+                    {i === firstMetaIndex ? (
+                      <span className="pointer-events-none absolute left-0 bottom-[3px] whitespace-nowrap text-[10.5px] font-bold text-[#1E8E5A]">
+                        Meta mensual (por mes)
+                      </span>
+                    ) : null}
+                  </div>
                 ) : null}
                 <div
                   className={`w-full rounded-t-md ${isLast ? "bg-[#0A3D62]" : "bg-[#9DB4C7]"}`}
