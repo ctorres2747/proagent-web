@@ -6,7 +6,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus } from "lucide-react";
 import { useAgentView } from "@/features/agentView/AgentViewProvider";
 import { useAuth } from "@/features/auth/AuthProvider";
-import { propertiesService } from "@/services";
+import { propertiesService, fichasService } from "@/services";
 import type { Property } from "@/services/interfaces/properties";
 import { CompletenessBar } from "@/components/CompletenessBar";
 import { CoverImage } from "@/components/CoverImage";
@@ -55,6 +55,7 @@ export default function PropertiesPage() {
   const [openFilter, setOpenFilter] = useState<FilterKey | null>(null);
   const [shortcutFaltanDatos, setShortcutFaltanDatos] = useState(false);
   const [debajo50Inicio, setDebajo50Inicio] = useState(false);
+  const [creatingFromLead, setCreatingFromLead] = useState(false);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -64,6 +65,24 @@ export default function PropertiesPage() {
       setDebajo50Inicio(true);
     }
   }, []);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const leadRaw = params.get("crearDesdeLead");
+    if (!leadRaw || !token || creatingFromLead) return;
+    const leadId = Number(leadRaw);
+    if (!Number.isFinite(leadId)) return;
+    setCreatingFromLead(true);
+    fichasService
+      .createFromLead(leadId, token)
+      .then((ficha) => {
+        void queryClient.invalidateQueries({ queryKey: ["properties"] });
+        router.replace(`/properties/${ficha.id}`);
+      })
+      .catch(() => {
+        setCreatingFromLead(false);
+      });
+  }, [token, router, queryClient, creatingFromLead]);
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ["properties"],

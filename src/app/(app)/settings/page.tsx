@@ -252,7 +252,12 @@ function ProfileTab({
         {saveMutation.isPending ? "Guardando…" : "Guardar perfil"}
       </button>
 
-      <MetasDesempenoSection token={token} />
+      <MetasDesempenoSection
+        token={token}
+        onFeedback={(message, type) =>
+          type === "error" ? onError(message) : onSaved(message)
+        }
+      />
     </div>
   );
 }

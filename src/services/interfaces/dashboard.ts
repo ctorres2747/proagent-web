@@ -31,7 +31,7 @@ export interface DesempenoSerieMensual {
 export interface DesempenoPendientes {
   leadsSinContactar: { total: number; masDe48h: number };
   fichasIncompletas: { total: number; muestras: string[] };
-  captadosSinRegistrar: { total: number };
+  captadosSinRegistrar: { total: number; primerLeadId: number | null };
   sinPublicar: { total: number };
 }
 

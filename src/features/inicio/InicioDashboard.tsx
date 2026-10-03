@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/features/auth/AuthProvider";
@@ -15,7 +15,6 @@ import {
   formatInteger,
   globalAdvancePct,
   kpiPct,
-  lastClosedMonth,
   monthAbbr,
   monthLabel,
   MESES_LARGO,
@@ -142,34 +141,60 @@ export function InicioDashboard() {
   const { session, token } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const defaultClosed = lastClosedMonth();
 
   const periodo = (searchParams.get("periodo") === "anio" ? "anio" : "mes") as DesempenoPeriodoTipo;
-  const anio = Number(searchParams.get("anio") ?? defaultClosed.anio);
-  const mes = Number(searchParams.get("mes") ?? defaultClosed.mes);
+  const anioParam = searchParams.get("anio");
+  const mesParam = searchParams.get("mes");
+  const anioQuery = anioParam ? Number(anioParam) : undefined;
+  const mesQuery = mesParam ? Number(mesParam) : undefined;
   const [monthOpen, setMonthOpen] = useState(false);
+
+  const displayAnio = anioQuery ?? 0;
+  const displayMes = mesQuery ?? 0;
 
   const setParams = useCallback(
     (next: Partial<{ periodo: DesempenoPeriodoTipo; anio: number; mes: number }>) => {
       const p = new URLSearchParams(searchParams.toString());
       const tipo = next.periodo ?? periodo;
       p.set("periodo", tipo);
-      p.set("anio", String(next.anio ?? anio));
-      if (tipo === "mes") p.set("mes", String(next.mes ?? mes));
-      else p.delete("mes");
+      if (next.anio != null) p.set("anio", String(next.anio));
+      else if (anioQuery != null) p.set("anio", String(anioQuery));
+      if (tipo === "mes") {
+        if (next.mes != null) p.set("mes", String(next.mes));
+        else if (mesQuery != null) p.set("mes", String(mesQuery));
+      } else p.delete("mes");
       router.replace(`/?${p.toString()}`);
     },
-    [anio, mes, periodo, router, searchParams],
+    [anioQuery, mesQuery, periodo, router, searchParams],
   );
 
   const { data, isLoading, isError, refetch } = useQuery({
-    queryKey: ["dashboard-desempeno", periodo, anio, mes, token],
+    queryKey: ["dashboard-desempeno", periodo, anioQuery, mesQuery, token],
     queryFn: () =>
       dashboardService.getDesempeno(
-        { periodo, anio, mes: periodo === "mes" ? mes : undefined },
+        {
+          periodo,
+          anio: anioQuery,
+          mes: periodo === "mes" ? mesQuery : undefined,
+        },
         token ?? undefined,
       ),
   });
+
+  useEffect(() => {
+    if (!data?.periodo) return;
+    const needsAnio = !anioParam;
+    const needsMes = periodo === "mes" && !mesParam;
+    if (!needsAnio && !needsMes) return;
+    setParams({
+      periodo: data.periodo.tipo,
+      anio: data.periodo.anio,
+      mes: data.periodo.mes,
+    });
+  }, [data, anioParam, mesParam, periodo, setParams]);
+
+  const anio = data?.periodo.anio ?? anioQuery ?? displayAnio;
+  const mes = data?.periodo.mes ?? mesQuery ?? displayMes;
 
   const monthOptions = useMemo(() => {
     const opts: { anio: number; mes: number; label: string }[] = [];
@@ -280,7 +305,7 @@ export function InicioDashboard() {
               <button
                 key={t}
                 type="button"
-                onClick={() => setParams({ periodo: t, anio: defaultClosed.anio, mes: defaultClosed.mes })}
+                onClick={() => setParams({ periodo: t })}
                 className={`rounded-lg px-3 py-1.5 text-[12.5px] font-semibold ${
                   periodo === t
                     ? "bg-white font-bold text-[#0A3D62] shadow-[0_1px_3px_rgba(16,24,32,.12)]"
@@ -578,7 +603,9 @@ function PendientesBlock({
           href:
             pendientes.captadosSinRegistrar.total > 1
               ? "/captacion?estado=Captado"
-              : "/properties/new",
+              : pendientes.captadosSinRegistrar.primerLeadId != null
+                ? `/properties?crearDesdeLead=${pendientes.captadosSinRegistrar.primerLeadId}`
+                : "/captacion?estado=Captado",
           action: "Registrar",
         }
       : null,

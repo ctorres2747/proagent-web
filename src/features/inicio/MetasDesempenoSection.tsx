@@ -26,7 +26,13 @@ function mergeMetas(existing: MetaMes[]): MetaMes[] {
   return base;
 }
 
-export function MetasDesempenoSection({ token }: { token?: string }) {
+export function MetasDesempenoSection({
+  token,
+  onFeedback,
+}: {
+  token?: string;
+  onFeedback?: (message: string, type?: "error") => void;
+}) {
   const { session } = useAuth();
   const qc = useQueryClient();
   const isAdmin = session?.role === "admin";
@@ -50,27 +56,41 @@ export function MetasDesempenoSection({ token }: { token?: string }) {
   });
 
   const [rows, setRows] = useState<MetaMes[]>(emptyYear());
+  const [touchedMeses, setTouchedMeses] = useState<Set<number>>(() => new Set());
 
   useEffect(() => {
-    if (data) setRows(mergeMetas(data.meses));
+    if (data) {
+      setRows(mergeMetas(data.meses));
+      setTouchedMeses(new Set());
+    }
   }, [data]);
+
+  const markTouched = (mes: number) => {
+    setTouchedMeses((prev) => new Set(prev).add(mes));
+  };
 
   const saveMutation = useMutation({
     mutationFn: () => {
       const persisted = new Set((data?.meses ?? []).map((m) => m.mes));
       const mesesToSave = rows.filter(
-        (row) =>
-          persisted.has(row.mes) ||
-          row.captadas > 0 ||
-          row.publicadas > 0 ||
-          row.leads > 0 ||
-          row.conversionPct > 0,
+        (row) => touchedMeses.has(row.mes) || persisted.has(row.mes),
       );
+      if (!mesesToSave.length) {
+        throw new Error("No hay cambios para guardar.");
+      }
       return metasService.put({ anio, agenteId, meses: mesesToSave }, token);
     },
     onSuccess: () => {
+      setTouchedMeses(new Set());
       qc.invalidateQueries({ queryKey: ["metas"] });
       qc.invalidateQueries({ queryKey: ["dashboard-desempeno"] });
+      onFeedback?.("Metas guardadas");
+    },
+    onError: (err) => {
+      onFeedback?.(
+        err instanceof Error ? err.message : "No se pudieron guardar las metas",
+        "error",
+      );
     },
   });
 
@@ -161,6 +181,7 @@ export function MetasDesempenoSection({ token }: { token?: string }) {
                           value={row[field]}
                           onChange={(e) => {
                             const v = Number(e.target.value);
+                            markTouched(row.mes);
                             setRows((prev) => {
                               const next = [...prev];
                               next[idx] = { ...next[idx], [field]: Number.isFinite(v) ? v : 0 };
@@ -181,6 +202,7 @@ export function MetasDesempenoSection({ token }: { token?: string }) {
                         value={row.conversionPct}
                         onChange={(e) => {
                           const v = Number(e.target.value);
+                          markTouched(row.mes);
                           setRows((prev) => {
                             const next = [...prev];
                             next[idx] = {
@@ -214,6 +236,7 @@ export function MetasDesempenoSection({ token }: { token?: string }) {
                       conversionPct: template.conversionPct,
                     })),
                   );
+                  setTouchedMeses(new Set(rows.map((r) => r.mes)));
                 }}
                 className="rounded-lg border border-[var(--pa-border)] px-3 py-2 text-[12px] font-bold text-[var(--pa-navy)]"
               >
@@ -227,11 +250,6 @@ export function MetasDesempenoSection({ token }: { token?: string }) {
               >
                 {saveMutation.isPending ? "Guardando…" : "Guardar metas"}
               </button>
-              {saveMutation.isSuccess ? (
-                <span className="self-center text-[12px] font-semibold text-[#1E8E5A]">
-                  Metas guardadas
-                </span>
-              ) : null}
               {saveMutation.isError ? (
                 <span className="self-center text-[12px] text-[var(--pa-danger)]">
                   Error al guardar

@@ -38,7 +38,8 @@ export function lastClosedMonth(d = new Date()): { anio: number; mes: number } {
 }
 
 export function pctOfMeta(actual: number, meta: number | null | undefined): number | null {
-  if (meta == null || meta <= 0) return null;
+  if (meta == null) return null;
+  if (meta === 0) return actual === 0 ? 100 : null;
   return Math.round((actual / meta) * 100);
 }
 

@@ -37,7 +37,7 @@ export const dashboardService: DashboardService = {
       pendientes: {
         leadsSinContactar: { total: 2, masDe48h: 1 },
         fichasIncompletas: { total: 1, muestras: ["Casa en La Estrella"] },
-        captadosSinRegistrar: { total: 0 },
+        captadosSinRegistrar: { total: 0, primerLeadId: null },
         sinPublicar: { total: 3 },
       },
     };

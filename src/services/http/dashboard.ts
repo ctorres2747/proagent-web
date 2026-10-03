@@ -38,7 +38,7 @@ interface RawDashboard {
   pendientes: {
     leads_sin_contactar: { total: number; mas_de_48h: number };
     fichas_incompletas: { total: number; muestras: string[] };
-    captados_sin_registrar: { total: number };
+    captados_sin_registrar: { total: number; primer_lead_id: number | null };
     sin_publicar: { total: number };
   };
 }
@@ -74,7 +74,10 @@ function mapDashboard(raw: RawDashboard): DesempenoDashboard {
         masDe48h: raw.pendientes.leads_sin_contactar.mas_de_48h,
       },
       fichasIncompletas: raw.pendientes.fichas_incompletas,
-      captadosSinRegistrar: raw.pendientes.captados_sin_registrar,
+      captadosSinRegistrar: {
+        total: raw.pendientes.captados_sin_registrar.total,
+        primerLeadId: raw.pendientes.captados_sin_registrar.primer_lead_id,
+      },
       sinPublicar: raw.pendientes.sin_publicar,
     },
   };
