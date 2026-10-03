@@ -77,11 +77,11 @@ function ProgressRing({
 
 type MetricKey = "captadas" | "publicadas" | "leads" | "conversion";
 
-const KPI_DEFS: { key: MetricKey; label: string; sub: string }[] = [
-  { key: "captadas", label: "Propiedades captadas", sub: "Registradas en Inventario" },
-  { key: "publicadas", label: "Propiedades publicadas", sub: "Enviadas a portales" },
-  { key: "leads", label: "Leads recibidos", sub: "Entraron por Captación" },
-  { key: "conversion", label: "Tasa de conversión", sub: "" },
+const KPI_DEFS: { key: MetricKey; label: string; sub: string; ring: string }[] = [
+  { key: "captadas", label: "Propiedades captadas", sub: "Registradas en Inventario", ring: "Captadas" },
+  { key: "publicadas", label: "Propiedades publicadas", sub: "Enviadas a portales", ring: "Publicadas" },
+  { key: "leads", label: "Leads recibidos", sub: "Entraron por Captación", ring: "Leads" },
+  { key: "conversion", label: "Tasa de conversión", sub: "", ring: "Conversión" },
 ];
 
 function KpiChip({
@@ -161,8 +161,16 @@ export function InicioDashboard() {
     return () => document.removeEventListener("pointerdown", onPointerDown);
   }, [monthOpen]);
 
-  const displayAnio = anioQuery ?? 0;
-  const displayMes = mesQuery ?? 0;
+  const today = useMemo(() => {
+    const n = new Date();
+    return { anio: n.getFullYear(), mes: n.getMonth() + 1 };
+  }, []);
+
+  // Sin anio/mes en la URL, el panel arranca en el mes/anio EN CURSO (no el
+  // ultimo mes cerrado) -- pedido explicito, aunque el mes actual tenga
+  // pocos datos todavia.
+  const effectiveAnio = anioQuery ?? today.anio;
+  const effectiveMes = mesQuery ?? today.mes;
 
   const setParams = useCallback(
     (next: Partial<{ periodo: DesempenoPeriodoTipo; anio: number; mes: number }>) => {
@@ -181,13 +189,19 @@ export function InicioDashboard() {
   );
 
   const { data, isLoading, isError, refetch } = useQuery({
-    queryKey: ["dashboard-desempeno", periodo, anioQuery, mesQuery, token],
+    queryKey: [
+      "dashboard-desempeno",
+      periodo,
+      effectiveAnio,
+      periodo === "mes" ? effectiveMes : undefined,
+      token,
+    ],
     queryFn: () =>
       dashboardService.getDesempeno(
         {
           periodo,
-          anio: anioQuery,
-          mes: periodo === "mes" ? mesQuery : undefined,
+          anio: effectiveAnio,
+          mes: periodo === "mes" ? effectiveMes : undefined,
         },
         token ?? undefined,
       ),
@@ -205,8 +219,8 @@ export function InicioDashboard() {
     });
   }, [data, anioParam, mesParam, periodo, setParams]);
 
-  const anio = data?.periodo.anio ?? anioQuery ?? displayAnio;
-  const mes = data?.periodo.mes ?? mesQuery ?? displayMes;
+  const anio = data?.periodo.anio ?? effectiveAnio;
+  const mes = data?.periodo.mes ?? effectiveMes;
 
   const monthOptions = useMemo(() => {
     const opts: { anio: number; mes: number; label: string }[] = [];
@@ -231,9 +245,9 @@ export function InicioDashboard() {
 
   const ringItems = useMemo(() => {
     if (!data) return [];
-    return KPI_DEFS.map(({ key, label }) => ({
+    return KPI_DEFS.map(({ key, ring }) => ({
       key,
-      label: label.split(" ").slice(-1)[0] ?? label,
+      label: ring,
       pct: kpiPct(data.kpis[key]),
     }));
   }, [data]);
@@ -436,9 +450,9 @@ function ComparativoBlock({
     const title = prev
       ? `${monthLabel(data.periodo.mes)} vs. ${monthLabel(prev.mes)}`
       : "Comparativo mensual";
-    const rows = KPI_DEFS.filter((k) => k.key !== "conversion").concat([
-      { key: "conversion" as const, label: "Tasa de conversión", sub: "" },
-    ]);
+    const rows = KPI_DEFS.filter((k) => k.key !== "conversion").concat(
+      KPI_DEFS.filter((k) => k.key === "conversion"),
+    );
     return (
       <div className="rounded-2xl border border-[#E4E8EC] bg-white px-[22px] py-5">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
