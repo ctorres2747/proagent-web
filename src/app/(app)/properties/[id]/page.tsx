@@ -150,6 +150,7 @@ type ContentFormSnapshot = {
   areaM2: string;
   areaPrivada: string;
   areaConstruida: string;
+  nombreConjunto: string;
   administracion: string;
   anioConstruccion: string;
   direccion: string;
@@ -187,6 +188,7 @@ function emptyContentForm(): ContentFormSnapshot {
     areaM2: "",
     areaPrivada: "",
     areaConstruida: "",
+    nombreConjunto: "",
     administracion: "",
     anioConstruccion: "",
     direccion: "",
@@ -228,6 +230,7 @@ function snapshotFromProperty(property: Property): ContentFormSnapshot {
       property.areaPrivada != null ? String(property.areaPrivada) : "",
     areaConstruida:
       property.areaConstruida != null ? String(property.areaConstruida) : "",
+    nombreConjunto: property.nombreConjunto ?? "",
     administracion:
       property.administracion != null ? String(property.administracion) : "",
     anioConstruccion:
@@ -289,6 +292,7 @@ function contentFormsEqual(a: ContentFormSnapshot, b: ContentFormSnapshot): bool
     a.areaM2 === b.areaM2 &&
     a.areaPrivada === b.areaPrivada &&
     a.areaConstruida === b.areaConstruida &&
+    a.nombreConjunto === b.nombreConjunto &&
     a.administracion === b.administracion &&
     a.anioConstruccion === b.anioConstruccion &&
     a.direccion === b.direccion &&
@@ -638,6 +642,7 @@ export default function PublishWizardPage() {
           areaM2: parseIntInput(contentForm.areaM2),
           areaPrivada: parseIntInput(contentForm.areaPrivada),
           areaConstruida: parseIntInput(contentForm.areaConstruida),
+          nombreConjunto: contentForm.nombreConjunto || null,
           administracion: parsePrecioInput(contentForm.administracion),
           anioConstruccion: parseIntInput(contentForm.anioConstruccion),
           direccion: contentForm.direccion || null,
@@ -1713,6 +1718,11 @@ function ContentStep({
 
         <Card title="Detalles">
           <div className="grid grid-cols-2 gap-3.5 sm:grid-cols-4">
+            <ControlledField
+              label="Nombre conjunto"
+              value={form.nombreConjunto}
+              onChange={(v) => onPatch({ nombreConjunto: v })}
+            />
             <ControlledField
               label="Alcobas"
               value={form.alcobas}

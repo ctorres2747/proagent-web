@@ -45,6 +45,7 @@ interface RawProperty {
   area_m2?: number | string | null;
   area_privada?: number | string | null;
   area_construida?: number | string | null;
+  nombre_conjunto?: string | null;
   administracion?: number | string | null;
   anio_construccion?: number | string | null;
   condicion?: string | null;
@@ -126,6 +127,7 @@ function mapProperty(raw: RawProperty): Property {
     areaM2: num(raw.area_m2),
     areaPrivada: num(raw.area_privada),
     areaConstruida: num(raw.area_construida),
+    nombreConjunto: raw.nombre_conjunto ?? null,
     administracion: num(raw.administracion),
     anioConstruccion: num(raw.anio_construccion),
     condicion:
@@ -200,6 +202,7 @@ function toWriteBody(
   if (data.areaM2 !== undefined) body.area_m2 = data.areaM2;
   if (data.areaPrivada !== undefined) body.area_privada = data.areaPrivada;
   if (data.areaConstruida !== undefined) body.area_construida = data.areaConstruida;
+  if (data.nombreConjunto !== undefined) body.nombre_conjunto = data.nombreConjunto;
   if (data.administracion !== undefined) body.administracion = data.administracion;
   if (data.anioConstruccion !== undefined) {
     body.anio_construccion = data.anioConstruccion;

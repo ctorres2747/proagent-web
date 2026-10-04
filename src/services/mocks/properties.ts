@@ -25,6 +25,7 @@ const DRIVE_FIELDS_DEFAULT = {
   puntosFavorablesInternos: null,
   detalleParqueadero: null,
   frenteFondoM: null,
+  nombreConjunto: null,
 } satisfies Pick<
   Property,
   | "numeroApartamento"
@@ -38,6 +39,7 @@ const DRIVE_FIELDS_DEFAULT = {
   | "puntosFavorablesInternos"
   | "detalleParqueadero"
   | "frenteFondoM"
+  | "nombreConjunto"
 >;
 
 const MOCK_PROPERTIES: Property[] = [
@@ -317,6 +319,7 @@ export const propertiesService: PropertiesService = {
       areaM2: data.areaM2 ?? null,
       areaPrivada: data.areaPrivada ?? null,
       areaConstruida: data.areaConstruida ?? null,
+      nombreConjunto: data.nombreConjunto ?? null,
       administracion: data.administracion ?? null,
       anioConstruccion: data.anioConstruccion ?? null,
       condicion: data.condicion ?? null,
