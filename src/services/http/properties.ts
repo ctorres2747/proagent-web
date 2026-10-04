@@ -267,8 +267,12 @@ export const propertiesService: PropertiesService = {
     });
     return mapProperty(raw);
   },
-  async delete(id: string, token?: string): Promise<void> {
-    await apiFetch<{ ok: boolean }>(detailPath(id), { method: "DELETE", token });
+  async delete(id: string, token?: string): Promise<{ pendiente: boolean }> {
+    const res = await apiFetch<{ ok: boolean; pendiente?: boolean }>(detailPath(id), {
+      method: "DELETE",
+      token,
+    });
+    return { pendiente: Boolean(res.pendiente) };
   },
   async uploadPhotos(id, files, token?: string): Promise<Property> {
     const form = new FormData();

@@ -347,11 +347,12 @@ export const propertiesService: PropertiesService = {
     MOCK_PROPERTIES[idx] = merged;
     return merged;
   },
-  async delete(id: string): Promise<void> {
+  async delete(id: string): Promise<{ pendiente: boolean }> {
     await delay(200 + Math.random() * 200);
     const idx = MOCK_PROPERTIES.findIndex((p) => p.id === id);
     if (idx < 0) throw new Error(`Propiedad ${id} no encontrada`);
     MOCK_PROPERTIES.splice(idx, 1);
+    return { pendiente: false };
   },
   async uploadPhotos(id, files) {
     await delay(250);

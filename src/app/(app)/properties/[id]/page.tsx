@@ -328,6 +328,55 @@ export default function PublishWizardPage() {
   const [actionError, setActionError] = useState<string | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deletingProperty, setDeletingProperty] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  // true mientras se espera que el worker de la PC confirme el cierre del
+  // anuncio de Marketplace (eliminación "pendiente" — ver backend
+  // publication_remove.py, eliminar_propiedad_completa). La ficha sigue
+  // viva hasta esa confirmación; sin este estado, un fallo de red o un PC
+  // apagada hacía parecer que "no pasó nada" (bug real reportado por
+  // Cristhian con la ficha F-41, 2026-10-04).
+  const [deletePending, setDeletePending] = useState(false);
+
+  // Mientras deletePending, confirma periódicamente si la propiedad ya
+  // desapareció (404 = delete_ficha_completa ya corrió). Tope de 3 min
+  // (36 × 5s) — más que suficiente: el worker de Marketplace pollea cada
+  // ~60s y en pruebas reales confirma en menos de 90s.
+  useEffect(() => {
+    if (!deletePending) return;
+    let cancelled = false;
+    let attempts = 0;
+    const poll = () => {
+      attempts += 1;
+      propertiesService
+        .get(params.id, token ?? undefined)
+        .then(() => {
+          if (cancelled) return;
+          if (attempts < 36) {
+            setTimeout(poll, 5000);
+          } else {
+            setDeletePending(false);
+            setDeleteError(
+              "Sigue eliminándose en segundo plano (esperando que tu PC cierre el anuncio de Marketplace) — está tardando más de lo normal, revisa en unos minutos.",
+            );
+          }
+        })
+        .catch((err) => {
+          if (cancelled) return;
+          if (err instanceof ApiError && err.status === 404) {
+            queryClient.invalidateQueries({ queryKey: ["properties"] });
+            router.push("/publications");
+            return;
+          }
+          if (attempts < 36) setTimeout(poll, 5000);
+        });
+    };
+    const t = setTimeout(poll, 3000);
+    return () => {
+      cancelled = true;
+      clearTimeout(t);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [deletePending]);
 
   // Content form
   const [contentForm, setContentForm] = useState<ContentFormSnapshot>(emptyContentForm);
@@ -946,12 +995,27 @@ export default function PublishWizardPage() {
         </div>
         <button
           type="button"
-          onClick={() => setDeleteDialogOpen(true)}
-          className="text-xs font-bold text-[var(--pa-danger)] hover:underline"
+          onClick={() => {
+            setDeleteError(null);
+            setDeleteDialogOpen(true);
+          }}
+          disabled={deletePending}
+          className="text-xs font-bold text-[var(--pa-danger)] hover:underline disabled:opacity-50"
         >
           Eliminar propiedad
         </button>
       </div>
+
+      {deleteError ? (
+        <p className="mb-4 text-sm text-[var(--pa-danger)]">{deleteError}</p>
+      ) : null}
+      {deletePending ? (
+        <p className="mb-4 flex items-center gap-2 text-sm font-semibold text-[var(--pa-warning-ink)]">
+          <Spinner size={14} className="text-[var(--pa-warning-ink)]" />
+          Eliminando de Marketplace… la propiedad se borrará automáticamente al
+          confirmarse (puede tardar unos minutos).
+        </p>
+      ) : null}
 
       <DeletePropertyDialog
         open={deleteDialogOpen}
@@ -962,13 +1026,19 @@ export default function PublishWizardPage() {
           void (async () => {
             setDeletingProperty(true);
             try {
-              await propertiesService.delete(property.id, token ?? undefined);
-              router.push("/publications");
-            } catch {
-              window.alert("No se pudo eliminar la propiedad.");
+              const result = await propertiesService.delete(property.id, token ?? undefined);
+              setDeleteDialogOpen(false);
+              if (result.pendiente) {
+                setDeletePending(true);
+              } else {
+                queryClient.invalidateQueries({ queryKey: ["properties"] });
+                router.push("/publications");
+              }
+            } catch (err) {
+              setDeleteError(formatActionError(err, "No se pudo eliminar la propiedad."));
+              setDeleteDialogOpen(false);
             } finally {
               setDeletingProperty(false);
-              setDeleteDialogOpen(false);
             }
           })();
         }}
