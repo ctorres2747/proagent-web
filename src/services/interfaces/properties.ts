@@ -169,7 +169,10 @@ export interface PropertiesService {
     >,
     token?: string,
   ): Promise<Property>;
-  delete(id: string, token?: string): Promise<void>;
+  /** `pendiente: true` = encolado (ej. cerrar un anuncio de Marketplace vía
+   * el worker de la PC) — la propiedad sigue existiendo hasta que se
+   * confirme; `false` = ya se borró del todo en este mismo request. */
+  delete(id: string, token?: string): Promise<{ pendiente: boolean }>;
   uploadPhotos(id: string, files: File[], token?: string): Promise<Property>;
   reorderPhotos(
     id: string,

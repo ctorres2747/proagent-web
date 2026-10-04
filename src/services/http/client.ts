@@ -32,14 +32,41 @@ function logSlowApiCall(
   );
 }
 
+interface FailedChannelDetail {
+  plataforma?: string;
+  mensaje?: string;
+}
+
+/** Algunos endpoints (ej. DELETE /properties) mandan `detail` como objeto
+ * `{message, failed_channels}` en vez de un string plano — FastAPI lo hace
+ * cuando `HTTPException(detail={...})` trae estructura. Antes esto se
+ * asumía siempre string y el objeto terminaba mostrándose como
+ * "[object Object]" (enmascarado porque los callers ignoraban el error). */
+function detailToMessage(detail: unknown): string | null {
+  if (typeof detail === "string") return detail;
+  if (detail && typeof detail === "object") {
+    const d = detail as { message?: string; failed_channels?: FailedChannelDetail[] };
+    if (d.message) {
+      const channels = Array.isArray(d.failed_channels)
+        ? d.failed_channels
+            .map((f) => (f.plataforma ? `${f.plataforma}${f.mensaje ? `: ${f.mensaje}` : ""}` : null))
+            .filter((x): x is string => Boolean(x))
+        : [];
+      return channels.length ? `${d.message} (${channels.join(", ")})` : d.message;
+    }
+  }
+  return null;
+}
+
 async function parseError(res: Response): Promise<never> {
   if (res.status === 401) {
     throw new ApiError(401, "No autorizado");
   }
   let detail = res.statusText;
   try {
-    const data = (await res.json()) as { detail?: string };
-    if (data?.detail) detail = data.detail;
+    const data = (await res.json()) as { detail?: unknown };
+    const parsed = detailToMessage(data?.detail);
+    if (parsed) detail = parsed;
   } catch {
     // non-JSON error body — keep statusText
   }

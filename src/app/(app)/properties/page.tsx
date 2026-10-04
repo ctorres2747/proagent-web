@@ -32,6 +32,7 @@ import {
   ViewToggle,
 } from "@/components/properties/PropertyListUi";
 import { DeletePropertyDialog } from "@/components/DeletePropertyDialog";
+import { ApiError } from "@/services/http/client";
 import { PAGE_SIZE_OPTIONS, usePagination } from "@/hooks/usePagination";
 
 const FILTER_TYPES = ["Todos", "Apartamento", "Casa", "Local", "Lote", "Oficina", "Finca"];
@@ -47,6 +48,7 @@ export default function PropertiesPage() {
   const [view, setView] = useState<"table" | "cards">("table");
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Property | null>(null);
+  const [deletePendingNotice, setDeletePendingNotice] = useState(false);
   const [search, setSearch] = useState("");
   const [tipoFilter, setTipoFilter] = useState("Todos");
   const [municipioFilter, setMunicipioFilter] = useState("Todos");
@@ -158,8 +160,12 @@ export default function PropertiesPage() {
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => propertiesService.delete(id, token ?? undefined),
-    onSuccess: () => {
+    onSuccess: (result) => {
       void queryClient.invalidateQueries({ queryKey: ["properties"] });
+      // `pendiente: true` = el anuncio de Marketplace se cierra en segundo
+      // plano (worker de la PC) -- la propiedad sigue viva hasta que
+      // confirme, no se borra en este mismo request (ver publication_remove.py).
+      setDeletePendingNotice(result.pendiente);
     },
     onSettled: () => {
       setDeletingId(null);
@@ -313,7 +319,16 @@ export default function PropertiesPage() {
 
       {deleteMutation.isError && (
         <p className="mb-4 text-sm text-[var(--pa-danger)]">
-          No se pudo eliminar la propiedad.
+          {deleteMutation.error instanceof ApiError && deleteMutation.error.message
+            ? deleteMutation.error.message
+            : "No se pudo eliminar la propiedad."}
+        </p>
+      )}
+      {deletePendingNotice && (
+        <p className="mb-4 text-sm font-semibold text-[var(--pa-warning-ink)]">
+          Una propiedad se está terminando de eliminar en segundo plano
+          (cerrando el anuncio de Marketplace) — puede tardar unos minutos en
+          desaparecer de esta lista.
         </p>
       )}
       {createMutation.isError && (
