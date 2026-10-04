@@ -22,6 +22,7 @@ import { wasiZonasService as mockWasiZonas } from "./mocks/wasiZonas";
 import { wasiCiudadesService as mockWasiCiudades } from "./mocks/wasiCiudades";
 import { dashboardService as mockDashboard } from "./mocks/dashboard";
 import { metasService as mockMetas } from "./mocks/metas";
+import { clientsService as mockClients } from "./mocks/clients";
 import { agentesService as httpAgentes } from "./http/agentes";
 import { authService as httpAuth } from "./http/auth";
 import { channelsService as httpChannels } from "./http/channels";
@@ -37,6 +38,7 @@ import { wasiZonasService as httpWasiZonas } from "./http/wasiZonas";
 import { wasiCiudadesService as httpWasiCiudades } from "./http/wasiCiudades";
 import { dashboardService as httpDashboard } from "./http/dashboard";
 import { metasService as httpMetas } from "./http/metas";
+import { clientsService as httpClients } from "./http/clients";
 
 import type { AgentesService } from "./interfaces/agentes";
 import type { AuthService } from "./interfaces/auth";
@@ -49,6 +51,7 @@ import type { PublicationsService } from "./interfaces/publications";
 import type { ScraperService } from "./interfaces/scraper";
 import type { DashboardService } from "./interfaces/dashboard";
 import type { MetasService } from "./interfaces/metas";
+import type { ClientsService } from "./interfaces/clients";
 
 export const agentesService: AgentesService = USE_HTTP_API
   ? httpAgentes
@@ -85,6 +88,7 @@ export const dashboardService: DashboardService = USE_HTTP_API
   ? httpDashboard
   : mockDashboard;
 export const metasService: MetasService = USE_HTTP_API ? httpMetas : mockMetas;
+export const clientsService: ClientsService = USE_HTTP_API ? httpClients : mockClients;
 
 export type { AgenteResumen, AgentesService } from "./interfaces/agentes";
 export type { AuthService } from "./interfaces/auth";
@@ -126,3 +130,15 @@ export type {
   DashboardService,
 } from "./interfaces/dashboard";
 export type { MetasAnio, MetasService, MetaMes } from "./interfaces/metas";
+export type {
+  Client,
+  ClientChannel,
+  ClientChannelCount,
+  ClientDiscardReason,
+  ClientLinkedProperty,
+  ClientPaymentMethod,
+  ClientsService,
+  ClientStage,
+  ClientTemperature,
+  ClientWrite,
+} from "./interfaces/clients";
