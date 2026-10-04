@@ -63,8 +63,6 @@ export const NAV_ITEMS: NavItemConfig[] = [
     href: "/clients",
     group: "cartera",
     visibility: "all",
-    disabled: true,
-    soon: true,
   },
   {
     id: "reportes",
