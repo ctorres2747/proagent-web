@@ -17,8 +17,8 @@ Esta sección resuelve los puntos que quedaron en TBD en la versión original de
 ### 0.1 Admin ve la cartera de cada asesora
 `clientes` tiene `visibility: "all"` en `nav-config.ts` (no `"staff"` ni `"admin"`), y el selector global **"Viendo como {asesor}"** del Sidebar (`ViewingAsSelect.tsx`) va a aparecer en esta pantalla automáticamente apenas se active la ruta. Para que funcione de verdad (y no quede un control visible sin efecto), el API de Clientes debe soportar **`view_as_agente_id`**, mismo patrón que ya usan Captación e Inventario — ver §8.
 
-### 0.2 Logos de Ciencuadras y Metrocuadrado
-Confirmado contra el código: **no existen hoy** (`design-system/portals.ts` solo define `"facebook" | "mercadolibre"`). Hay que conseguir los 2 SVG oficiales antes de implementar el badge con logo real — mientras tanto usar el respaldo de siglas (CC / M²) que ya prevé §3.2. Nombre/URL real del portal confirmado: **Ciencuadras — www.ciencuadras.com** (no "Cienicuadras"; si ese typo aparece en otra documentación del proyecto, es un error viejo a corregir aparte).
+### 0.2 Logos de Ciencuadras y Metrocuadrado — ✅ resuelto (2026-10-04)
+Bajados directo de las webs reales (`public/channels/ciencuadras.svg`, `public/channels/metrocuadrado.svg`), no de un agregador de terceros. Ciencuadras: SVG estático servido por `ciencuadras.com/sources/images/logo-cc-color.svg`. Metrocuadrado: el sitio es una SPA (Next.js) que inyecta el logo como `<svg>` inline vía JS, sin archivo descargable por URL — se extrajo inspeccionando el DOM renderizado con un navegador real. Ambos son wordmarks rectangulares (no isotipos cuadrados como Facebook/MercadoLibre) — `ChannelBadge` usa `w-auto` para no aplastarlos. El respaldo de siglas (CC / M²) de §3.2 queda solo como red de seguridad si un logo no carga. Nombre/URL real del portal confirmado: **Ciencuadras — www.ciencuadras.com** (no "Cienicuadras"; si ese typo aparece en otra documentación del proyecto, es un error viejo a corregir aparte).
 
 ### 0.3 Tipo de inmueble buscado — alineado al catálogo real de Inventario
 Cambia de `'apartamento'|'casa'|'lote'|'local'|'oficina'` (el de la v1 del handoff) a los 5 tipos que ya usa la ficha de Inventario (`PROPERTY_TYPES` en `properties/[id]/page.tsx`):
@@ -290,7 +290,7 @@ Resueltos en la revisión del 2026-10-04 — ver §0. Solo queda abierto:
 
 | # | Tema | Estado |
 |---|---|---|
-| 1 | Logos oficiales de Ciencuadras y Metrocuadrado | **Sigue pendiente** — hay que conseguir los SVG (§0.2), no existen en el repo hoy |
+| 1 | Logos oficiales de Ciencuadras y Metrocuadrado | Resuelto (§0.2): SVG reales en `public/channels/`, bajados de ciencuadras.com y metrocuadrado.com |
 | 2 | Temperatura por defecto al crear | Resuelto: `warm` (Tibio), confirmado con negocio |
 | 3 | Catálogo de zonas | Resuelto (§0.4): texto libre + sugerencias del catálogo de Inventario |
 | 4 | ¿Lead captado en Captación → cliente? | Resuelto: no en esta iteración, son flujos distintos (propietarios vs. compradores) |
