@@ -44,6 +44,7 @@ export interface Property {
   areaM2: number | null;
   areaPrivada: number | null;
   areaConstruida: number | null;
+  nombreConjunto: string | null;
   administracion: number | null;
   anioConstruccion: number | null;
   condicion: Condition | null;
@@ -105,6 +106,7 @@ export interface PropertiesService {
         | "areaM2"
         | "areaPrivada"
         | "areaConstruida"
+        | "nombreConjunto"
         | "administracion"
         | "anioConstruccion"
         | "condicion"
@@ -146,6 +148,7 @@ export interface PropertiesService {
         | "areaM2"
         | "areaPrivada"
         | "areaConstruida"
+        | "nombreConjunto"
         | "administracion"
         | "anioConstruccion"
         | "condicion"

@@ -81,10 +81,6 @@ export function isResidentialTipo(tipo: string | null | undefined): boolean {
   return RESIDENTIAL_TYPES.has(key) || key.startsWith("apart");
 }
 
-export function isCasaTipo(tipo: string | null | undefined): boolean {
-  return (tipo ?? "").trim().toLowerCase() === "casa";
-}
-
 export function checklistForTipo(tipo: string | null | undefined) {
   return COMPLETENESS_CHECKLIST.filter((item) => {
     if (item.key === "bedrooms" || item.key === "bathrooms") {
@@ -129,15 +125,17 @@ function parseDraftMoney(value: string | null | undefined): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
-/** Live Drive rule for administración — mirrors backend admin_fee_missing_for_drive. */
+/**
+ * Live Drive rule for administración — mirrors backend admin_fee_missing_for_drive.
+ * Falta solo si nunca se llenó (null). 0 es una respuesta válida en
+ * cualquier tipo de inmueble -- no todo apartamento paga administración
+ * (depende del edificio/barrio), no solo Casa.
+ */
 export function adminFeeMissingFromDraft(
   administracion: string,
-  tipo: string | null | undefined,
+  _tipo: string | null | undefined,
 ): boolean {
-  const admin = parseDraftMoney(administracion);
-  if (admin == null) return true;
-  if (isCasaTipo(tipo)) return false;
-  return admin <= 0;
+  return parseDraftMoney(administracion) == null;
 }
 
 /** Live missing fields while editing (aligned with backend/completeness.py). */
