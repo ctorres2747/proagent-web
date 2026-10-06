@@ -227,7 +227,7 @@ export default function ClientsPage() {
             }`}
           >
             <span
-              className={`absolute top-1/2 h-[15px] w-[15px] -translate-y-1/2 rounded-full bg-white shadow-[0_1px_3px_rgba(16,33,49,.4)] transition-transform ${
+              className={`absolute left-0 top-1/2 h-[15px] w-[15px] -translate-y-1/2 rounded-full bg-white shadow-[0_1px_3px_rgba(16,33,49,.4)] transition-transform ${
                 showDiscarded ? "translate-x-[18px]" : "translate-x-[3px]"
               }`}
             />
