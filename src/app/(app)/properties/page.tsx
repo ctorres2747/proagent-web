@@ -32,6 +32,8 @@ import {
   ViewToggle,
 } from "@/components/properties/PropertyListUi";
 import { DeletePropertyDialog } from "@/components/DeletePropertyDialog";
+import { PropertyDeletePendingBanner } from "@/components/PropertyDeletePendingBanner";
+import { Toast } from "@/components/Toast";
 import { ApiError } from "@/services/http/client";
 import { PAGE_SIZE_OPTIONS, usePagination } from "@/hooks/usePagination";
 
@@ -58,6 +60,9 @@ export default function PropertiesPage() {
   const [shortcutFaltanDatos, setShortcutFaltanDatos] = useState(false);
   const [debajo50Inicio, setDebajo50Inicio] = useState(false);
   const [creatingFromLead, setCreatingFromLead] = useState(false);
+  const [toast, setToast] = useState<{ message: string; type?: "error" } | null>(
+    null,
+  );
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -79,10 +84,22 @@ export default function PropertiesPage() {
       .createFromLead(leadId, token)
       .then((ficha) => {
         void queryClient.invalidateQueries({ queryKey: ["properties"] });
+        setToast({ message: "Propiedad creada desde el lead. Abriendo ficha…" });
         router.replace(`/properties/${ficha.id}`);
       })
-      .catch(() => {
+      .catch((err) => {
         setCreatingFromLead(false);
+        const params = new URLSearchParams(window.location.search);
+        params.delete("crearDesdeLead");
+        const q = params.toString();
+        router.replace(q ? `/properties?${q}` : "/properties");
+        setToast({
+          message:
+            err instanceof Error
+              ? err.message
+              : "No se pudo crear la propiedad desde el lead.",
+          type: "error",
+        });
       });
   }, [token, router, queryClient, creatingFromLead]);
 
@@ -324,13 +341,12 @@ export default function PropertiesPage() {
             : "No se pudo eliminar la propiedad."}
         </p>
       )}
-      {deletePendingNotice && (
-        <p className="mb-4 text-sm font-semibold text-[var(--pa-warning-ink)]">
-          Una propiedad se está terminando de eliminar en segundo plano
-          (cerrando el anuncio de Marketplace) — puede tardar unos minutos en
-          desaparecer de esta lista.
-        </p>
-      )}
+      {deletePendingNotice ? (
+        <PropertyDeletePendingBanner
+          variant="list"
+          onDismiss={() => setDeletePendingNotice(false)}
+        />
+      ) : null}
       {createMutation.isError && (
         <p className="mb-4 text-sm text-[var(--pa-danger)]">
           No se pudo crear la propiedad.
@@ -395,6 +411,12 @@ export default function PropertiesPage() {
         </div>
       )}
 
+      {creatingFromLead ? (
+        <p className="mb-4 text-[13px] font-semibold text-[var(--pa-navy)]">
+          Creando propiedad desde el lead…
+        </p>
+      ) : null}
+
       <DeletePropertyDialog
         open={deleteTarget !== null}
         titulo={deleteTarget?.titulo ?? ""}
@@ -406,6 +428,9 @@ export default function PropertiesPage() {
           deleteMutation.mutate(deleteTarget.id);
         }}
       />
+      {toast ? (
+        <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />
+      ) : null}
     </div>
   );
 }
