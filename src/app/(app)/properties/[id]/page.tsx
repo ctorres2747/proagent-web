@@ -36,6 +36,7 @@ import { Spinner } from "@/components/Spinner";
 import { WasiFeaturesCheckboxes } from "@/components/properties/WasiFeaturesCheckboxes";
 import { WasiLocationCombobox } from "@/components/properties/WasiLocationCombobox";
 import { DeletePropertyDialog } from "@/components/DeletePropertyDialog";
+import { PropertyDeletePendingBanner } from "@/components/PropertyDeletePendingBanner";
 import { formatPrice, formatThousandsInput } from "@/lib/format";
 import { capturedAtLabel } from "@/lib/formatCapturedAt";
 import {
@@ -336,6 +337,7 @@ export default function PublishWizardPage() {
   // apagada hacía parecer que "no pasó nada" (bug real reportado por
   // Cristhian con la ficha F-41, 2026-10-04).
   const [deletePending, setDeletePending] = useState(false);
+  const [deletePendingBannerVisible, setDeletePendingBannerVisible] = useState(true);
 
   // Mientras deletePending, confirma periódicamente si la propiedad ya
   // desapareció (404 = delete_ficha_completa ya corrió). Tope de 3 min
@@ -1009,12 +1011,11 @@ export default function PublishWizardPage() {
       {deleteError ? (
         <p className="mb-4 text-sm text-[var(--pa-danger)]">{deleteError}</p>
       ) : null}
-      {deletePending ? (
-        <p className="mb-4 flex items-center gap-2 text-sm font-semibold text-[var(--pa-warning-ink)]">
-          <Spinner size={14} className="text-[var(--pa-warning-ink)]" />
-          Eliminando de Marketplace… la propiedad se borrará automáticamente al
-          confirmarse (puede tardar unos minutos).
-        </p>
+      {deletePending && deletePendingBannerVisible ? (
+        <PropertyDeletePendingBanner
+          variant="detail"
+          onDismiss={() => setDeletePendingBannerVisible(false)}
+        />
       ) : null}
 
       <DeletePropertyDialog
@@ -1029,6 +1030,7 @@ export default function PublishWizardPage() {
               const result = await propertiesService.delete(property.id, token ?? undefined);
               setDeleteDialogOpen(false);
               if (result.pendiente) {
+                setDeletePendingBannerVisible(true);
                 setDeletePending(true);
               } else {
                 queryClient.invalidateQueries({ queryKey: ["properties"] });
