@@ -7,6 +7,7 @@ import { useAgentView } from "@/features/agentView/AgentViewProvider";
 import { useAuth } from "@/features/auth/AuthProvider";
 import { ClientCard } from "@/features/clients/ClientCard";
 import { ClientDetailDrawer } from "@/features/clients/ClientDetailDrawer";
+import { DiscardedClientsTable } from "@/features/clients/DiscardedClientsTable";
 import { NewClientModal } from "@/features/clients/NewClientModal";
 import { TemperatureChip } from "@/features/clients/TemperatureChip";
 import { CLIENT_CHANNEL_META, CLIENT_CHANNEL_ORDER } from "@/design-system/clientChannels";
@@ -21,8 +22,6 @@ const COLUMNS: { id: ClientStage; label: string; dot: string }[] = [
   { id: "negociando", label: "Negociando", dot: "#0A3D62" },
   { id: "cerrado", label: "Cerrado", dot: "#1E8E5A" },
 ];
-
-const DESCARTADO_COLUMN = { id: "descartado" as ClientStage, label: "Descartado", dot: "#C23B2B" };
 
 export default function ClientsPage() {
   const { token } = useAuth();
@@ -112,8 +111,8 @@ export default function ClientsPage() {
     },
   });
 
-  const discardedCount = visibleClients.filter((c) => c.estado === "descartado").length;
-  const columns = showDiscarded ? [...COLUMNS, DESCARTADO_COLUMN] : COLUMNS;
+  const discardedClients = visibleClients.filter((c) => c.estado === "descartado");
+  const discardedCount = discardedClients.length;
   const hasFilters = Boolean(debouncedSearch || channelFilter || tempFilter.length);
 
   function toggleTemp(t: ClientTemperature) {
@@ -218,14 +217,18 @@ export default function ClientsPage() {
           </span>
           <button
             type="button"
+            role="switch"
+            aria-checked={showDiscarded}
             onClick={() => setShowDiscarded((v) => !v)}
-            className={`relative h-[18px] w-8 rounded-full transition-colors ${
-              showDiscarded ? "bg-[var(--pa-navy)]" : "bg-[#D7DCE1]"
+            className={`relative h-5 w-9 shrink-0 rounded-full border transition-colors ${
+              showDiscarded
+                ? "border-[var(--pa-navy)] bg-[var(--pa-navy)]"
+                : "border-[var(--pa-border)] bg-[#D7DCE1]"
             }`}
           >
             <span
-              className={`absolute top-[2px] h-[14px] w-[14px] rounded-full bg-white transition-transform ${
-                showDiscarded ? "translate-x-[16px]" : "translate-x-[2px]"
+              className={`absolute top-1/2 h-[15px] w-[15px] -translate-y-1/2 rounded-full bg-white shadow-[0_1px_3px_rgba(16,33,49,.4)] transition-transform ${
+                showDiscarded ? "translate-x-[18px]" : "translate-x-[3px]"
               }`}
             />
           </button>
@@ -234,13 +237,19 @@ export default function ClientsPage() {
 
       {isLoading ? (
         <p className="text-sm text-[var(--pa-muted)]">Cargando clientes…</p>
+      ) : showDiscarded ? (
+        <DiscardedClientsTable
+          clients={discardedClients}
+          selectedId={selectedId}
+          onSelect={setSelectedId}
+        />
       ) : (
         <div className="min-h-0 flex-1 overflow-x-auto">
           <div
             className="grid min-h-[420px] gap-3"
-            style={{ gridTemplateColumns: `repeat(${columns.length}, minmax(220px, 1fr))` }}
+            style={{ gridTemplateColumns: `repeat(${COLUMNS.length}, minmax(220px, 1fr))` }}
           >
-            {columns.map((col) => {
+            {COLUMNS.map((col) => {
               const items = visibleClients.filter((c) => c.estado === col.id);
               return (
                 <section

@@ -5,7 +5,7 @@ import type { Client } from "@/services/interfaces/clients";
 import { ChannelBadge } from "./ChannelBadge";
 import { TemperatureChip } from "./TemperatureChip";
 
-const DISCARD_REASON_LABEL: Record<string, string> = {
+export const DISCARD_REASON_LABEL: Record<string, string> = {
   compro_otro_asesor: "Compró con otro asesor",
   sin_presupuesto: "Sin presupuesto",
   credito_no_aprobado: "Crédito no aprobado",
@@ -14,7 +14,7 @@ const DISCARD_REASON_LABEL: Record<string, string> = {
   otro: "Otro",
 };
 
-function formatBudget(min: number | null, max: number | null): string | null {
+export function formatBudget(min: number | null, max: number | null): string | null {
   if (min == null && max == null) return null;
   const fmt = (n: number) => new Intl.NumberFormat("es-CO").format(n);
   if (min != null && max != null) return `$ ${fmt(min)} – ${fmt(max)} M`;
@@ -22,7 +22,7 @@ function formatBudget(min: number | null, max: number | null): string | null {
   return `Hasta $ ${fmt(max as number)} M`;
 }
 
-function initials(name: string): string {
+export function initials(name: string): string {
   const parts = name.trim().split(/\s+/).filter(Boolean);
   if (parts.length === 0) return "?";
   if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
