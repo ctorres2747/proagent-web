@@ -284,6 +284,19 @@ Se filtra por la asesora autenticada, salvo que quien pide sea admin y mande `vi
 
 ---
 
+## 12. Operación, deploy y escala (Manager 2026-10-06)
+
+Documentación para Owner/Dev — **no bloquea** la v1 mergeada (#130 / API #433).
+
+| Tema | Detalle |
+|------|---------|
+| **Deploy parejo** | `/clients` exige backend con tablas `clientes`, `cliente_eventos_estado`, rutas `/api/web/clients*`. Actualizar **API en VPS antes o junto** con `proagent-web` `main`. Web sola → 404/500 en Clientes. |
+| **Carga v1** | La UI lista **todos** los clientes visibles (asesor o dominio admin) y reparte en columnas en el **navegador**. Adecuado para decenas–bajas centenas de filas. |
+| **Mejora futura** | Paginación o filtro por `estado` en servidor, búsqueda indexada, y **`view_as_agente_id`** en API (§0.1 / §8) si el selector «Viendo como» debe filtrar en backend en lugar de solo en cliente. |
+| **Paridad mobile** | Fuera de alcance; Clientes es web comercial. |
+
+---
+
 ## 11. Pendientes (TBD)
 
 Resueltos en la revisión del 2026-10-04 — ver §0. Solo queda abierto:
