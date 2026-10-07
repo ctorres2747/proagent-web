@@ -20,7 +20,7 @@ const MOCK_CLIENTS: Client[] = [
     canal: "facebook",
     canalOtro: null,
     temperatura: "hot",
-    estado: "nuevo",
+    estado: "calificando",
     motivoDescarte: null,
     presupuestoMin: 350,
     presupuestoMax: 450,
@@ -30,6 +30,7 @@ const MOCK_CLIENTS: Client[] = [
     notas: "",
     proximaCita: null,
     linkedProperties: [],
+    events: [{ estadoAnterior: null, estadoNuevo: "calificando", fecha: now }],
     createdAt: now,
     updatedAt: now,
   },
@@ -52,6 +53,7 @@ const MOCK_CLIENTS: Client[] = [
     notas: "",
     proximaCita: null,
     linkedProperties: [{ id: "71", titulo: "Casa en Envigado", precio: 1_100_000_000, portadaUrl: null }],
+    events: [{ estadoAnterior: null, estadoNuevo: "calificando", fecha: now }],
     createdAt: now,
     updatedAt: now,
   },
@@ -74,6 +76,10 @@ const MOCK_CLIENTS: Client[] = [
     notas: "",
     proximaCita: null,
     linkedProperties: [],
+    events: [
+      { estadoAnterior: "calificando", estadoNuevo: "visitas", fecha: now },
+      { estadoAnterior: null, estadoNuevo: "calificando", fecha: now },
+    ],
     createdAt: now,
     updatedAt: now,
   },
@@ -139,6 +145,7 @@ export const clientsService: ClientsService = {
       notas: data.notas ?? null,
       proximaCita: data.proximaCita ?? null,
       linkedProperties: [],
+      events: [{ estadoAnterior: null, estadoNuevo: data.estado ?? "nuevo", fecha: new Date().toISOString() }],
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
@@ -162,6 +169,13 @@ export const clientsService: ClientsService = {
           : data.estado
             ? null
             : MOCK_CLIENTS[idx].motivoDescarte,
+      events:
+        data.estado && data.estado !== MOCK_CLIENTS[idx].estado
+          ? [
+              { estadoAnterior: MOCK_CLIENTS[idx].estado, estadoNuevo: data.estado, fecha: new Date().toISOString() },
+              ...MOCK_CLIENTS[idx].events,
+            ]
+          : MOCK_CLIENTS[idx].events,
       updatedAt: new Date().toISOString(),
     };
     MOCK_CLIENTS[idx] = merged;

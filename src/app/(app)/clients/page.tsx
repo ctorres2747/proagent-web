@@ -2,11 +2,12 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
 import { Plus } from "lucide-react";
 import { useAgentView } from "@/features/agentView/AgentViewProvider";
 import { useAuth } from "@/features/auth/AuthProvider";
 import { ClientCard } from "@/features/clients/ClientCard";
-import { ClientDetailDrawer } from "@/features/clients/ClientDetailDrawer";
+import { ClientDetailModal } from "@/features/clients/ClientDetailModal";
 import { DiscardedClientsTable } from "@/features/clients/DiscardedClientsTable";
 import { NewClientModal } from "@/features/clients/NewClientModal";
 import { TemperatureChip } from "@/features/clients/TemperatureChip";
@@ -15,21 +16,46 @@ import { buildMunicipioOptions } from "@/lib/municipio";
 import { clientsService, propertiesService } from "@/services";
 import type { Client, ClientStage, ClientTemperature, ClientWrite } from "@/services/interfaces/clients";
 
+// "Nuevo contacto" se eliminó (pedido de Cristhian, 2026-10-07): un cliente
+// nuevo nace directo en "calificando" (ver NewClientModal). El valor
+// `ClientStage` "nuevo" se mantiene en el tipo por compatibilidad con datos
+// viejos, pero ya no tiene columna ni es seleccionable desde la UI.
 const COLUMNS: { id: ClientStage; label: string; dot: string }[] = [
-  { id: "nuevo", label: "Nuevo contacto", dot: "#9AA6B2" },
-  { id: "calificando", label: "Calificando", dot: "#0A3D62" },
+  { id: "calificando", label: "Calificado", dot: "#0A3D62" },
   { id: "visitas", label: "En visitas", dot: "#0A3D62" },
   { id: "negociando", label: "Negociando", dot: "#0A3D62" },
   { id: "cerrado", label: "Cerrado", dot: "#1E8E5A" },
 ];
 
+// Red de seguridad: el backend ya crea clientes nuevos en "calificando"
+// (ver create_cliente), pero un registro viejo o traído por otra vía con
+// estado="nuevo" no debe desaparecer del tablero solo porque esa columna
+// ya no existe -- cae en la primera columna real.
+function effectiveStage(estado: ClientStage): ClientStage {
+  return estado === "nuevo" ? "calificando" : estado;
+}
+
 export default function ClientsPage() {
   const { token } = useAuth();
   const { viewAgenteId } = useAgentView();
   const queryClient = useQueryClient();
+  const router = useRouter();
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [newOpen, setNewOpen] = useState(false);
+
+  // Ruta profunda `/clients?cliente={id}` (handoff ficha central §2): abre
+  // la ficha directo si la URL ya trae el parámetro al cargar/recargar.
+  useEffect(() => {
+    const id = new URLSearchParams(window.location.search).get("cliente");
+    if (id) setSelectedId(id);
+  }, []);
+
+  function selectClient(id: string | null) {
+    setSelectedId(id);
+    const url = id ? `/clients?cliente=${id}` : "/clients";
+    router.replace(url, { scroll: false });
+  }
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [channelFilter, setChannelFilter] = useState<string>("");
@@ -78,15 +104,53 @@ export default function ClientsPage() {
     [allProperties],
   );
 
-  const selected = visibleClients.find((c) => c.id === selectedId) ?? null;
+  const foundInList = visibleClients.find((c) => c.id === selectedId) ?? null;
+
+  // Detalle del cliente abierto -- SIEMPRE se pide, no solo cuando falta en
+  // la lista. GET /clients devuelve eventos=[] en cada fila a propósito
+  // (fix N+1, 2026-10-07: Actividad nunca se ve en la tarjeta, así que
+  // listar no necesita esa query por cliente) -- si este fetch solo
+  // corriera para el caso "no está en la lista", el flujo normal (clic en
+  // una tarjeta que SÍ está en la lista) habría dejado Actividad vacía
+  // siempre (bug real, encontrado en revisión antes de mergear). También
+  // sirve de respaldo para la ruta profunda `?cliente={id}` cuando el
+  // cliente no está en la lista visible (filtros activos, "Viendo como"
+  // distinto, o un refetch todavía en curso tras crear).
+  const { data: detailClient, isError: detailFailed } = useQuery({
+    queryKey: ["client", selectedId],
+    queryFn: () => clientsService.get(selectedId!, token ?? undefined),
+    enabled: !!selectedId,
+    retry: false,
+  });
+
+  // Prioriza el detalle (trae Actividad real); mientras llega, muestra la
+  // fila de la lista si ya la tenemos -- la ficha abre al instante y
+  // Actividad se completa un instante después, en vez de esperar en blanco.
+  const selected = detailClient ?? foundInList ?? null;
+
+  // Deep link a un id inválido o de otro asesor: el fetch de detalle
+  // falla (404) y no hay fila en la lista -- sin esto, la URL se quedaba
+  // colgada en `?cliente=` para siempre sin ninguna ficha visible.
+  useEffect(() => {
+    if (selectedId && detailFailed && !foundInList) {
+      selectClient(null);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedId, detailFailed, foundInList]);
+
+  function syncClientCaches(updated: Client) {
+    queryClient.setQueryData<Client[]>(
+      ["clients", debouncedSearch, channelFilter, tempFilter, showDiscarded],
+      (prev) => prev?.map((c) => (c.id === updated.id ? updated : c)),
+    );
+    queryClient.setQueryData<Client>(["client", updated.id], updated);
+  }
 
   const patchMutation = useMutation({
     mutationFn: (payload: ClientWrite) =>
       clientsService.update(selectedId!, payload, token ?? undefined),
     onSuccess: (updated) => {
-      queryClient.setQueryData<Client[]>(["clients", debouncedSearch, channelFilter, tempFilter, showDiscarded], (prev) =>
-        prev?.map((c) => (c.id === updated.id ? updated : c)),
-      );
+      syncClientCaches(updated);
       queryClient.invalidateQueries({ queryKey: ["clients-channel-counts"] });
     },
   });
@@ -94,22 +158,20 @@ export default function ClientsPage() {
   const linkMutation = useMutation({
     mutationFn: (propertyId: string) =>
       clientsService.linkProperty(selectedId!, propertyId, token ?? undefined),
-    onSuccess: (updated) => {
-      queryClient.setQueryData<Client[]>(["clients", debouncedSearch, channelFilter, tempFilter, showDiscarded], (prev) =>
-        prev?.map((c) => (c.id === updated.id ? updated : c)),
-      );
-    },
+    onSuccess: syncClientCaches,
   });
 
   const unlinkMutation = useMutation({
     mutationFn: (propertyId: string) =>
       clientsService.unlinkProperty(selectedId!, propertyId, token ?? undefined),
-    onSuccess: (updated) => {
-      queryClient.setQueryData<Client[]>(["clients", debouncedSearch, channelFilter, tempFilter, showDiscarded], (prev) =>
-        prev?.map((c) => (c.id === updated.id ? updated : c)),
-      );
-    },
+    onSuccess: syncClientCaches,
   });
+
+  const saveError =
+    (patchMutation.error instanceof Error && patchMutation.error.message) ||
+    (linkMutation.error instanceof Error && linkMutation.error.message) ||
+    (unlinkMutation.error instanceof Error && unlinkMutation.error.message) ||
+    null;
 
   const discardedClients = visibleClients.filter((c) => c.estado === "descartado");
   const discardedCount = discardedClients.length;
@@ -241,7 +303,7 @@ export default function ClientsPage() {
         <DiscardedClientsTable
           clients={discardedClients}
           selectedId={selectedId}
-          onSelect={setSelectedId}
+          onSelect={selectClient}
         />
       ) : (
         <div className="min-h-0 flex-1 overflow-x-auto">
@@ -250,7 +312,7 @@ export default function ClientsPage() {
             style={{ gridTemplateColumns: `repeat(${COLUMNS.length}, minmax(220px, 1fr))` }}
           >
             {COLUMNS.map((col) => {
-              const items = visibleClients.filter((c) => c.estado === col.id);
+              const items = visibleClients.filter((c) => effectiveStage(c.estado) === col.id);
               return (
                 <section
                   key={col.id}
@@ -268,13 +330,13 @@ export default function ClientsPage() {
                       {items.length}
                     </span>
                   </header>
-                  <div className="flex max-h-[calc(100vh-300px)] flex-1 flex-col gap-2.5 overflow-y-auto p-2.5">
+                  <div className="flex flex-1 flex-col gap-2.5 overflow-y-auto p-2.5">
                     {items.map((c) => (
                       <ClientCard
                         key={c.id}
                         client={c}
                         active={c.id === selectedId}
-                        onClick={() => setSelectedId(c.id)}
+                        onClick={() => selectClient(c.id)}
                       />
                     ))}
                     {items.length === 0 ? (
@@ -291,15 +353,16 @@ export default function ClientsPage() {
       )}
 
       {selected ? (
-        <ClientDetailDrawer
+        <ClientDetailModal
           client={selected}
           allProperties={allProperties ?? []}
           zoneSuggestions={zoneSuggestions}
           busy={patchMutation.isPending || linkMutation.isPending || unlinkMutation.isPending}
+          error={saveError}
           onPatch={(patch) => patchMutation.mutate(patch)}
           onLinkProperty={(id) => linkMutation.mutate(id)}
           onUnlinkProperty={(id) => unlinkMutation.mutate(id)}
-          onClose={() => setSelectedId(null)}
+          onClose={() => selectClient(null)}
         />
       ) : null}
 
@@ -307,11 +370,16 @@ export default function ClientsPage() {
         <NewClientModal
           token={token ?? undefined}
           onClose={() => setNewOpen(false)}
-          onCreated={(id) => {
+          onCreated={(created) => {
             setNewOpen(false);
+            // Sembrar el caché del cliente recién creado para que la ficha
+            // abra al instante -- sin esto, selectClient actualiza la URL
+            // pero `selected` queda null hasta que termine el refetch de
+            // la lista (revisión 2026-10-07).
+            queryClient.setQueryData<Client>(["client", created.id], created);
             queryClient.invalidateQueries({ queryKey: ["clients"] });
             queryClient.invalidateQueries({ queryKey: ["clients-channel-counts"] });
-            setSelectedId(id);
+            selectClient(created.id);
           }}
         />
       ) : null}

@@ -1,6 +1,7 @@
 import type {
   Client,
   ClientChannelCount,
+  ClientEvent,
   ClientListFilters,
   ClientsService,
   ClientWrite,
@@ -15,6 +16,12 @@ interface RawLinkedProperty {
   titulo: string;
   precio?: number | null;
   portada_url?: string | null;
+}
+
+interface RawEvent {
+  estado_anterior?: string | null;
+  estado_nuevo: string;
+  fecha: string;
 }
 
 interface RawClient {
@@ -36,6 +43,7 @@ interface RawClient {
   notas?: string | null;
   proxima_cita?: string | null;
   linked_properties?: RawLinkedProperty[] | null;
+  eventos?: RawEvent[] | null;
   created_at: string;
   updated_at: string;
 }
@@ -70,6 +78,13 @@ function mapClient(raw: RawClient): Client {
       precio: p.precio ?? null,
       portadaUrl: p.portada_url ?? null,
     })),
+    events: (raw.eventos ?? []).map(
+      (e): ClientEvent => ({
+        estadoAnterior: (e.estado_anterior as Client["estado"] | null) ?? null,
+        estadoNuevo: e.estado_nuevo as Client["estado"],
+        fecha: e.fecha,
+      }),
+    ),
     createdAt: raw.created_at,
     updatedAt: raw.updated_at,
   };
