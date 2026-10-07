@@ -32,6 +32,9 @@ export function NewClientModal({
           telefono: telefono.trim(),
           canal: canal as ClientChannel,
           canalOtro: canal === "otro" ? canalOtro.trim() : undefined,
+          // Sin columna "Nuevo contacto" (pedido de Cristhian, 2026-10-07),
+          // el cliente nace directo en la primera columna visible.
+          estado: "calificando",
         },
         token,
       ),

@@ -48,3 +48,31 @@ export function formatAppointment(iso: string | null | undefined): string | null
   }).format(d);
   return `${fecha}, ${hora}`;
 }
+
+/** "29 sep 2026" / "Hoy, 3:40 p. m." — para la línea de tiempo de Actividad
+ * (ficha central de Clientes, handoff §5.1). */
+export function formatActivityDate(iso: string | null | undefined): string | null {
+  if (!iso) return null;
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return null;
+  const hoy = new Date();
+  const esHoy =
+    d.getFullYear() === hoy.getFullYear() &&
+    d.getMonth() === hoy.getMonth() &&
+    d.getDate() === hoy.getDate();
+  if (esHoy) {
+    const hora = new Intl.DateTimeFormat("es-CO", {
+      timeZone: "America/Bogota",
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    }).format(d);
+    return `Hoy, ${hora}`;
+  }
+  return new Intl.DateTimeFormat("es-CO", {
+    timeZone: "America/Bogota",
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  }).format(d);
+}

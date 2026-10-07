@@ -34,6 +34,14 @@ export interface ClientLinkedProperty {
   portadaUrl: string | null;
 }
 
+/** Fila de historial de estado — sección Actividad (versión simple, ver
+ * clientes-ficha-central-README.md §5.1: solo cambios de estado por ahora). */
+export interface ClientEvent {
+  estadoAnterior: ClientStage | null;
+  estadoNuevo: ClientStage;
+  fecha: string;
+}
+
 export interface Client {
   id: string;
   ownerAgenteId: string;
@@ -53,6 +61,7 @@ export interface Client {
   notas: string | null;
   proximaCita: string | null;
   linkedProperties: ClientLinkedProperty[];
+  events: ClientEvent[];
   createdAt: string;
   updatedAt: string;
 }
