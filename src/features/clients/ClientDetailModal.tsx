@@ -94,6 +94,7 @@ export function ClientDetailModal({
   onUnlinkProperty,
   onClose,
   busy,
+  error,
 }: {
   client: Client;
   allProperties: Property[];
@@ -103,6 +104,10 @@ export function ClientDetailModal({
   onUnlinkProperty: (propertyId: string) => void;
   onClose: () => void;
   busy?: boolean;
+  /** Mensaje del último guardado fallido (ej. 422 de presupuesto inválido).
+   * Sin esto, un PATCH rechazado por el API fallaba en silencio -- revisión
+   * 2026-10-07. */
+  error?: string | null;
 }) {
   const [discardOpen, setDiscardOpen] = useState(false);
   const [nombre, setNombre] = useState(client.nombre);
@@ -186,50 +191,33 @@ export function ClientDetailModal({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Guardado automático con debounce de 500ms — sin botón "Guardar" (handoff §6).
+  // Guardado automático con debounce de 500ms — sin botón "Guardar" (handoff
+  // §6). Un solo efecto combinado (revisión 2026-10-07: antes eran 6
+  // efectos independientes, uno por campo -- editar dos campos seguidos
+  // disparaba dos PATCH separados en vez de uno). También frena el envío
+  // si el presupuesto quedaría inválido (mín > máx): antes el error se veía
+  // en pantalla pero el PATCH se mandaba igual y el API lo rechazaba (422)
+  // sin que nada lo mostrara.
   useEffect(() => {
-    if (nombre === client.nombre || !nombre.trim()) return;
-    const t = setTimeout(() => onPatch({ nombre: nombre.trim() }), 500);
-    return () => clearTimeout(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [nombre]);
-
-  useEffect(() => {
-    if (telefono === client.telefono || !telefono.trim()) return;
-    const t = setTimeout(() => onPatch({ telefono: telefono.trim() }), 500);
-    return () => clearTimeout(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [telefono]);
-
-  useEffect(() => {
+    const patch: ClientWrite = {};
+    if (nombre !== client.nombre && nombre.trim()) patch.nombre = nombre.trim();
+    if (telefono !== client.telefono && telefono.trim()) patch.telefono = telefono.trim();
     const min = presupuestoMin.trim() ? Number(presupuestoMin) : null;
-    if (min === client.presupuestoMin) return;
-    const t = setTimeout(() => onPatch({ presupuestoMin: min }), 500);
-    return () => clearTimeout(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [presupuestoMin]);
-
-  useEffect(() => {
+    if (min !== client.presupuestoMin) patch.presupuestoMin = min;
     const max = presupuestoMax.trim() ? Number(presupuestoMax) : null;
-    if (max === client.presupuestoMax) return;
-    const t = setTimeout(() => onPatch({ presupuestoMax: max }), 500);
-    return () => clearTimeout(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [presupuestoMax]);
+    if (max !== client.presupuestoMax) patch.presupuestoMax = max;
+    if (notas !== (client.notas ?? "")) patch.notas = notas;
+    if (proximaCita !== (client.proximaCita ?? "")) patch.proximaCita = proximaCita || null;
+    if (Object.keys(patch).length === 0) return;
 
-  useEffect(() => {
-    if (notas === (client.notas ?? "")) return;
-    const t = setTimeout(() => onPatch({ notas }), 500);
-    return () => clearTimeout(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [notas]);
+    const effectiveMin = patch.presupuestoMin !== undefined ? patch.presupuestoMin : client.presupuestoMin;
+    const effectiveMax = patch.presupuestoMax !== undefined ? patch.presupuestoMax : client.presupuestoMax;
+    if (effectiveMin != null && effectiveMax != null && effectiveMin > effectiveMax) return;
 
-  useEffect(() => {
-    if (proximaCita === (client.proximaCita ?? "")) return;
-    const t = setTimeout(() => onPatch({ proximaCita: proximaCita || null }), 500);
+    const t = setTimeout(() => onPatch(patch), 500);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [proximaCita]);
+  }, [nombre, telefono, presupuestoMin, presupuestoMax, notas, proximaCita]);
 
   const presupuestoError =
     presupuestoMin.trim() && presupuestoMax.trim() && Number(presupuestoMin) > Number(presupuestoMax);
@@ -769,7 +757,11 @@ export function ClientDetailModal({
           </div>
         </div>
 
-        {busy ? (
+        {error ? (
+          <div className="shrink-0 border-t border-[var(--pa-bg-alt)] bg-[var(--pa-danger-bg)] px-6 py-2 text-center text-[11px] font-semibold text-[var(--pa-danger)]">
+            No se pudo guardar: {error}
+          </div>
+        ) : busy ? (
           <div className="shrink-0 border-t border-[var(--pa-bg-alt)] px-6 py-2 text-center text-[11px] font-semibold text-[var(--pa-muted)]">
             Guardando…
           </div>

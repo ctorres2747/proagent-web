@@ -96,15 +96,35 @@ export default function ClientsPage() {
     [allProperties],
   );
 
-  const selected = visibleClients.find((c) => c.id === selectedId) ?? null;
+  const foundInList = visibleClients.find((c) => c.id === selectedId) ?? null;
+
+  // Respaldo para la ruta profunda `?cliente={id}` (revisión 2026-10-07):
+  // si el id de la URL no está en la lista YA cargada (filtros activos,
+  // "Viendo como" distinto, o un refetch todavía en curso tras crear),
+  // se trae directo por id en vez de dejar la ficha sin abrir. Solo se
+  // activa cuando de verdad hace falta -- no duplica trabajo si el
+  // cliente ya está en la lista visible.
+  const { data: fallbackClient } = useQuery({
+    queryKey: ["client", selectedId],
+    queryFn: () => clientsService.get(selectedId!, token ?? undefined),
+    enabled: !!selectedId && !foundInList && !isLoading,
+  });
+
+  const selected = foundInList ?? fallbackClient ?? null;
+
+  function syncClientCaches(updated: Client) {
+    queryClient.setQueryData<Client[]>(
+      ["clients", debouncedSearch, channelFilter, tempFilter, showDiscarded],
+      (prev) => prev?.map((c) => (c.id === updated.id ? updated : c)),
+    );
+    queryClient.setQueryData<Client>(["client", updated.id], updated);
+  }
 
   const patchMutation = useMutation({
     mutationFn: (payload: ClientWrite) =>
       clientsService.update(selectedId!, payload, token ?? undefined),
     onSuccess: (updated) => {
-      queryClient.setQueryData<Client[]>(["clients", debouncedSearch, channelFilter, tempFilter, showDiscarded], (prev) =>
-        prev?.map((c) => (c.id === updated.id ? updated : c)),
-      );
+      syncClientCaches(updated);
       queryClient.invalidateQueries({ queryKey: ["clients-channel-counts"] });
     },
   });
@@ -112,22 +132,20 @@ export default function ClientsPage() {
   const linkMutation = useMutation({
     mutationFn: (propertyId: string) =>
       clientsService.linkProperty(selectedId!, propertyId, token ?? undefined),
-    onSuccess: (updated) => {
-      queryClient.setQueryData<Client[]>(["clients", debouncedSearch, channelFilter, tempFilter, showDiscarded], (prev) =>
-        prev?.map((c) => (c.id === updated.id ? updated : c)),
-      );
-    },
+    onSuccess: syncClientCaches,
   });
 
   const unlinkMutation = useMutation({
     mutationFn: (propertyId: string) =>
       clientsService.unlinkProperty(selectedId!, propertyId, token ?? undefined),
-    onSuccess: (updated) => {
-      queryClient.setQueryData<Client[]>(["clients", debouncedSearch, channelFilter, tempFilter, showDiscarded], (prev) =>
-        prev?.map((c) => (c.id === updated.id ? updated : c)),
-      );
-    },
+    onSuccess: syncClientCaches,
   });
+
+  const saveError =
+    (patchMutation.error instanceof Error && patchMutation.error.message) ||
+    (linkMutation.error instanceof Error && linkMutation.error.message) ||
+    (unlinkMutation.error instanceof Error && unlinkMutation.error.message) ||
+    null;
 
   const discardedClients = visibleClients.filter((c) => c.estado === "descartado");
   const discardedCount = discardedClients.length;
@@ -314,6 +332,7 @@ export default function ClientsPage() {
           allProperties={allProperties ?? []}
           zoneSuggestions={zoneSuggestions}
           busy={patchMutation.isPending || linkMutation.isPending || unlinkMutation.isPending}
+          error={saveError}
           onPatch={(patch) => patchMutation.mutate(patch)}
           onLinkProperty={(id) => linkMutation.mutate(id)}
           onUnlinkProperty={(id) => unlinkMutation.mutate(id)}
@@ -325,11 +344,16 @@ export default function ClientsPage() {
         <NewClientModal
           token={token ?? undefined}
           onClose={() => setNewOpen(false)}
-          onCreated={(id) => {
+          onCreated={(created) => {
             setNewOpen(false);
+            // Sembrar el caché del cliente recién creado para que la ficha
+            // abra al instante -- sin esto, selectClient actualiza la URL
+            // pero `selected` queda null hasta que termine el refetch de
+            // la lista (revisión 2026-10-07).
+            queryClient.setQueryData<Client>(["client", created.id], created);
             queryClient.invalidateQueries({ queryKey: ["clients"] });
             queryClient.invalidateQueries({ queryKey: ["clients-channel-counts"] });
-            selectClient(id);
+            selectClient(created.id);
           }}
         />
       ) : null}
