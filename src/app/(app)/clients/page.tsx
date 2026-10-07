@@ -27,6 +27,14 @@ const COLUMNS: { id: ClientStage; label: string; dot: string }[] = [
   { id: "cerrado", label: "Cerrado", dot: "#1E8E5A" },
 ];
 
+// Red de seguridad: el backend ya crea clientes nuevos en "calificando"
+// (ver create_cliente), pero un registro viejo o traído por otra vía con
+// estado="nuevo" no debe desaparecer del tablero solo porque esa columna
+// ya no existe -- cae en la primera columna real.
+function effectiveStage(estado: ClientStage): ClientStage {
+  return estado === "nuevo" ? "calificando" : estado;
+}
+
 export default function ClientsPage() {
   const { token } = useAuth();
   const { viewAgenteId } = useAgentView();
@@ -98,19 +106,37 @@ export default function ClientsPage() {
 
   const foundInList = visibleClients.find((c) => c.id === selectedId) ?? null;
 
-  // Respaldo para la ruta profunda `?cliente={id}` (revisión 2026-10-07):
-  // si el id de la URL no está en la lista YA cargada (filtros activos,
-  // "Viendo como" distinto, o un refetch todavía en curso tras crear),
-  // se trae directo por id en vez de dejar la ficha sin abrir. Solo se
-  // activa cuando de verdad hace falta -- no duplica trabajo si el
-  // cliente ya está en la lista visible.
-  const { data: fallbackClient } = useQuery({
+  // Detalle del cliente abierto -- SIEMPRE se pide, no solo cuando falta en
+  // la lista. GET /clients devuelve eventos=[] en cada fila a propósito
+  // (fix N+1, 2026-10-07: Actividad nunca se ve en la tarjeta, así que
+  // listar no necesita esa query por cliente) -- si este fetch solo
+  // corriera para el caso "no está en la lista", el flujo normal (clic en
+  // una tarjeta que SÍ está en la lista) habría dejado Actividad vacía
+  // siempre (bug real, encontrado en revisión antes de mergear). También
+  // sirve de respaldo para la ruta profunda `?cliente={id}` cuando el
+  // cliente no está en la lista visible (filtros activos, "Viendo como"
+  // distinto, o un refetch todavía en curso tras crear).
+  const { data: detailClient, isError: detailFailed } = useQuery({
     queryKey: ["client", selectedId],
     queryFn: () => clientsService.get(selectedId!, token ?? undefined),
-    enabled: !!selectedId && !foundInList && !isLoading,
+    enabled: !!selectedId,
+    retry: false,
   });
 
-  const selected = foundInList ?? fallbackClient ?? null;
+  // Prioriza el detalle (trae Actividad real); mientras llega, muestra la
+  // fila de la lista si ya la tenemos -- la ficha abre al instante y
+  // Actividad se completa un instante después, en vez de esperar en blanco.
+  const selected = detailClient ?? foundInList ?? null;
+
+  // Deep link a un id inválido o de otro asesor: el fetch de detalle
+  // falla (404) y no hay fila en la lista -- sin esto, la URL se quedaba
+  // colgada en `?cliente=` para siempre sin ninguna ficha visible.
+  useEffect(() => {
+    if (selectedId && detailFailed && !foundInList) {
+      selectClient(null);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedId, detailFailed, foundInList]);
 
   function syncClientCaches(updated: Client) {
     queryClient.setQueryData<Client[]>(
@@ -286,7 +312,7 @@ export default function ClientsPage() {
             style={{ gridTemplateColumns: `repeat(${COLUMNS.length}, minmax(220px, 1fr))` }}
           >
             {COLUMNS.map((col) => {
-              const items = visibleClients.filter((c) => c.estado === col.id);
+              const items = visibleClients.filter((c) => effectiveStage(c.estado) === col.id);
               return (
                 <section
                   key={col.id}
