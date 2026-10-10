@@ -2977,7 +2977,10 @@ function ResultsStep({
         republished: republishedChannelIds.has(id),
       }),
       error: found.status === "failed" ? found.errorMessage : null,
-      note: isPublished ? found.statusNote : null,
+      // inFlight incluido (sesión 2026-10-09): el backend ahora manda
+      // progreso real ("Subiendo foto N/total") en statusNote mientras el
+      // canal está "publishing" (WASI), no solo cuando ya terminó.
+      note: isPublished || inFlight ? found.statusNote : null,
       personalized: isChannelPersonalized(sharedTitle, sharedBody, channelPc),
       canRetry: found.status === "failed",
       canRemove: isPublished,
