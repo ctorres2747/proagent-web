@@ -81,6 +81,8 @@ export interface Property {
   channels: PropertyChannel[];
   /** ISO datetime when linked lead was captured by scraper; null for manual alta. */
   capturedAt?: string | null;
+  /** Link to the original scraped listing (linked lead); null for manual alta. */
+  sourceUrl?: string | null;
 }
 
 export interface PropertiesService {

@@ -1616,6 +1616,16 @@ function ContentStep({
   return (
     <div className="grid grid-cols-1 items-start gap-7 lg:grid-cols-[1fr_300px]">
       <div className="flex min-w-0 flex-col gap-6">
+        {property.sourceUrl ? (
+          <a
+            href={property.sourceUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1.5 self-start rounded-xl border border-[var(--pa-border)] bg-[var(--pa-surface)] px-3.5 py-2 text-xs font-semibold text-[var(--pa-navy)] underline-offset-2 hover:underline"
+          >
+            Ver publicación original del scraper ↗
+          </a>
+        ) : null}
         <Card title="Básicos">
           <div className="grid gap-4">
             <div>
@@ -2977,7 +2987,10 @@ function ResultsStep({
         republished: republishedChannelIds.has(id),
       }),
       error: found.status === "failed" ? found.errorMessage : null,
-      note: isPublished ? found.statusNote : null,
+      // inFlight incluido (sesión 2026-10-09): el backend ahora manda
+      // progreso real ("Subiendo foto N/total") en statusNote mientras el
+      // canal está "publishing" (WASI), no solo cuando ya terminó.
+      note: isPublished || inFlight ? found.statusNote : null,
       personalized: isChannelPersonalized(sharedTitle, sharedBody, channelPc),
       canRetry: found.status === "failed",
       canRemove: isPublished,
