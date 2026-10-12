@@ -599,6 +599,15 @@ function PendientesBlock({
   pendientes: DesempenoDashboard["pendientes"];
 }) {
   const rows = [
+    pendientes.publicacionesConError.total > 0
+      ? {
+          color: "#C23B2B",
+          title: `${pendientes.publicacionesConError.total} fichas con errores en publicación`,
+          sub: "Revisa el canal con error y reintenta",
+          href: "/publications?filtro=error",
+          action: "Ver publicaciones",
+        }
+      : null,
     pendientes.leadsSinContactar.total > 0
       ? {
           color: "#C23B2B",
@@ -619,20 +628,6 @@ function PendientesBlock({
               : ""),
           href: "/properties?filtro=incompletas&umbral=50",
           action: "Completar",
-        }
-      : null,
-    pendientes.captadosSinRegistrar.total > 0
-      ? {
-          color: "#0A3D62",
-          title: `${pendientes.captadosSinRegistrar.total} leads captados sin registrar`,
-          sub: "Aún no están en Inventario",
-          href:
-            pendientes.captadosSinRegistrar.total > 1
-              ? "/captacion?estado=Captado"
-              : pendientes.captadosSinRegistrar.primerLeadId != null
-                ? `/properties?crearDesdeLead=${pendientes.captadosSinRegistrar.primerLeadId}`
-                : "/captacion?estado=Captado",
-          action: "Registrar",
         }
       : null,
     pendientes.sinPublicar.total > 0
