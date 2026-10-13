@@ -28,10 +28,12 @@ Los prospectos **llegan solos desde los portales** (integración existente o ing
 
 | Resultado | Qué pasa |
 |-----------|----------|
-| **Calificar** | Cliente en **Calificado**; sale de la bandeja |
-| **Descartar** | Motivo obligatorio; sale de la bandeja |
-| **Duplicado** | Se une a cliente existente; mensaje en actividad; sale de la bandeja |
-| **Pausar** | Pestaña «En pausa» hasta la fecha |
+| **Calificar** | Cliente en **Calificado**; el prospecto **se elimina de la vista** Prospectos (no visible en ninguna pestaña) |
+| **Descartar** | Motivo obligatorio; **desaparece** de Prospectos |
+| **Duplicado** | Se une a cliente existente; mensaje en actividad; **desaparece** de Prospectos |
+| **Pausar** | Pestaña «En pausa» hasta la fecha (**sigue** en la bandeja) |
+
+**Regla explícita (Owner):** cuando un prospecto pasa a **cliente calificado** (`POST .../qualify`), deja de existir en la UI de `/prospects` — Sin revisar, Contactados, En pausa y **Todos** solo listan prospectos activos (`new`, `contacted`, `paused`). Los resueltos (`qualified`, `discarded`, `merged`) quedan en base de datos para métricas futuras, no en la bandeja.
 
 No hay CTA «Nuevo prospecto».
 
@@ -129,7 +131,7 @@ Campos obligatorios: temperatura (iconos como Clientes), presupuesto min/max mil
 
 Pie: «Falta: …» `#8A4E12` mientras incompleto; **Convertir en cliente** deshabilitado hasta válido.
 
-**Al convertir:** cliente `calificando`, inmueble vinculado, mensaje en actividad, toast «{Nombre} pasó a Clientes · **Calificado**».
+**Al convertir:** cliente `calificando`, inmueble vinculado, mensaje en actividad, toast «{Nombre} pasó a Clientes · **Calificado**»; la fila del prospecto **desaparece de la bandeja de inmediato** (sin esperar otro refresh manual).
 
 ---
 
