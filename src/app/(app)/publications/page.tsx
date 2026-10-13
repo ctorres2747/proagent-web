@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus } from "lucide-react";
@@ -75,6 +75,16 @@ export default function PublicationsPage() {
   const [shortcutSinPublicar, setShortcutSinPublicar] = useState(false);
   const [shortcutError, setShortcutError] = useState(false);
   const [shortcutProgramadas, setShortcutProgramadas] = useState(false);
+
+  // Deep link desde el bloque "Pendientes" de Inicio (mismo patrón que
+  // /properties?filtro=incompletas) -- llega con el atajo "Con error" ya
+  // activado.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("filtro") === "error") {
+      setShortcutError(true);
+    }
+  }, []);
 
   const { data: properties, isLoading, isError } = useQuery({
     queryKey: ["properties"],
