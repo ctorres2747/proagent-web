@@ -4,6 +4,7 @@ import {
   Building2,
   Home,
   KanbanSquare,
+  Inbox,
   Users,
   type LucideIcon,
 } from "lucide-react";
@@ -15,6 +16,7 @@ const ICONS: Record<string, LucideIcon> = {
   captacion: KanbanSquare,
   inventario: Building2,
   publicacion: ArrowUpFromLine,
+  prospectos: Inbox,
   clientes: Users,
   reportes: BarChart3,
 };

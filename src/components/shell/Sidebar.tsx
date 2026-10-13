@@ -16,6 +16,7 @@ export function Sidebar({
   sessionReady,
   captacionBadge,
   inventoryBadge,
+  prospectsBadge,
 }: {
   pathname: string;
   collapsed: boolean;
@@ -25,6 +26,7 @@ export function Sidebar({
   sessionReady: boolean;
   captacionBadge?: number | null;
   inventoryBadge?: number;
+  prospectsBadge?: number | null;
 }) {
   const activeId = resolveActiveNavId(pathname);
   const items = filterNavItems({ staff, admin });
@@ -99,6 +101,7 @@ export function Sidebar({
                         collapsed={collapsed}
                         captacionBadge={captacionBadge}
                         inventoryBadge={inventoryBadge}
+                        prospectsBadge={prospectsBadge}
                       />
                     ))}
                   </div>

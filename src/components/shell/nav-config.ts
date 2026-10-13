@@ -1,7 +1,7 @@
 import { CAPTACION_NATIVE, CAPTACION_URL } from "@/config/env";
 
 export type NavGroupId = "operacion" | "cartera";
-export type NavBadgeKind = "captacion" | "inventory";
+export type NavBadgeKind = "captacion" | "inventory" | "prospects";
 export type NavVisibility = "all" | "staff" | "admin";
 
 export interface NavItemConfig {
@@ -58,6 +58,14 @@ export const NAV_ITEMS: NavItemConfig[] = [
     visibility: "all",
   },
   {
+    id: "prospectos",
+    label: "Prospectos",
+    href: "/prospects",
+    group: "cartera",
+    visibility: "all",
+    badge: "prospects",
+  },
+  {
     id: "clientes",
     label: "Clientes",
     href: "/clients",
@@ -92,6 +100,7 @@ const MATCHERS: { id: string; test: (pathname: string) => boolean }[] = [
       /^\/properties\/[^/]+/.test(p),
   },
   { id: "inicio", test: (p) => p === "/" },
+  { id: "prospectos", test: (p) => p.startsWith("/prospects") },
   { id: "clientes", test: (p) => p.startsWith("/clients") },
   { id: "reportes", test: (p) => p.startsWith("/reports") },
 ];

@@ -23,6 +23,7 @@ import { wasiCiudadesService as mockWasiCiudades } from "./mocks/wasiCiudades";
 import { dashboardService as mockDashboard } from "./mocks/dashboard";
 import { metasService as mockMetas } from "./mocks/metas";
 import { clientsService as mockClients } from "./mocks/clients";
+import { prospectsService as mockProspects } from "./mocks/prospects";
 import { agentesService as httpAgentes } from "./http/agentes";
 import { authService as httpAuth } from "./http/auth";
 import { channelsService as httpChannels } from "./http/channels";
@@ -39,6 +40,7 @@ import { wasiCiudadesService as httpWasiCiudades } from "./http/wasiCiudades";
 import { dashboardService as httpDashboard } from "./http/dashboard";
 import { metasService as httpMetas } from "./http/metas";
 import { clientsService as httpClients } from "./http/clients";
+import { prospectsService as httpProspects } from "./http/prospects";
 
 import type { AgentesService } from "./interfaces/agentes";
 import type { AuthService } from "./interfaces/auth";
@@ -52,6 +54,7 @@ import type { ScraperService } from "./interfaces/scraper";
 import type { DashboardService } from "./interfaces/dashboard";
 import type { MetasService } from "./interfaces/metas";
 import type { ClientsService } from "./interfaces/clients";
+import type { ProspectsService } from "./interfaces/prospects";
 
 export const agentesService: AgentesService = USE_HTTP_API
   ? httpAgentes
@@ -89,6 +92,9 @@ export const dashboardService: DashboardService = USE_HTTP_API
   : mockDashboard;
 export const metasService: MetasService = USE_HTTP_API ? httpMetas : mockMetas;
 export const clientsService: ClientsService = USE_HTTP_API ? httpClients : mockClients;
+export const prospectsService: ProspectsService = USE_HTTP_API
+  ? httpProspects
+  : mockProspects;
 
 export type { AgenteResumen, AgentesService } from "./interfaces/agentes";
 export type { AuthService } from "./interfaces/auth";

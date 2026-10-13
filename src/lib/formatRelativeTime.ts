@@ -76,3 +76,33 @@ export function formatActivityDate(iso: string | null | undefined): string | nul
     year: "numeric",
   }).format(d);
 }
+
+/** Prospectos bandeja — handoff §4.3 (umbrales 24/48 h). */
+export function formatProspectRelativeTime(iso: string, now = Date.now()): string {
+  const t = new Date(iso).getTime();
+  if (Number.isNaN(t)) return "—";
+  const diffMs = Math.max(0, now - t);
+  const hours = diffMs / (1000 * 60 * 60);
+  if (hours < 1) return "Ahora";
+  if (hours < 24) return `Hace ${Math.floor(hours)} h`;
+  const days = Math.floor(hours / 24);
+  return `Hace ${days} día${days === 1 ? "" : "s"}`;
+}
+
+export function prospectRelativeTimeStyle(iso: string, now = Date.now()): {
+  color: string;
+  fontWeight: number;
+} {
+  const hours = Math.max(0, now - new Date(iso).getTime()) / (1000 * 60 * 60);
+  if (hours >= 48) return { color: "#C23B2B", fontWeight: 800 };
+  if (hours >= 24) return { color: "#B5651D", fontWeight: 800 };
+  return { color: "#45525E", fontWeight: 600 };
+}
+
+export function prospectPriorityBand(iso: string, estado: string, now = Date.now()): string {
+  if (estado === "paused") return "paused";
+  const hours = Math.max(0, now - new Date(iso).getTime()) / (1000 * 60 * 60);
+  if (hours >= 48) return "48";
+  if (hours >= 24) return "24";
+  return "fresh";
+}

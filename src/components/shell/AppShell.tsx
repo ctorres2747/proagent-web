@@ -59,6 +59,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         sessionReady={sessionReady}
         captacionBadge={navCounts?.captacionPending}
         inventoryBadge={navCounts?.inventoryCount}
+        prospectsBadge={navCounts?.prospectsNew}
       />
 
       <MobileDrawer
@@ -69,6 +70,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         admin={admin}
         captacionBadge={navCounts?.captacionPending}
         inventoryBadge={navCounts?.inventoryCount}
+        prospectsBadge={navCounts?.prospectsNew}
       />
 
       <div className="flex min-w-0 flex-1 flex-col">
