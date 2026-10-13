@@ -5,6 +5,7 @@ import { Phone, X } from "lucide-react";
 import { formatActivityDate, formatAppointment } from "@/lib/formatRelativeTime";
 import type {
   Client,
+  ClientActividadItem,
   ClientDiscardReason,
   ClientEvent,
   ClientPaymentMethod,
@@ -74,6 +75,42 @@ function eventText(e: ClientEvent, discardReasonLabel?: string | null): string {
   return `Pasó a ${STAGE_LABEL[e.estadoNuevo]}`;
 }
 
+function actividadText(a: ClientActividadItem): string {
+  if (a.tipo === "prospect_message") {
+    const msg = typeof a.payload.mensaje === "string" ? a.payload.mensaje : "";
+    return msg ? `Mensaje del prospecto · ${msg}` : "Mensaje del prospecto";
+  }
+  if (a.tipo === "merged_prospect") {
+    const code =
+      typeof a.payload.property_code === "string" ? a.payload.property_code : null;
+    const title =
+      typeof a.payload.property_title === "string" ? a.payload.property_title : null;
+    const ref = code ?? title;
+    const nombre = typeof a.payload.nombre === "string" ? a.payload.nombre : null;
+    if (ref && nombre) return `Prospecto unificado · ${nombre} (${ref})`;
+    if (ref) return `Prospecto unificado · ${ref}`;
+    return nombre ? `Prospecto unificado · ${nombre}` : "Prospecto unificado";
+  }
+  return a.tipo;
+}
+
+type TimelineRow =
+  | { kind: "event"; fecha: string; event: ClientEvent }
+  | { kind: "actividad"; fecha: string; actividad: ClientActividadItem };
+
+function buildActivityTimeline(client: Client): TimelineRow[] {
+  const rows: TimelineRow[] = [
+    ...client.events.map((e) => ({ kind: "event" as const, fecha: e.fecha, event: e })),
+    ...client.actividad.map((a) => ({
+      kind: "actividad" as const,
+      fecha: a.fecha,
+      actividad: a,
+    })),
+  ];
+  rows.sort((a, b) => (a.fecha < b.fecha ? 1 : a.fecha > b.fecha ? -1 : 0));
+  return rows;
+}
+
 const sectionTitle =
   "text-[11px] font-extrabold uppercase tracking-[.06em] text-[var(--pa-faint)]";
 const label = "mb-1.5 block text-[11px] font-bold text-[var(--pa-text-secondary)]";
@@ -125,6 +162,7 @@ export function ClientDetailModal({
   const [entered, setEntered] = useState(false);
 
   const dialogRef = useRef<HTMLDivElement>(null);
+  const activityTimeline = useMemo(() => buildActivityTimeline(client), [client]);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
 
@@ -720,16 +758,24 @@ export function ClientDetailModal({
             <div className={section}>
               <div className={sectionTitle}>Actividad</div>
               <div className="mt-2.5">
-                {client.events.length === 0 ? (
+                {activityTimeline.length === 0 ? (
                   <p className="text-[11.5px] text-[var(--pa-faint)]">Sin actividad todavía.</p>
                 ) : (
-                  client.events.map((e, i) => {
+                  activityTimeline.map((row, i) => {
                     const isFirst = i === 0;
-                    const isDiscard = e.estadoNuevo === "descartado";
+                    const isDiscard =
+                      row.kind === "event" && row.event.estadoNuevo === "descartado";
                     const dotColor = isFirst ? "#0A3D62" : isDiscard ? "#C23B2B" : "#C9D0D7";
-                    const isLast = i === client.events.length - 1;
+                    const isLast = i === activityTimeline.length - 1;
+                    const title =
+                      row.kind === "event"
+                        ? eventText(
+                            row.event,
+                            isFirst && isDiscard ? discardReasonLabel : null,
+                          )
+                        : actividadText(row.actividad);
                     return (
-                      <div key={`${e.fecha}-${i}`} className="flex gap-3">
+                      <div key={`${row.fecha}-${i}-${row.kind}`} className="flex gap-3">
                         <div className="flex w-[10px] shrink-0 flex-col items-center">
                           <span
                             className="h-[10px] w-[10px] shrink-0 rounded-full border-2"
@@ -741,11 +787,9 @@ export function ClientDetailModal({
                           {!isLast ? <span className="w-[2px] flex-1 bg-[var(--pa-bg-alt)]" /> : null}
                         </div>
                         <div className="min-w-0 flex-1 pb-3.5">
-                          <div className="text-[12.5px] font-bold text-[var(--pa-ink)]">
-                            {eventText(e, isFirst && isDiscard ? discardReasonLabel : null)}
-                          </div>
+                          <div className="text-[12.5px] font-bold text-[var(--pa-ink)]">{title}</div>
                           <div className="text-[11.5px] text-[var(--pa-faint)]">
-                            {formatActivityDate(e.fecha)}
+                            {formatActivityDate(row.fecha)}
                           </div>
                         </div>
                       </div>

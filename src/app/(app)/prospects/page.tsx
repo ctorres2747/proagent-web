@@ -8,7 +8,7 @@ import { ChannelBadge } from "@/features/clients/ChannelBadge";
 import { TemperatureChip } from "@/features/clients/TemperatureChip";
 import type { ClientChannel, ClientTemperature } from "@/services/interfaces/clients";
 import type { Prospect, ProspectTab } from "@/services/interfaces/prospects";
-import { clientsService, prospectsService } from "@/services";
+import { clientsService, propertiesService, prospectsService } from "@/services";
 import {
   formatProspectRelativeTime,
   prospectPriorityBand,
@@ -50,6 +50,32 @@ function digits(phone: string): string {
   return phone.replace(/\D/g, "");
 }
 
+const INTERACTION_LABELS: Record<string, string> = {
+  received: "Mensaje recibido",
+  call: "Llamada registrada",
+  whatsapp: "WhatsApp abierto",
+};
+
+function prospectInteractionLabel(type: string): string {
+  return INTERACTION_LABELS[type] ?? type;
+}
+
+function qualifyMissingFields(
+  tempChosen: boolean,
+  presMin: string,
+  presMax: string,
+  zonas: string,
+  tipos: string,
+): string[] {
+  const missing: string[] = [];
+  if (!tempChosen) missing.push("temperatura");
+  if (!presMin.trim() || !presMax.trim()) missing.push("presupuesto");
+  else if (Number(presMin) > Number(presMax)) missing.push("presupuesto (mín ≤ máx)");
+  if (!zonas.trim()) missing.push("zonas");
+  if (!tipos.trim()) missing.push("tipos de inmueble");
+  return missing;
+}
+
 export default function ProspectsPage() {
   const { token } = useAuth();
   const queryClient = useQueryClient();
@@ -63,7 +89,8 @@ export default function ProspectsPage() {
   const [undo, setUndo] = useState<{ id: string; label: string } | null>(null);
   const [toast, setToast] = useState<string | null>(null);
 
-  const [temp, setTemp] = useState<ClientTemperature>("warm");
+  const [temp, setTemp] = useState<ClientTemperature | null>(null);
+  const [tempChosen, setTempChosen] = useState(false);
   const [presMin, setPresMin] = useState("");
   const [presMax, setPresMax] = useState("");
   const [zonas, setZonas] = useState("");
@@ -98,6 +125,10 @@ export default function ProspectsPage() {
     void queryClient.invalidateQueries({ queryKey: ["nav-counts"] });
   };
 
+  const offerUndo = (id: string, label: string) => {
+    setUndo({ id, label });
+  };
+
   const removeOptimistic = (id: string) => {
     queryClient.setQueryData<Prospect[]>(
       ["prospects", tab, channel, search],
@@ -110,7 +141,7 @@ export default function ProspectsPage() {
       prospectsService.qualify(
         p.id,
         {
-          temperatura: temp,
+          temperatura: temp ?? "warm",
           presupuestoMin: Number(presMin),
           presupuestoMax: Number(presMax),
           zonas: zonas.split(",").map((z) => z.trim()).filter(Boolean),
@@ -123,6 +154,7 @@ export default function ProspectsPage() {
     onSuccess: (_res, p) => {
       setQualifyTarget(null);
       setToast(`${p.nombre} pasó a Clientes · Calificado`);
+      offerUndo(p.id, `${p.nombre} calificado`);
       invalidate();
     },
     onError: () => invalidate(),
@@ -132,8 +164,9 @@ export default function ProspectsPage() {
     mutationFn: ({ p, reason }: { p: Prospect; reason: string }) =>
       prospectsService.discard(p.id, reason, token ?? undefined),
     onMutate: ({ p }) => removeOptimistic(p.id),
-    onSuccess: () => {
+    onSuccess: (_res, { p }) => {
       setDiscardTarget(null);
+      offerUndo(p.id, `${p.nombre} descartado`);
       invalidate();
     },
     onError: () => invalidate(),
@@ -155,21 +188,30 @@ export default function ProspectsPage() {
   }, [undo]);
 
   const openQualify = (p: Prospect) => {
-    setTemp("warm");
+    setTemp(null);
+    setTempChosen(false);
     setPresMin("");
     setPresMax("");
-    setZonas(p.propertyTitle ? "" : "");
+    setZonas("");
     setTipos("");
     setFormaPago("credito");
     setQualifyTarget(p);
+    if (p.fichaId && token) {
+      void propertiesService.get(p.fichaId, token).then((prop) => {
+        const zona = [prop.barrio, prop.municipio].filter(Boolean).join(", ");
+        if (zona) setZonas(zona);
+        if (prop.tipo) setTipos(prop.tipo);
+        if (prop.precio != null && prop.precio > 0) {
+          const mm = Math.round(prop.precio / 1_000_000);
+          setPresMin(String(Math.max(1, mm - 50)));
+          setPresMax(String(mm + 50));
+        }
+      });
+    }
   };
 
-  const qualifyValid =
-    presMin.trim() &&
-    presMax.trim() &&
-    Number(presMin) <= Number(presMax) &&
-    zonas.trim() &&
-    tipos.trim();
+  const missingQualify = qualifyMissingFields(tempChosen, presMin, presMax, zonas, tipos);
+  const qualifyValid = missingQualify.length === 0;
 
   return (
     <div className="px-6 py-8 md:px-10">
@@ -265,6 +307,11 @@ export default function ProspectsPage() {
                         <div>
                           <div className="text-[12.5px] font-bold">{p.nombre}</div>
                           <div className="text-[11px] text-[#5B6B79]">{p.telefono}</div>
+                          {p.returnedFromPause ? (
+                            <span className="mt-1 mr-1 inline-block rounded bg-[#E7EEF4] px-2 py-0.5 text-[10px] font-bold text-[var(--pa-navy)]">
+                              Volvió de pausa
+                            </span>
+                          ) : null}
                           {p.possibleDuplicateClienteId ? (
                             <span className="mt-1 inline-block rounded bg-[#FCEEE0] px-2 py-0.5 text-[10px] font-bold text-[#8A4E12]">
                               Duplicado
@@ -286,7 +333,9 @@ export default function ProspectsPage() {
                               ? `Hasta ${p.pausedUntil}`
                               : formatProspectRelativeTime(p.lastInteractionAt)}
                           </div>
-                          <div className="text-[10.5px] text-[#9AA6B2]">{p.lastInteractionType}</div>
+                          <div className="text-[10.5px] text-[#9AA6B2]">
+                            {prospectInteractionLabel(p.lastInteractionType)}
+                          </div>
                         </div>
                         <div className="flex items-center gap-1.5">
                           <a
@@ -333,6 +382,7 @@ export default function ProspectsPage() {
                                   onClick={() => {
                                     void prospectsService.pause(p.id, d, token ?? undefined).then(() => {
                                       setMenuId(null);
+                                      offerUndo(p.id, `${p.nombre} en pausa`);
                                       invalidate();
                                     });
                                   }}
@@ -345,7 +395,12 @@ export default function ProspectsPage() {
                                   type="button"
                                   className="block w-full rounded-lg px-3 py-2 text-left text-[12px]"
                                   onClick={() => {
-                                    void prospectsService.resume(p.id, token ?? undefined).then(invalidate);
+                                    void prospectsService
+                                      .resume(p.id, token ?? undefined)
+                                      .then(() => {
+                                        offerUndo(p.id, `${p.nombre} reanudado`);
+                                        invalidate();
+                                      });
                                     setMenuId(null);
                                   }}
                                 >
@@ -395,7 +450,10 @@ export default function ProspectsPage() {
                   key={t}
                   value={t}
                   active={temp === t}
-                  onClick={() => setTemp(t)}
+                  onClick={() => {
+                    setTemp(t);
+                    setTempChosen(true);
+                  }}
                 />
               ))}
             </div>
@@ -441,7 +499,7 @@ export default function ProspectsPage() {
             </div>
             {!qualifyValid ? (
               <p className="mt-3 text-[12px] font-semibold text-[#8A4E12]">
-                Falta completar presupuesto, zonas y tipos de inmueble.
+                Falta: {missingQualify.join(", ")}.
               </p>
             ) : null}
             <div className="mt-6 flex justify-end gap-2">
@@ -499,6 +557,7 @@ export default function ProspectsPage() {
                       void prospectsService
                         .merge(mergeTarget.id, c.id, token ?? undefined)
                         .then(() => {
+                          offerUndo(mergeTarget.id, `${mergeTarget.nombre} unido a cliente`);
                           setMergeTarget(null);
                           invalidate();
                         });
