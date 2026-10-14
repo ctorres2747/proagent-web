@@ -11,6 +11,7 @@ export function SidebarNavItem({
   collapsed,
   captacionBadge,
   inventoryBadge,
+  prospectsBadge,
   onNavigate,
 }: {
   item: NavItemConfig;
@@ -18,6 +19,7 @@ export function SidebarNavItem({
   collapsed: boolean;
   captacionBadge?: number | null;
   inventoryBadge?: number;
+  prospectsBadge?: number | null;
   onNavigate?: () => void;
 }) {
   const tooltip = useDelayedTooltip(400);
@@ -26,7 +28,9 @@ export function SidebarNavItem({
       ? captacionBadge
       : item.badge === "inventory"
         ? inventoryBadge
-        : undefined;
+        : item.badge === "prospects"
+          ? prospectsBadge
+          : undefined;
 
   if (item.disabled) {
     return (
@@ -71,7 +75,10 @@ export function SidebarNavItem({
                 : "text-[var(--pa-on-navy-secondary)]"
           }
         />
-        {collapsed && badgeCount != null && badgeCount > 0 && item.badge === "captacion" ? (
+        {collapsed &&
+        badgeCount != null &&
+        badgeCount > 0 &&
+        (item.badge === "captacion" || item.badge === "prospects") ? (
           <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-[var(--pa-emerald-bright)] px-1 text-[9.5px] font-extrabold text-[var(--pa-emerald-ink)]">
             {badgeCount > 99 ? "99+" : badgeCount}
           </span>
@@ -89,7 +96,7 @@ export function SidebarNavItem({
             {item.label}
           </span>
           {badgeCount != null && badgeCount > 0 ? (
-            item.badge === "captacion" ? (
+            item.badge === "captacion" || item.badge === "prospects" ? (
               <span className="rounded-full bg-[var(--pa-emerald-bright)] px-2 py-0.5 text-[10px] font-extrabold text-[var(--pa-emerald-ink)]">
                 {badgeCount > 99 ? "99+" : badgeCount}
               </span>

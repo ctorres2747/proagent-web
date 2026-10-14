@@ -1,6 +1,7 @@
 import type {
   Client,
   ClientChannelCount,
+  ClientActividadItem,
   ClientEvent,
   ClientListFilters,
   ClientsService,
@@ -24,6 +25,12 @@ interface RawEvent {
   fecha: string;
 }
 
+interface RawActividad {
+  tipo: string;
+  payload?: Record<string, unknown> | null;
+  fecha: string;
+}
+
 interface RawClient {
   id: string;
   owner_agente_id: string;
@@ -44,6 +51,7 @@ interface RawClient {
   proxima_cita?: string | null;
   linked_properties?: RawLinkedProperty[] | null;
   eventos?: RawEvent[] | null;
+  actividad?: RawActividad[] | null;
   created_at: string;
   updated_at: string;
 }
@@ -83,6 +91,13 @@ function mapClient(raw: RawClient): Client {
         estadoAnterior: (e.estado_anterior as Client["estado"] | null) ?? null,
         estadoNuevo: e.estado_nuevo as Client["estado"],
         fecha: e.fecha,
+      }),
+    ),
+    actividad: (raw.actividad ?? []).map(
+      (a): ClientActividadItem => ({
+        tipo: a.tipo,
+        payload: a.payload ?? {},
+        fecha: a.fecha,
       }),
     ),
     createdAt: raw.created_at,

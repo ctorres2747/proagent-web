@@ -42,6 +42,14 @@ export interface ClientEvent {
   fecha: string;
 }
 
+export type ClientActividadTipo = "prospect_message" | "merged_prospect" | string;
+
+export interface ClientActividadItem {
+  tipo: ClientActividadTipo;
+  payload: Record<string, unknown>;
+  fecha: string;
+}
+
 export interface Client {
   id: string;
   ownerAgenteId: string;
@@ -62,6 +70,7 @@ export interface Client {
   proximaCita: string | null;
   linkedProperties: ClientLinkedProperty[];
   events: ClientEvent[];
+  actividad: ClientActividadItem[];
   createdAt: string;
   updatedAt: string;
 }
