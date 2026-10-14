@@ -6,6 +6,7 @@ import { MoreHorizontal, Phone } from "lucide-react";
 import { useAuth } from "@/features/auth/AuthProvider";
 import { ChannelBadge } from "@/features/clients/ChannelBadge";
 import { TemperatureChip } from "@/features/clients/TemperatureChip";
+import { CLIENT_CHANNEL_META } from "@/design-system/clientChannels";
 import type { ClientChannel, ClientTemperature } from "@/services/interfaces/clients";
 import type { Prospect, ProspectTab } from "@/services/interfaces/prospects";
 import { clientsService, propertiesService, prospectsService } from "@/services";
@@ -23,12 +24,14 @@ const TABS: { id: ProspectTab; label: string }[] = [
   { id: "all", label: "Todos" },
 ];
 
-const CHANNELS = [
-  { id: "all", label: "Todos" },
-  { id: "facebook", label: "FB" },
-  { id: "mercadolibre", label: "ML" },
-  { id: "ciencuadras", label: "CC" },
-  { id: "metrocuadrado", label: "M²" },
+/** Los 4 canales que ingieren prospectos -- mismos logos oficiales que
+ * Captación/Clientes (CLIENT_CHANNEL_META), no las iniciales sueltas que
+ * tenía antes esta bandeja. */
+const PROSPECT_CHANNEL_IDS: ClientChannel[] = [
+  "facebook",
+  "mercadolibre",
+  "ciencuadras",
+  "metrocuadrado",
 ];
 
 const DISCARD_REASONS = [
@@ -274,31 +277,49 @@ export default function ProspectsPage() {
           onChange={(e) => setSearch(e.target.value)}
           className="mb-3 w-full rounded-lg border border-[var(--pa-border)] px-3 py-2 text-[13px]"
         />
-        <div className="flex flex-wrap gap-2">
-          {CHANNELS.map((c) => (
-            <button
-              key={c.id}
-              type="button"
-              onClick={() => setChannel(c.id)}
-              className={`rounded-full px-3 py-1.5 text-[12px] font-semibold ${
-                channel === c.id
-                  ? "bg-[#E7EEF4] text-[var(--pa-navy)]"
-                  : "text-[var(--pa-muted)]"
-              }`}
-            >
-              {c.label}
-              {c.id !== "all" && counts?.byChannel[c.id]
-                ? ` ${counts.byChannel[c.id]}`
-                : ""}
-            </button>
-          ))}
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-[11px] font-bold uppercase tracking-wide text-[var(--pa-muted)]">
+            Canal
+          </span>
+          <button
+            type="button"
+            onClick={() => setChannel("all")}
+            className={`rounded-full px-3 py-1.5 text-[12px] font-semibold ${
+              channel === "all"
+                ? "bg-[#E7EEF4] text-[var(--pa-navy)]"
+                : "text-[var(--pa-muted)]"
+            }`}
+          >
+            Todos{counts?.all != null ? ` ${counts.all}` : ""}
+          </button>
+          {PROSPECT_CHANNEL_IDS.map((id) => {
+            const meta = CLIENT_CHANNEL_META[id];
+            const n = counts?.byChannel[id];
+            return (
+              <button
+                key={id}
+                type="button"
+                onClick={() => setChannel(id)}
+                className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-semibold ${
+                  channel === id
+                    ? "bg-[#E7EEF4] text-[var(--pa-navy)]"
+                    : "text-[var(--pa-muted)]"
+                }`}
+              >
+                {meta.logo ? (
+                  // eslint-disable-next-line @next/next/no-img-element -- SVG vector, igual que ChannelBadge
+                  <img src={meta.logo} alt="" className="h-3.5 w-auto max-w-[52px] object-contain" />
+                ) : null}
+                {meta.label}
+                {n ? ` ${n}` : ""}
+              </button>
+            );
+          })}
         </div>
       </div>
 
       {isLoading ? (
         <p className="mt-6 text-sm text-[var(--pa-muted)]">Cargando bandeja…</p>
-      ) : prospects.length === 0 ? (
-        <p className="mt-6 text-sm text-[var(--pa-muted)]">No hay prospectos en esta vista.</p>
       ) : (
         <div className="mt-6 space-y-4">
           {/* Encabezado de columnas (§4.1 design_handoff_prospectos/README.md) --
@@ -312,7 +333,12 @@ export default function ProspectsPage() {
           </div>
           {(["48", "24", "fresh", "paused"] as const).map((band) => {
             const rows = grouped[band];
-            if (!rows.length) return null;
+            // Las 3 franjas de interacción (48h/24-48h/<24h) se muestran
+            // siempre, aunque estén vacías -- así se sabe que no hay
+            // prospectos en ese grupo en vez de que la franja desaparezca
+            // sin explicación. "En pausa" sigue ocultándose si no hay nada
+            // pausado (es una acción manual explícita, no un cubo de tiempo).
+            if (band === "paused" && !rows.length) return null;
             const meta = BAND_META[band];
             return (
               <section key={band}>
@@ -323,7 +349,8 @@ export default function ProspectsPage() {
                   {meta.title}
                 </div>
                 <div className="overflow-hidden rounded-b-lg border border-t-0 border-[var(--pa-border)]">
-                  {rows.map((p) => {
+                  {rows.length ? (
+                    rows.map((p) => {
                     const rel = prospectRelativeTimeStyle(p.lastInteractionAt);
                     return (
                       <div
@@ -469,7 +496,12 @@ export default function ProspectsPage() {
                         </div>
                       </div>
                     );
-                  })}
+                    })
+                  ) : (
+                    <div className="bg-white px-5 py-4 text-[12px] text-[var(--pa-muted)]">
+                      Sin prospectos en este grupo.
+                    </div>
+                  )}
                 </div>
               </section>
             );
