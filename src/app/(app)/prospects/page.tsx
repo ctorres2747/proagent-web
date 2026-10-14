@@ -301,6 +301,15 @@ export default function ProspectsPage() {
         <p className="mt-6 text-sm text-[var(--pa-muted)]">No hay prospectos en esta vista.</p>
       ) : (
         <div className="mt-6 space-y-4">
+          {/* Encabezado de columnas (§4.1 design_handoff_prospectos/README.md) --
+           * faltaba por completo, las filas no tenían ningún título de columna. */}
+          <div className="hidden grid-cols-[1.2fr_40px_2fr_92px_186px] gap-3 rounded-t-lg bg-[#FAFBFC] px-5 py-2 text-[11px] font-bold uppercase tracking-wide text-[#9AA6B2] md:grid">
+            <span>Prospecto</span>
+            <span>Canal</span>
+            <span>Interés</span>
+            <span>Interacción</span>
+            <span>Acciones</span>
+          </div>
           {(["48", "24", "fresh", "paused"] as const).map((band) => {
             const rows = grouped[band];
             if (!rows.length) return null;
