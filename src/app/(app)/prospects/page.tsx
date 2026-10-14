@@ -87,7 +87,7 @@ export default function ProspectsPage() {
   const [discardTarget, setDiscardTarget] = useState<Prospect | null>(null);
   const [mergeTarget, setMergeTarget] = useState<Prospect | null>(null);
   const [undo, setUndo] = useState<{ id: string; label: string } | null>(null);
-  const [toast, setToast] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ message: string; type?: "error" } | null>(null);
 
   const [temp, setTemp] = useState<ClientTemperature | null>(null);
   const [tempChosen, setTempChosen] = useState(false);
@@ -129,6 +129,18 @@ export default function ProspectsPage() {
     setUndo({ id, label });
   };
 
+  /** Toda acción de la bandeja (interacción, pausar, reanudar, unir,
+   * deshacer) corría como un `.then()` sin `.catch()` -- un fallo del
+   * backend (ej. "Deshacer" fuera de la ventana de 6s, muy plausible si
+   * la latencia de red ya consumió parte de esos 6s antes de que el toast
+   * aparezca) se perdía como una promesa rechazada sin capturar, sin
+   * ningún aviso para el usuario y sin revertir el estado optimista. */
+  const showActionError = (err: unknown) => {
+    const message = err instanceof Error ? err.message : "No se pudo completar la acción";
+    setToast({ message, type: "error" });
+    invalidate();
+  };
+
   const removeOptimistic = (id: string) => {
     queryClient.setQueryData<Prospect[]>(
       ["prospects", tab, channel, search],
@@ -153,7 +165,7 @@ export default function ProspectsPage() {
     onMutate: (p) => removeOptimistic(p.id),
     onSuccess: (_res, p) => {
       setQualifyTarget(null);
-      setToast(`${p.nombre} pasó a Clientes · Calificado`);
+      setToast({ message: `${p.nombre} pasó a Clientes · Calificado` });
       offerUndo(p.id, `${p.nombre} calificado`);
       invalidate();
     },
@@ -183,7 +195,13 @@ export default function ProspectsPage() {
 
   useEffect(() => {
     if (!undo) return;
-    const t = setTimeout(() => setUndo(null), 6000);
+    // El backend acepta deshacer hasta 6s después de registrar la acción,
+    // pero ese reloj arranca en el servidor ANTES de que la respuesta llegue
+    // al navegador y el toast se muestre -- un timer local de 6000ms deja
+    // una ventana donde el botón se ve activo pero el clic ya llega tarde
+    // en el servidor. 5000ms da margen real para la latencia de red; el
+    // .catch() del botón sigue cubriendo el caso límite si aun así falla.
+    const t = setTimeout(() => setUndo(null), 5000);
     return () => clearTimeout(t);
   }, [undo]);
 
@@ -337,12 +355,15 @@ export default function ProspectsPage() {
                             {prospectInteractionLabel(p.lastInteractionType)}
                           </div>
                         </div>
-                        <div className="flex items-center gap-1.5">
+                        <div className="relative flex items-center gap-1.5">
                           <a
                             href={`tel:+57${digits(p.telefono)}`}
                             className="flex h-[30px] w-[30px] items-center justify-center rounded-lg border border-[#E4E8EC]"
                             onClick={() => {
-                              void prospectsService.interaction(p.id, "call", token ?? undefined).then(invalidate);
+                              void prospectsService
+                                .interaction(p.id, "call", token ?? undefined)
+                                .then(invalidate)
+                                .catch(showActionError);
                             }}
                           >
                             <Phone size={14} />
@@ -353,7 +374,10 @@ export default function ProspectsPage() {
                             rel="noreferrer"
                             className="flex h-[30px] w-[30px] items-center justify-center rounded-lg border border-[#E4E8EC] text-[11px] font-bold"
                             onClick={() => {
-                              void prospectsService.interaction(p.id, "whatsapp", token ?? undefined).then(invalidate);
+                              void prospectsService
+                                .interaction(p.id, "whatsapp", token ?? undefined)
+                                .then(invalidate)
+                                .catch(showActionError);
                             }}
                           >
                             WA
@@ -373,18 +397,21 @@ export default function ProspectsPage() {
                             <MoreHorizontal size={14} />
                           </button>
                           {menuId === p.id ? (
-                            <div className="absolute right-8 z-10 mt-24 w-56 rounded-xl border bg-white p-2 shadow-lg">
+                            <div className="absolute right-0 top-full z-20 mt-2 w-56 rounded-xl border bg-white p-2 shadow-lg">
                               {[3, 7, 30].map((d) => (
                                 <button
                                   key={d}
                                   type="button"
                                   className="block w-full rounded-lg px-3 py-2 text-left text-[12px] hover:bg-[#F6F7F9]"
                                   onClick={() => {
-                                    void prospectsService.pause(p.id, d, token ?? undefined).then(() => {
-                                      setMenuId(null);
-                                      offerUndo(p.id, `${p.nombre} en pausa`);
-                                      invalidate();
-                                    });
+                                    void prospectsService
+                                      .pause(p.id, d, token ?? undefined)
+                                      .then(() => {
+                                        setMenuId(null);
+                                        offerUndo(p.id, `${p.nombre} en pausa`);
+                                        invalidate();
+                                      })
+                                      .catch(showActionError);
                                   }}
                                 >
                                   Pausar {d} días
@@ -400,7 +427,8 @@ export default function ProspectsPage() {
                                       .then(() => {
                                         offerUndo(p.id, `${p.nombre} reanudado`);
                                         invalidate();
-                                      });
+                                      })
+                                      .catch(showActionError);
                                     setMenuId(null);
                                   }}
                                 >
@@ -560,7 +588,8 @@ export default function ProspectsPage() {
                           offerUndo(mergeTarget.id, `${mergeTarget.nombre} unido a cliente`);
                           setMergeTarget(null);
                           invalidate();
-                        });
+                        })
+                        .catch(showActionError);
                     }}
                   >
                     {c.nombre} · {c.telefono}
@@ -582,10 +611,19 @@ export default function ProspectsPage() {
             type="button"
             className="font-bold text-[#7FE3B8]"
             onClick={() => {
-              void prospectsService.undo(undo.id, token ?? undefined).then(() => {
-                setUndo(null);
-                invalidate();
-              });
+              void prospectsService
+                .undo(undo.id, token ?? undefined)
+                .then(() => {
+                  setUndo(null);
+                  invalidate();
+                })
+                .catch((err: unknown) => {
+                  // Se agota la ventana de deshacer (6s en el backend) o el
+                  // prospecto ya no existe -- limpiar el toast de "Deshacer"
+                  // y avisar en vez de dejarlo colgado sin ninguna acción.
+                  setUndo(null);
+                  showActionError(err);
+                });
             }}
           >
             Deshacer
@@ -593,7 +631,9 @@ export default function ProspectsPage() {
         </div>
       ) : null}
 
-      {toast ? <Toast message={toast} onClose={() => setToast(null)} /> : null}
+      {toast ? (
+        <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />
+      ) : null}
     </div>
   );
 }
