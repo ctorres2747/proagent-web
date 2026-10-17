@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import JSZip from "jszip";
 import { useParams, useRouter } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/features/auth/AuthProvider";
@@ -2117,6 +2118,12 @@ function PhotosStep({
   }, [property.id, property.videoUrl]);
   const videoDirty = videoUrl.trim() !== (property.videoUrl ?? "");
 
+  // Descargar todas las fotos en un solo .zip (pedido real: se necesitan
+  // las fotos fuera del dashboard, ej. para subirlas a una herramienta de
+  // reels con IA -- no había ninguna forma de bajarlas hasta ahora).
+  const [downloading, setDownloading] = useState(false);
+  const [downloadError, setDownloadError] = useState<string | null>(null);
+
   const run = async (fn: () => Promise<void>) => {
     setBusy(true);
     setError(null);
@@ -2145,6 +2152,46 @@ function PhotosStep({
     void run(async () => {
       await propertiesService.deletePhoto(property.id, photoId, token);
     });
+  };
+
+  const onDownloadAll = async () => {
+    if (!fotos.length || downloading) return;
+    setDownloading(true);
+    setDownloadError(null);
+    try {
+      const zip = new JSZip();
+      let agregadas = 0;
+      for (let i = 0; i < fotos.length; i += 1) {
+        try {
+          const res = await fetch(fotos[i].url);
+          if (!res.ok) continue;
+          const blob = await res.blob();
+          const extMatch = /\.(\w{2,5})(?:\?.*)?$/.exec(fotos[i].url);
+          const ext = extMatch ? extMatch[1] : "jpg";
+          zip.file(`${property.code}-${String(i + 1).padStart(2, "0")}.${ext}`, blob);
+          agregadas += 1;
+        } catch {
+          // una foto que falle no debe tumbar el resto del zip
+        }
+      }
+      if (agregadas === 0) {
+        setDownloadError("No se pudo descargar ninguna foto.");
+        return;
+      }
+      const content = await zip.generateAsync({ type: "blob" });
+      const url = URL.createObjectURL(content);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${property.code}-fotos.zip`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch {
+      setDownloadError("No se pudo generar el archivo .zip.");
+    } finally {
+      setDownloading(false);
+    }
   };
 
   const onSaveVideo = () => {
@@ -2191,13 +2238,28 @@ function PhotosStep({
 
   return (
     <div className="max-w-[920px]">
-      <div className="mb-4 text-[13px] text-[var(--pa-muted)]">
-        La primera foto es la portada. Arrastra una foto y suéltala donde
-        quieras (o usa las flechas). Facebook Marketplace e Instagram usan
-        como máximo 10 fotos por publicación.
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+        <div className="text-[13px] text-[var(--pa-muted)]">
+          La primera foto es la portada. Arrastra una foto y suéltala donde
+          quieras (o usa las flechas). Facebook Marketplace e Instagram usan
+          como máximo 10 fotos por publicación.
+        </div>
+        {fotos.length > 0 && (
+          <button
+            type="button"
+            disabled={downloading}
+            onClick={() => void onDownloadAll()}
+            className="shrink-0 rounded-lg border border-[var(--pa-border)] px-3 py-1.5 text-[12px] font-semibold text-[var(--pa-ink)] disabled:opacity-50"
+          >
+            {downloading ? "Descargando…" : "⬇ Descargar fotos (.zip)"}
+          </button>
+        )}
       </div>
       {error && (
         <p className="mb-3 text-sm text-[var(--pa-danger)]">{error}</p>
+      )}
+      {downloadError && (
+        <p className="mb-3 text-sm text-[var(--pa-danger)]">{downloadError}</p>
       )}
       <div className="mb-5 grid grid-cols-[repeat(auto-fill,minmax(160px,1fr))] gap-3.5">
         {fotos.map((p, i) => (
