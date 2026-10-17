@@ -96,7 +96,7 @@ type StepId =
 
 const STEPS: { id: StepId; label: string }[] = [
   { id: "content", label: "Contenido" },
-  { id: "photos", label: "Fotos" },
+  { id: "photos", label: "Fotos y Video" },
   { id: "channels", label: "Canales" },
   { id: "customize", label: "Personalizar" },
   { id: "preview", label: "Vista previa" },
@@ -2106,6 +2106,17 @@ function PhotosStep({
   const [overIndex, setOverIndex] = useState<number | null>(null);
   const fotos = property.fotos ?? [];
 
+  // Video del recorrido -- se envía a WASI (campo "video", URL de YouTube o
+  // Vimeo) y se sincroniza a los portales aliados. Estado local propio para
+  // no guardar en cada tecla; "Guardar" dispara el PATCH igual que las
+  // acciones de fotos de este mismo step.
+  const [videoUrl, setVideoUrl] = useState(property.videoUrl ?? "");
+  const [videoSaved, setVideoSaved] = useState(false);
+  useEffect(() => {
+    setVideoUrl(property.videoUrl ?? "");
+  }, [property.id, property.videoUrl]);
+  const videoDirty = videoUrl.trim() !== (property.videoUrl ?? "");
+
   const run = async (fn: () => Promise<void>) => {
     setBusy(true);
     setError(null);
@@ -2113,7 +2124,7 @@ function PhotosStep({
       await fn();
       onPropertyUpdated();
     } catch {
-      setError("No se pudo actualizar las fotos.");
+      setError("No se pudo guardar el cambio.");
     } finally {
       setBusy(false);
     }
@@ -2133,6 +2144,15 @@ function PhotosStep({
   const onDelete = (photoId: string) => {
     void run(async () => {
       await propertiesService.deletePhoto(property.id, photoId, token);
+    });
+  };
+
+  const onSaveVideo = () => {
+    const trimmed = videoUrl.trim();
+    void run(async () => {
+      await propertiesService.update(property.id, { videoUrl: trimmed || null }, token);
+      setVideoSaved(true);
+      setTimeout(() => setVideoSaved(false), 2000);
     });
   };
 
@@ -2263,6 +2283,40 @@ function PhotosStep({
           />
         </label>
       </div>
+
+      <div className="mb-5 rounded-xl border border-[var(--pa-border)] bg-[var(--pa-surface)] p-4">
+        <div className="mb-2 text-[13px] font-bold text-[var(--pa-ink)]">
+          Video del recorrido
+        </div>
+        <div className="mb-3 text-[12px] text-[var(--pa-muted)]">
+          Link de YouTube o Vimeo con un recorrido del inmueble — se publica en
+          WASI y se sincroniza a los portales aliados (opcional).
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <input
+            type="url"
+            value={videoUrl}
+            onChange={(e) => setVideoUrl(e.target.value)}
+            placeholder="https://www.youtube.com/watch?v=..."
+            disabled={busy}
+            className="min-w-[280px] flex-1 rounded-lg border border-[var(--pa-border)] px-3 py-2 text-[13px]"
+          />
+          <button
+            type="button"
+            disabled={busy || !videoDirty}
+            onClick={onSaveVideo}
+            className="rounded-lg bg-[var(--pa-navy)] px-4 py-2 text-[13px] font-bold text-white disabled:opacity-40"
+          >
+            Guardar
+          </button>
+          {videoSaved && !videoDirty && (
+            <span className="text-[12px] font-semibold text-[var(--pa-accent)]">
+              ✓ Guardado
+            </span>
+          )}
+        </div>
+      </div>
+
       <PrimaryBlock onClick={onNext} disabled={busy} className="w-[220px]">
         Continuar a canales
       </PrimaryBlock>

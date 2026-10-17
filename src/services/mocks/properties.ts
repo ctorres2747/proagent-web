@@ -26,6 +26,7 @@ const DRIVE_FIELDS_DEFAULT = {
   detalleParqueadero: null,
   frenteFondoM: null,
   nombreConjunto: null,
+  videoUrl: null,
 } satisfies Pick<
   Property,
   | "numeroApartamento"
@@ -40,6 +41,7 @@ const DRIVE_FIELDS_DEFAULT = {
   | "detalleParqueadero"
   | "frenteFondoM"
   | "nombreConjunto"
+  | "videoUrl"
 >;
 
 const MOCK_PROPERTIES: Property[] = [
