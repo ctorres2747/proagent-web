@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import JSZip from "jszip";
 import { useParams, useRouter } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/features/auth/AuthProvider";
@@ -96,7 +97,7 @@ type StepId =
 
 const STEPS: { id: StepId; label: string }[] = [
   { id: "content", label: "Contenido" },
-  { id: "photos", label: "Fotos" },
+  { id: "photos", label: "Fotos y Video" },
   { id: "channels", label: "Canales" },
   { id: "customize", label: "Personalizar" },
   { id: "preview", label: "Vista previa" },
@@ -2106,6 +2107,23 @@ function PhotosStep({
   const [overIndex, setOverIndex] = useState<number | null>(null);
   const fotos = property.fotos ?? [];
 
+  // Video del recorrido -- se envía a WASI (campo "video", URL de YouTube o
+  // Vimeo) y se sincroniza a los portales aliados. Estado local propio para
+  // no guardar en cada tecla; "Guardar" dispara el PATCH igual que las
+  // acciones de fotos de este mismo step.
+  const [videoUrl, setVideoUrl] = useState(property.videoUrl ?? "");
+  const [videoSaved, setVideoSaved] = useState(false);
+  useEffect(() => {
+    setVideoUrl(property.videoUrl ?? "");
+  }, [property.id, property.videoUrl]);
+  const videoDirty = videoUrl.trim() !== (property.videoUrl ?? "");
+
+  // Descargar todas las fotos en un solo .zip (pedido real: se necesitan
+  // las fotos fuera del dashboard, ej. para subirlas a una herramienta de
+  // reels con IA -- no había ninguna forma de bajarlas hasta ahora).
+  const [downloading, setDownloading] = useState(false);
+  const [downloadError, setDownloadError] = useState<string | null>(null);
+
   const run = async (fn: () => Promise<void>) => {
     setBusy(true);
     setError(null);
@@ -2113,7 +2131,7 @@ function PhotosStep({
       await fn();
       onPropertyUpdated();
     } catch {
-      setError("No se pudo actualizar las fotos.");
+      setError("No se pudo guardar el cambio.");
     } finally {
       setBusy(false);
     }
@@ -2133,6 +2151,55 @@ function PhotosStep({
   const onDelete = (photoId: string) => {
     void run(async () => {
       await propertiesService.deletePhoto(property.id, photoId, token);
+    });
+  };
+
+  const onDownloadAll = async () => {
+    if (!fotos.length || downloading) return;
+    setDownloading(true);
+    setDownloadError(null);
+    try {
+      const zip = new JSZip();
+      let agregadas = 0;
+      for (let i = 0; i < fotos.length; i += 1) {
+        try {
+          const res = await fetch(fotos[i].url);
+          if (!res.ok) continue;
+          const blob = await res.blob();
+          const extMatch = /\.(\w{2,5})(?:\?.*)?$/.exec(fotos[i].url);
+          const ext = extMatch ? extMatch[1] : "jpg";
+          zip.file(`${property.code}-${String(i + 1).padStart(2, "0")}.${ext}`, blob);
+          agregadas += 1;
+        } catch {
+          // una foto que falle no debe tumbar el resto del zip
+        }
+      }
+      if (agregadas === 0) {
+        setDownloadError("No se pudo descargar ninguna foto.");
+        return;
+      }
+      const content = await zip.generateAsync({ type: "blob" });
+      const url = URL.createObjectURL(content);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${property.code}-fotos.zip`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch {
+      setDownloadError("No se pudo generar el archivo .zip.");
+    } finally {
+      setDownloading(false);
+    }
+  };
+
+  const onSaveVideo = () => {
+    const trimmed = videoUrl.trim();
+    void run(async () => {
+      await propertiesService.update(property.id, { videoUrl: trimmed || null }, token);
+      setVideoSaved(true);
+      setTimeout(() => setVideoSaved(false), 2000);
     });
   };
 
@@ -2171,13 +2238,28 @@ function PhotosStep({
 
   return (
     <div className="max-w-[920px]">
-      <div className="mb-4 text-[13px] text-[var(--pa-muted)]">
-        La primera foto es la portada. Arrastra una foto y suéltala donde
-        quieras (o usa las flechas). Facebook Marketplace e Instagram usan
-        como máximo 10 fotos por publicación.
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+        <div className="text-[13px] text-[var(--pa-muted)]">
+          La primera foto es la portada. Arrastra una foto y suéltala donde
+          quieras (o usa las flechas). Facebook Marketplace e Instagram usan
+          como máximo 10 fotos por publicación.
+        </div>
+        {fotos.length > 0 && (
+          <button
+            type="button"
+            disabled={downloading}
+            onClick={() => void onDownloadAll()}
+            className="shrink-0 rounded-lg border border-[var(--pa-border)] px-3 py-1.5 text-[12px] font-semibold text-[var(--pa-ink)] disabled:opacity-50"
+          >
+            {downloading ? "Descargando…" : "⬇ Descargar fotos (.zip)"}
+          </button>
+        )}
       </div>
       {error && (
         <p className="mb-3 text-sm text-[var(--pa-danger)]">{error}</p>
+      )}
+      {downloadError && (
+        <p className="mb-3 text-sm text-[var(--pa-danger)]">{downloadError}</p>
       )}
       <div className="mb-5 grid grid-cols-[repeat(auto-fill,minmax(160px,1fr))] gap-3.5">
         {fotos.map((p, i) => (
@@ -2263,6 +2345,40 @@ function PhotosStep({
           />
         </label>
       </div>
+
+      <div className="mb-5 rounded-xl border border-[var(--pa-border)] bg-[var(--pa-surface)] p-4">
+        <div className="mb-2 text-[13px] font-bold text-[var(--pa-ink)]">
+          Video del recorrido
+        </div>
+        <div className="mb-3 text-[12px] text-[var(--pa-muted)]">
+          Link de YouTube o Vimeo con un recorrido del inmueble — se publica en
+          WASI y se sincroniza a los portales aliados (opcional).
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <input
+            type="url"
+            value={videoUrl}
+            onChange={(e) => setVideoUrl(e.target.value)}
+            placeholder="https://www.youtube.com/watch?v=..."
+            disabled={busy}
+            className="min-w-[280px] flex-1 rounded-lg border border-[var(--pa-border)] px-3 py-2 text-[13px]"
+          />
+          <button
+            type="button"
+            disabled={busy || !videoDirty}
+            onClick={onSaveVideo}
+            className="rounded-lg bg-[var(--pa-navy)] px-4 py-2 text-[13px] font-bold text-white disabled:opacity-40"
+          >
+            Guardar
+          </button>
+          {videoSaved && !videoDirty && (
+            <span className="text-[12px] font-semibold text-[var(--pa-accent)]">
+              ✓ Guardado
+            </span>
+          )}
+        </div>
+      </div>
+
       <PrimaryBlock onClick={onNext} disabled={busy} className="w-[220px]">
         Continuar a canales
       </PrimaryBlock>

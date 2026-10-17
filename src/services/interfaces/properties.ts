@@ -74,6 +74,9 @@ export interface Property {
   frenteFondoM: string | null;
   portadaUrl: string | null;
   fotos: PropertyPhoto[];
+  /** Link de YouTube/Vimeo del recorrido del inmueble -- se envía a WASI
+   * (campo "video" de su API) y se sincroniza a los portales aliados. */
+  videoUrl: string | null;
   /** Owning agent id (ownership: an agent sees only their own). */
   ownerAgenteId: string | null;
   /** Display name of owning agent (admin inventory filter). */
@@ -125,6 +128,7 @@ export interface PropertiesService {
         | "puntosFavorablesInternos"
         | "detalleParqueadero"
         | "frenteFondoM"
+        | "videoUrl"
       >
     >,
     token?: string,
@@ -167,6 +171,7 @@ export interface PropertiesService {
         | "puntosFavorablesInternos"
         | "detalleParqueadero"
         | "frenteFondoM"
+        | "videoUrl"
       >
     >,
     token?: string,
