@@ -2163,15 +2163,27 @@ function PhotosStep({
       let agregadas = 0;
       for (let i = 0; i < fotos.length; i += 1) {
         try {
-          const res = await fetch(fotos[i].url);
+          // Bug real (2026-10-17): las miniaturas de esta misma vista ya
+          // cargaron esta URL como <img> (modo "no-cors", el navegador no
+          // exige CORS para imágenes) y el navegador la cachea. Un fetch()
+          // posterior a la MISMA URL reutiliza esa respuesta cacheada en
+          // vez de pedirla de nuevo -- y esa versión no trae la info de CORS
+          // que fetch() sí exige, así que el navegador la bloquea aunque el
+          // servidor responda bien en una petición fresca (confirmado: curl
+          // directo al servidor sí trae Access-Control-Allow-Origin). Forzar
+          // "no-store" evita que reuse esa entrada de caché contaminada.
+          const res = await fetch(fotos[i].url, { cache: "no-store" });
           if (!res.ok) continue;
           const blob = await res.blob();
           const extMatch = /\.(\w{2,5})(?:\?.*)?$/.exec(fotos[i].url);
           const ext = extMatch ? extMatch[1] : "jpg";
           zip.file(`${property.code}-${String(i + 1).padStart(2, "0")}.${ext}`, blob);
           agregadas += 1;
-        } catch {
-          // una foto que falle no debe tumbar el resto del zip
+        } catch (err) {
+          // una foto que falle no debe tumbar el resto del zip -- pero sí
+          // queda en consola para poder diagnosticar sin tener que pedir
+          // capturas de DevTools cada vez.
+          console.error(`No se pudo descargar la foto ${i + 1}:`, err);
         }
       }
       if (agregadas === 0) {
