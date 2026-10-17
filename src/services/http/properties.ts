@@ -67,6 +67,7 @@ interface RawProperty {
   puntos_favorables_internos?: string | null;
   detalle_parqueadero?: string | null;
   frente_fondo_m?: string | null;
+  video_url?: string | null;
   portada_url?: string | null;
   fotos?: RawPhoto[] | null;
   owner_agente_id?: number | string | null;
@@ -169,6 +170,7 @@ function mapProperty(raw: RawProperty): Property {
     puntosFavorablesInternos: raw.puntos_favorables_internos ?? null,
     detalleParqueadero: raw.detalle_parqueadero ?? null,
     frenteFondoM: raw.frente_fondo_m ?? null,
+    videoUrl: raw.video_url ?? null,
     portadaUrl: raw.portada_url ?? fotos[0]?.url ?? null,
     fotos,
     ownerAgenteId:
@@ -241,6 +243,7 @@ function toWriteBody(
     body.detalle_parqueadero = data.detalleParqueadero;
   }
   if (data.frenteFondoM !== undefined) body.frente_fondo_m = data.frenteFondoM;
+  if (data.videoUrl !== undefined) body.video_url = data.videoUrl;
   return body;
 }
 
