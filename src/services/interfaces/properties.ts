@@ -77,6 +77,13 @@ export interface Property {
   /** Link de YouTube/Vimeo del recorrido del inmueble -- se envía a WASI
    * (campo "video" de su API) y se sincroniza a los portales aliados. */
   videoUrl: string | null;
+  /** Reel vertical generado automáticamente (FFmpeg) a partir de las fotos
+   * -- asset local, no es un canal/publicación externa. `null` = nunca se
+   * generó; mientras está `"generando"` el cliente debe re-pedir la
+   * propiedad cada pocos segundos hasta que pase a `"listo"`/`"error"`. */
+  reelEstado: "generando" | "listo" | "error" | null;
+  reelUrl: string | null;
+  reelMensaje: string | null;
   /** Owning agent id (ownership: an agent sees only their own). */
   ownerAgenteId: string | null;
   /** Display name of owning agent (admin inventory filter). */
@@ -190,4 +197,10 @@ export interface PropertiesService {
   /** Sube un archivo suelto (contrato, cédula, certificado…) a la carpeta de
    * Google Drive ya publicada de la propiedad. */
   uploadDriveFile(id: string, file: File, token?: string): Promise<void>;
+  /** Encola el render del reel (FFmpeg, backend) a partir de las fotos ya
+   * subidas. Responde de inmediato con `reelEstado: "generando"` -- el
+   * caller debe volver a pedir la propiedad para ver cuándo termina. */
+  generateReel(id: string, token?: string): Promise<Property>;
+  /** Borra el reel ya generado (archivo + estado), para poder regenerar. */
+  deleteReel(id: string, token?: string): Promise<Property>;
 }

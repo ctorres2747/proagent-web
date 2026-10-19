@@ -68,6 +68,9 @@ interface RawProperty {
   detalle_parqueadero?: string | null;
   frente_fondo_m?: string | null;
   video_url?: string | null;
+  reel_estado?: string | null;
+  reel_url?: string | null;
+  reel_mensaje?: string | null;
   portada_url?: string | null;
   fotos?: RawPhoto[] | null;
   owner_agente_id?: number | string | null;
@@ -171,6 +174,14 @@ function mapProperty(raw: RawProperty): Property {
     detalleParqueadero: raw.detalle_parqueadero ?? null,
     frenteFondoM: raw.frente_fondo_m ?? null,
     videoUrl: raw.video_url ?? null,
+    reelEstado:
+      raw.reel_estado === "generando" ||
+      raw.reel_estado === "listo" ||
+      raw.reel_estado === "error"
+        ? raw.reel_estado
+        : null,
+    reelUrl: raw.reel_url ?? null,
+    reelMensaje: raw.reel_mensaje ?? null,
     portadaUrl: raw.portada_url ?? fotos[0]?.url ?? null,
     fotos,
     ownerAgenteId:
@@ -314,5 +325,19 @@ export const propertiesService: PropertiesService = {
       form,
       token,
     );
+  },
+  async generateReel(id, token?: string): Promise<Property> {
+    const raw = await apiFetch<RawProperty>(`${detailPath(id)}/reel`, {
+      method: "POST",
+      token,
+    });
+    return mapProperty(raw);
+  },
+  async deleteReel(id, token?: string): Promise<Property> {
+    const raw = await apiFetch<RawProperty>(`${detailPath(id)}/reel`, {
+      method: "DELETE",
+      token,
+    });
+    return mapProperty(raw);
   },
 };
