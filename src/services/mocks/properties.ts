@@ -27,6 +27,9 @@ const DRIVE_FIELDS_DEFAULT = {
   frenteFondoM: null,
   nombreConjunto: null,
   videoUrl: null,
+  reelEstado: null,
+  reelUrl: null,
+  reelMensaje: null,
 } satisfies Pick<
   Property,
   | "numeroApartamento"
@@ -42,6 +45,9 @@ const DRIVE_FIELDS_DEFAULT = {
   | "frenteFondoM"
   | "nombreConjunto"
   | "videoUrl"
+  | "reelEstado"
+  | "reelUrl"
+  | "reelMensaje"
 >;
 
 const MOCK_PROPERTIES: Property[] = [
@@ -413,5 +419,41 @@ export const propertiesService: PropertiesService = {
     const prop = MOCK_PROPERTIES.find((p) => p.id === id);
     if (!prop) throw new Error(`Propiedad ${id} no encontrada`);
     void file;
+  },
+  async generateReel(id): Promise<Property> {
+    await delay(200);
+    const idx = MOCK_PROPERTIES.findIndex((p) => p.id === id);
+    if (idx < 0) throw new Error(`Propiedad ${id} no encontrada`);
+    const marcado = { ...MOCK_PROPERTIES[idx], reelEstado: "generando" as const, reelMensaje: null };
+    MOCK_PROPERTIES[idx] = marcado;
+    // Primera simulación real de una transición async en este mock (el
+    // resto del archivo solo fakea latencia, nunca cambia de estado solo)
+    // -- el render real tarda uno o dos minutos; acá unos segundos alcanzan
+    // para que la UI local pueda probar el polling sin backend.
+    setTimeout(() => {
+      const i = MOCK_PROPERTIES.findIndex((p) => p.id === id);
+      if (i < 0 || MOCK_PROPERTIES[i].reelEstado !== "generando") return;
+      MOCK_PROPERTIES[i] = {
+        ...MOCK_PROPERTIES[i],
+        reelEstado: "listo",
+        reelUrl:
+          "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4",
+        reelMensaje: null,
+      };
+    }, 4000);
+    return marcado;
+  },
+  async deleteReel(id): Promise<Property> {
+    await delay(150);
+    const idx = MOCK_PROPERTIES.findIndex((p) => p.id === id);
+    if (idx < 0) throw new Error(`Propiedad ${id} no encontrada`);
+    const next = {
+      ...MOCK_PROPERTIES[idx],
+      reelEstado: null,
+      reelUrl: null,
+      reelMensaje: null,
+    };
+    MOCK_PROPERTIES[idx] = next;
+    return next;
   },
 };

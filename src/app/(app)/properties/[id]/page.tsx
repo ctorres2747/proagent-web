@@ -2215,6 +2215,41 @@ function PhotosStep({
     });
   };
 
+  // Reel automático (FFmpeg, backend) -- ciclo propio: la generación corre
+  // en background del lado del servidor (puede tardar 1-2 min), así que no
+  // usa el `run()` de arriba (pensado para mutaciones instantáneas de
+  // fotos/video). Mientras `reelEstado === "generando"` se vuelve a pedir
+  // la propiedad cada 4s hasta que el backend la deje en "listo"/"error".
+  const [reelBusy, setReelBusy] = useState(false);
+  const [reelActionError, setReelActionError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (property.reelEstado !== "generando") return;
+    const interval = setInterval(() => onPropertyUpdated(), 4000);
+    return () => clearInterval(interval);
+  }, [property.reelEstado, onPropertyUpdated]);
+
+  const onGenerateReel = () => {
+    setReelBusy(true);
+    setReelActionError(null);
+    void propertiesService
+      .generateReel(property.id, token)
+      .then(() => onPropertyUpdated())
+      .catch(() => setReelActionError("No se pudo iniciar la generación del reel."))
+      .finally(() => setReelBusy(false));
+  };
+
+  const onRegenerateReel = () => {
+    setReelBusy(true);
+    setReelActionError(null);
+    void propertiesService
+      .deleteReel(property.id, token)
+      .then(() => propertiesService.generateReel(property.id, token))
+      .then(() => onPropertyUpdated())
+      .catch(() => setReelActionError("No se pudo regenerar el reel."))
+      .finally(() => setReelBusy(false));
+  };
+
   const move = (index: number, dir: -1 | 1) => {
     const next = index + dir;
     if (next < 0 || next >= fotos.length) return;
@@ -2389,6 +2424,73 @@ function PhotosStep({
             </span>
           )}
         </div>
+      </div>
+
+      <div className="mb-5 rounded-xl border border-[var(--pa-border)] bg-[var(--pa-surface)] p-4">
+        <div className="mb-2 text-[13px] font-bold text-[var(--pa-ink)]">
+          🎬 Reel automático
+        </div>
+        <div className="mb-3 text-[12px] text-[var(--pa-muted)]">
+          Genera un reel vertical a partir de las fotos (zoom cinemático,
+          precio y municipio quemados, música de fondo) — reemplaza a
+          herramientas de pago como AutoReel.
+        </div>
+        {reelActionError && (
+          <p className="mb-2 text-[12px] text-[var(--pa-danger)]">{reelActionError}</p>
+        )}
+        {!property.reelEstado && (
+          <button
+            type="button"
+            disabled={reelBusy || fotos.length === 0}
+            onClick={onGenerateReel}
+            className="rounded-lg bg-[var(--pa-navy)] px-4 py-2 text-[13px] font-bold text-white disabled:opacity-40"
+          >
+            {reelBusy ? "Encolando…" : "Generar reel"}
+          </button>
+        )}
+        {property.reelEstado === "generando" && (
+          <div className="flex items-center gap-2 text-[13px] text-[var(--pa-muted)]">
+            <span className="h-2 w-2 animate-pulse rounded-full bg-[var(--pa-accent)]" />
+            Generando reel… puede tardar uno o dos minutos.
+          </div>
+        )}
+        {property.reelEstado === "listo" && property.reelUrl && (
+          <div className="flex flex-col gap-2">
+            <video controls src={property.reelUrl} className="w-[220px] rounded-lg" />
+            <div className="flex gap-2">
+              <button
+                type="button"
+                disabled={reelBusy}
+                onClick={onRegenerateReel}
+                className="rounded-lg border border-[var(--pa-border)] px-3 py-1.5 text-[12px] font-semibold text-[var(--pa-ink)] disabled:opacity-50"
+              >
+                🔁 Regenerar
+              </button>
+              <a
+                href={property.reelUrl}
+                download
+                className="flex items-center rounded-lg border border-[var(--pa-border)] px-3 py-1.5 text-[12px] font-semibold text-[var(--pa-ink)]"
+              >
+                ⬇ Descargar
+              </a>
+            </div>
+          </div>
+        )}
+        {property.reelEstado === "error" && (
+          <div className="flex flex-col gap-2">
+            <p className="text-[12px] text-[var(--pa-danger)]">
+              {property.reelMensaje ?? "No se pudo generar el reel."}
+            </p>
+            <button
+              type="button"
+              disabled={reelBusy}
+              onClick={onGenerateReel}
+              className="w-fit rounded-lg border border-[var(--pa-border)] px-3 py-1.5 text-[12px] font-semibold text-[var(--pa-ink)] disabled:opacity-50"
+            >
+              Reintentar
+            </button>
+          </div>
+        )}
       </div>
 
       <PrimaryBlock onClick={onNext} disabled={busy} className="w-[220px]">
