@@ -13,6 +13,20 @@ export interface PropertyPhoto {
   url: string;
   orden: number;
   isCover: boolean;
+  /** Etiqueta de ambiente (reel Opción B); null = default por posición al renderizar. */
+  roomLabel: string | null;
+  /** 1..8 si la foto entra en el reel por orden; null si queda fuera. */
+  reelSlot: number | null;
+}
+
+export interface ReelRoomLabelOption {
+  value: string;
+  label: string;
+}
+
+export interface ReelRoomLabelsResponse {
+  options: ReelRoomLabelOption[];
+  reelSlotCount: number;
 }
 
 /**
@@ -77,10 +91,9 @@ export interface Property {
   /** Link de YouTube/Vimeo del recorrido del inmueble -- se envía a WASI
    * (campo "video" de su API) y se sincroniza a los portales aliados. */
   videoUrl: string | null;
-  /** Reel vertical generado automáticamente (FFmpeg) a partir de las fotos
-   * -- asset local, no es un canal/publicación externa. `null` = nunca se
-   * generó; mientras está `"generando"` el cliente debe re-pedir la
-   * propiedad cada pocos segundos hasta que pase a `"listo"`/`"error"`. */
+  /** Reel vertical (Remotion Opción B) generado en el servidor a partir de las
+   * fotos — asset local, no es un canal. `null` = nunca se generó; mientras
+   * `"generando"` el cliente re-pide la propiedad cada pocos segundos. */
   reelEstado: "generando" | "listo" | "error" | null;
   reelUrl: string | null;
   reelMensaje: string | null;
@@ -197,9 +210,17 @@ export interface PropertiesService {
   /** Sube un archivo suelto (contrato, cédula, certificado…) a la carpeta de
    * Google Drive ya publicada de la propiedad. */
   uploadDriveFile(id: string, file: File, token?: string): Promise<void>;
-  /** Encola el render del reel (FFmpeg, backend) a partir de las fotos ya
-   * subidas. Responde de inmediato con `reelEstado: "generando"` -- el
-   * caller debe volver a pedir la propiedad para ver cuándo termina. */
+  /** Opciones del dropdown de etiqueta de ambiente (GET /api/web/reel/room-labels). */
+  listReelRoomLabels(token?: string): Promise<ReelRoomLabelsResponse>;
+  /** Etiqueta de ambiente de una foto (primeros slots del reel). */
+  patchPhotoRoomLabel(
+    propertyId: string,
+    photoId: string,
+    roomLabel: string | null,
+    token?: string,
+  ): Promise<Property>;
+  /** Encola el render del reel (Remotion, backend) a partir de las fotos ya
+   * subidas. Responde de inmediato con `reelEstado: "generando"`. */
   generateReel(id: string, token?: string): Promise<Property>;
   /** Borra el reel ya generado (archivo + estado), para poder regenerar. */
   deleteReel(id: string, token?: string): Promise<Property>;

@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import JSZip from "jszip";
+import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/features/auth/AuthProvider";
@@ -39,6 +40,12 @@ import { WasiLocationCombobox } from "@/components/properties/WasiLocationCombob
 import { DeletePropertyDialog } from "@/components/DeletePropertyDialog";
 import { PropertyDeletePendingBanner } from "@/components/PropertyDeletePendingBanner";
 import { formatPrice, formatThousandsInput } from "@/lib/format";
+import {
+  formatReelActionError,
+  MIN_REEL_PHOTOS,
+  REEL_SLOT_COUNT,
+  reelGenerateBlockers,
+} from "@/lib/reel";
 import { capturedAtLabel } from "@/lib/formatCapturedAt";
 import {
   adminFeeMissingFromDraft,
@@ -2101,11 +2108,31 @@ function PhotosStep({
   onPropertyUpdated: () => void;
   onNext: () => void;
 }) {
+  const { session } = useAuth();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [overIndex, setOverIndex] = useState<number | null>(null);
   const fotos = property.fotos ?? [];
+
+  const { data: reelRoomLabels } = useQuery({
+    queryKey: ["reel-room-labels"],
+    queryFn: () => propertiesService.listReelRoomLabels(token),
+    enabled: Boolean(token),
+    retry: false,
+    staleTime: 5 * 60_000,
+  });
+
+  const reelBlockers = useMemo(
+    () =>
+      reelGenerateBlockers({
+        photoCount: fotos.length,
+        precio: property.precio,
+        instagramHandle: session?.instagramHandle,
+      }),
+    [fotos.length, property.precio, session?.instagramHandle],
+  );
+  const canStartReel = reelBlockers.length === 0;
 
   // Video del recorrido -- se envía a WASI (campo "video", URL de YouTube o
   // Vimeo) y se sincroniza a los portales aliados. Estado local propio para
@@ -2215,11 +2242,8 @@ function PhotosStep({
     });
   };
 
-  // Reel automático (FFmpeg, backend) -- ciclo propio: la generación corre
-  // en background del lado del servidor (puede tardar 1-2 min), así que no
-  // usa el `run()` de arriba (pensado para mutaciones instantáneas de
-  // fotos/video). Mientras `reelEstado === "generando"` se vuelve a pedir
-  // la propiedad cada 4s hasta que el backend la deje en "listo"/"error".
+  // Reel Opción B (Remotion en el servidor) — render en background (varios
+  // minutos). Mientras `reelEstado === "generando"` se re-pide la ficha.
   const [reelBusy, setReelBusy] = useState(false);
   const [reelActionError, setReelActionError] = useState<string | null>(null);
 
@@ -2230,24 +2254,44 @@ function PhotosStep({
   }, [property.reelEstado, onPropertyUpdated]);
 
   const onGenerateReel = () => {
+    if (!canStartReel) return;
     setReelBusy(true);
     setReelActionError(null);
     void propertiesService
       .generateReel(property.id, token)
       .then(() => onPropertyUpdated())
-      .catch(() => setReelActionError("No se pudo iniciar la generación del reel."))
+      .catch((err: unknown) => setReelActionError(formatReelActionError(err)))
       .finally(() => setReelBusy(false));
   };
 
   const onRegenerateReel = () => {
+    if (!canStartReel) return;
     setReelBusy(true);
     setReelActionError(null);
     void propertiesService
       .deleteReel(property.id, token)
       .then(() => propertiesService.generateReel(property.id, token))
       .then(() => onPropertyUpdated())
-      .catch(() => setReelActionError("No se pudo regenerar el reel."))
+      .catch((err: unknown) => setReelActionError(formatReelActionError(err)))
       .finally(() => setReelBusy(false));
+  };
+
+  const onRoomLabelChange = (photoId: string, label: string) => {
+    if (!reelRoomLabels) return;
+    void (async () => {
+      setError(null);
+      try {
+        await propertiesService.patchPhotoRoomLabel(
+          property.id,
+          photoId,
+          label.trim() || null,
+          token,
+        );
+        onPropertyUpdated();
+      } catch {
+        setError("No se pudo guardar la etiqueta de ambiente.");
+      }
+    })();
   };
 
   const move = (index: number, dir: -1 | 1) => {
@@ -2288,8 +2332,9 @@ function PhotosStep({
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
         <div className="text-[13px] text-[var(--pa-muted)]">
           La primera foto es la portada. Arrastra una foto y suéltala donde
-          quieras (o usa las flechas). Facebook Marketplace e Instagram usan
-          como máximo 10 fotos por publicación.
+          quieras (o usa las flechas). Las primeras {REEL_SLOT_COUNT} fotos
+          alimentan el reel automático (etiqueta de ambiente opcional). Facebook
+          Marketplace e Instagram usan como máximo 10 fotos por publicación.
         </div>
         {fotos.length > 0 && (
           <button
@@ -2333,22 +2378,28 @@ function PhotosStep({
               dragIndex === i ? "opacity-40" : ""
             } ${overIndex === i && dragIndex !== null && dragIndex !== i ? "ring-2 ring-[var(--pa-accent)]" : ""}`}
           >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={p.url}
-              alt=""
-              draggable={false}
-              className="aspect-[4/3] w-full object-cover"
-            />
-            {i === 0 && (
-              <span className="absolute left-2 top-2 rounded-md bg-[var(--pa-navy)] px-2 py-0.5 text-[10px] font-bold text-white">
-                ★ Portada
+            <div className="relative aspect-[4/3] w-full">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={p.url}
+                alt=""
+                draggable={false}
+                className="h-full w-full object-cover"
+              />
+              {i === 0 && (
+                <span className="absolute left-2 top-2 rounded-md bg-[var(--pa-navy)] px-2 py-0.5 text-[10px] font-bold text-white">
+                  ★ Portada
+                </span>
+              )}
+              {i < REEL_SLOT_COUNT && (
+                <span className="absolute right-2 top-2 rounded-md bg-[rgba(22,33,43,0.65)] px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-white">
+                  Reel
+                </span>
+              )}
+              <span className="absolute bottom-2 right-2 flex h-[22px] w-[22px] items-center justify-center rounded-md bg-[rgba(22,33,43,0.6)] text-[11px] font-bold text-white">
+                {i + 1}
               </span>
-            )}
-            <span className="absolute bottom-2 right-2 flex h-[22px] w-[22px] items-center justify-center rounded-md bg-[rgba(22,33,43,0.6)] text-[11px] font-bold text-white">
-              {i + 1}
-            </span>
-            <div className="absolute left-2 bottom-2 flex gap-1">
+              <div className="absolute left-2 bottom-2 flex gap-1">
               <button
                 type="button"
                 disabled={busy || i === 0}
@@ -2373,7 +2424,28 @@ function PhotosStep({
               >
                 ✕
               </button>
+              </div>
             </div>
+            {reelRoomLabels && i < reelRoomLabels.reelSlotCount ? (
+              <div className="border-t border-[var(--pa-border)] bg-white p-1.5">
+                <label className="mb-0.5 block text-[9px] font-bold uppercase tracking-wide text-[var(--pa-muted)]">
+                  Ambiente (reel)
+                </label>
+                <select
+                  value={p.roomLabel ?? ""}
+                  disabled={busy}
+                  onChange={(e) => onRoomLabelChange(p.id, e.target.value)}
+                  className="w-full rounded border border-[var(--pa-border)] bg-white px-1 py-0.5 text-[10px] text-[var(--pa-ink)]"
+                >
+                  <option value="">Default por posición</option>
+                  {reelRoomLabels.options.map((opt) => (
+                    <option key={`${opt.value}-${opt.label}`} value={opt.label}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            ) : null}
           </div>
         ))}
         <label className="flex aspect-[4/3] cursor-pointer flex-col items-center justify-center gap-1.5 rounded-xl border-[1.5px] border-dashed border-[#C9D1D8] p-2.5 text-center text-xs text-[var(--pa-faint)]">
@@ -2431,17 +2503,27 @@ function PhotosStep({
           🎬 Reel automático
         </div>
         <div className="mb-3 text-[12px] text-[var(--pa-muted)]">
-          Genera un reel vertical a partir de las fotos (zoom cinemático,
-          precio y municipio quemados, música de fondo) — reemplaza a
-          herramientas de pago como AutoReel.
+          Reel vertical 15 s (1080×1920) con plantilla Ventana + panel: recorrido
+          por las fotos, datos del inmueble y cierre con tu Instagram — generado
+          en el servidor (Remotion). Requiere al menos {MIN_REEL_PHOTOS} fotos,
+          precio y tu @ en{" "}
+          <Link href="/settings" className="font-semibold text-[var(--pa-navy)] underline">
+            Ajustes → Perfil
+          </Link>
+          .
         </div>
+        {reelBlockers.length > 0 && !property.reelEstado ? (
+          <p className="mb-2 text-[12px] text-[#8A4E12]">
+            Para generar: {reelBlockers.join("; ")}.
+          </p>
+        ) : null}
         {reelActionError && (
           <p className="mb-2 text-[12px] text-[var(--pa-danger)]">{reelActionError}</p>
         )}
         {!property.reelEstado && (
           <button
             type="button"
-            disabled={reelBusy || fotos.length === 0}
+            disabled={reelBusy || !canStartReel}
             onClick={onGenerateReel}
             className="rounded-lg bg-[var(--pa-navy)] px-4 py-2 text-[13px] font-bold text-white disabled:opacity-40"
           >
@@ -2451,7 +2533,7 @@ function PhotosStep({
         {property.reelEstado === "generando" && (
           <div className="flex items-center gap-2 text-[13px] text-[var(--pa-muted)]">
             <span className="h-2 w-2 animate-pulse rounded-full bg-[var(--pa-accent)]" />
-            Generando reel… puede tardar uno o dos minutos.
+            Generando reel… puede tardar varios minutos. No cierres esta ficha.
           </div>
         )}
         {property.reelEstado === "listo" && property.reelUrl && (

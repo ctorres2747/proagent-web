@@ -4,6 +4,7 @@ import type {
   Property,
   PropertyChannel,
   PropertyPhoto,
+  ReelRoomLabelsResponse,
 } from "@/services/interfaces/properties";
 import type { ChannelStatus } from "@/design-system/channels";
 import { CHANNEL_ORDER } from "@/design-system/channels";
@@ -20,6 +21,8 @@ interface RawPhoto {
   url?: string | null;
   orden?: number | null;
   is_cover?: boolean | null;
+  room_label?: string | null;
+  reel_slot?: number | null;
 }
 
 interface RawProperty {
@@ -105,6 +108,9 @@ function mapPhotos(raw: RawProperty["fotos"]): PropertyPhoto[] {
     url: f.url ?? "",
     orden: typeof f.orden === "number" ? f.orden : index,
     isCover: Boolean(f.is_cover ?? index === 0),
+    roomLabel: f.room_label?.trim() ? f.room_label.trim() : null,
+    reelSlot:
+      typeof f.reel_slot === "number" && f.reel_slot >= 1 ? f.reel_slot : null,
   }));
 }
 
@@ -325,6 +331,32 @@ export const propertiesService: PropertiesService = {
       form,
       token,
     );
+  },
+  async listReelRoomLabels(token?: string): Promise<ReelRoomLabelsResponse> {
+    const raw = await apiFetch<{
+      options: { value: string; label: string }[];
+      reel_slot_count: number;
+    }>("/api/web/reel/room-labels", { token });
+    return {
+      options: raw.options ?? [],
+      reelSlotCount: raw.reel_slot_count ?? 8,
+    };
+  },
+  async patchPhotoRoomLabel(
+    id,
+    photoId,
+    roomLabel,
+    token?: string,
+  ): Promise<Property> {
+    const raw = await apiFetch<RawProperty>(
+      `${detailPath(id)}/photos/${photoId}`,
+      {
+        method: "PATCH",
+        token,
+        body: { room_label: roomLabel },
+      },
+    );
+    return mapProperty(raw);
   },
   async generateReel(id, token?: string): Promise<Property> {
     const raw = await apiFetch<RawProperty>(`${detailPath(id)}/reel`, {
