@@ -96,6 +96,10 @@ export interface Property {
    * `"generando"` el cliente re-pide la propiedad cada pocos segundos. */
   reelEstado: "generando" | "listo" | "error" | null;
   reelUrl: string | null;
+  /** Portada del reel (frame de cierre), pensada como poster del <video>.
+   * `null` si el still falló (no bloquea el reel en sí) o es un reel
+   * legado Fase A (FFmpeg) que nunca tuvo cover. */
+  reelCoverUrl: string | null;
   reelMensaje: string | null;
   /** Owning agent id (ownership: an agent sees only their own). */
   ownerAgenteId: string | null;

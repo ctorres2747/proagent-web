@@ -51,6 +51,7 @@ const DRIVE_FIELDS_DEFAULT = {
   videoUrl: null,
   reelEstado: null,
   reelUrl: null,
+  reelCoverUrl: null,
   reelMensaje: null,
 } satisfies Pick<
   Property,
@@ -69,6 +70,7 @@ const DRIVE_FIELDS_DEFAULT = {
   | "videoUrl"
   | "reelEstado"
   | "reelUrl"
+  | "reelCoverUrl"
   | "reelMensaje"
 >;
 
@@ -489,6 +491,7 @@ export const propertiesService: PropertiesService = {
         reelEstado: "listo",
         reelUrl:
           "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4",
+        reelCoverUrl: MOCK_PROPERTIES[i].portadaUrl,
         reelMensaje: null,
       };
     }, 4000);
@@ -502,6 +505,7 @@ export const propertiesService: PropertiesService = {
       ...MOCK_PROPERTIES[idx],
       reelEstado: null,
       reelUrl: null,
+      reelCoverUrl: null,
       reelMensaje: null,
     };
     MOCK_PROPERTIES[idx] = next;

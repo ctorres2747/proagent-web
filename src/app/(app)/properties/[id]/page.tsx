@@ -2538,7 +2538,12 @@ function PhotosStep({
         )}
         {property.reelEstado === "listo" && property.reelUrl && (
           <div className="flex flex-col gap-2">
-            <video controls src={property.reelUrl} className="w-[220px] rounded-lg" />
+            <video
+              controls
+              src={property.reelUrl}
+              poster={property.reelCoverUrl ?? undefined}
+              className="w-[220px] rounded-lg"
+            />
             <div className="flex gap-2">
               <button
                 type="button"

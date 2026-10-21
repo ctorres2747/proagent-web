@@ -73,6 +73,7 @@ interface RawProperty {
   video_url?: string | null;
   reel_estado?: string | null;
   reel_url?: string | null;
+  reel_cover_url?: string | null;
   reel_mensaje?: string | null;
   portada_url?: string | null;
   fotos?: RawPhoto[] | null;
@@ -187,6 +188,7 @@ function mapProperty(raw: RawProperty): Property {
         ? raw.reel_estado
         : null,
     reelUrl: raw.reel_url ?? null,
+    reelCoverUrl: raw.reel_cover_url ?? null,
     reelMensaje: raw.reel_mensaje ?? null,
     portadaUrl: raw.portada_url ?? fotos[0]?.url ?? null,
     fotos,
