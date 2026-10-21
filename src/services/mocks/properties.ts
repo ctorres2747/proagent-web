@@ -2,11 +2,33 @@ import type {
   PropertiesService,
   Property,
   PropertyChannel,
+  PropertyPhoto,
+  ReelRoomLabelsResponse,
 } from "@/services/interfaces/properties";
+import { REEL_SLOT_COUNT } from "@/lib/reel";
 import type { ChannelId, ChannelStatus } from "@/design-system/channels";
 import { CHANNEL_ORDER } from "@/design-system/channels";
 
 const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+const MOCK_REEL_ROOM_LABELS: ReelRoomLabelsResponse = {
+  reelSlotCount: REEL_SLOT_COUNT,
+  options: [
+    { value: "fachada", label: "Fachada" },
+    { value: "cocina", label: "Cocina integral" },
+    { value: "habitacion", label: "Habitación principal" },
+    { value: "bano", label: "Baño" },
+    { value: "sala", label: "Sala" },
+  ],
+};
+
+function withReelSlots(fotos: PropertyPhoto[]): PropertyPhoto[] {
+  return fotos.map((f, i) => ({
+    ...f,
+    roomLabel: f.roomLabel ?? null,
+    reelSlot: i < REEL_SLOT_COUNT ? i + 1 : null,
+  }));
+}
 
 /** Build the 5-channel status list from a compact map. */
 function channels(map: Partial<Record<ChannelId, ChannelStatus>>): PropertyChannel[] {
@@ -29,6 +51,7 @@ const DRIVE_FIELDS_DEFAULT = {
   videoUrl: null,
   reelEstado: null,
   reelUrl: null,
+  reelCoverUrl: null,
   reelMensaje: null,
 } satisfies Pick<
   Property,
@@ -47,6 +70,7 @@ const DRIVE_FIELDS_DEFAULT = {
   | "videoUrl"
   | "reelEstado"
   | "reelUrl"
+  | "reelCoverUrl"
   | "reelMensaje"
 >;
 
@@ -373,12 +397,16 @@ export const propertiesService: PropertiesService = {
       url: URL.createObjectURL(file),
       orden: start + i,
       isCover: start + i === 0,
+      roomLabel: null,
+      reelSlot: null,
     }));
-    const fotos = [...prop.fotos, ...added].map((f, i) => ({
-      ...f,
-      orden: i,
-      isCover: i === 0,
-    }));
+    const fotos = withReelSlots(
+      [...prop.fotos, ...added].map((f, i) => ({
+        ...f,
+        orden: i,
+        isCover: i === 0,
+      })),
+    );
     const next = {
       ...prop,
       fotos,
@@ -394,10 +422,12 @@ export const propertiesService: PropertiesService = {
     if (idx < 0) throw new Error(`Propiedad ${id} no encontrada`);
     const prop = MOCK_PROPERTIES[idx];
     const byId = new Map(prop.fotos.map((f) => [f.id, f]));
-    const fotos = photoIds
-      .map((pid) => byId.get(pid))
-      .filter(Boolean)
-      .map((f, i) => ({ ...f!, orden: i, isCover: i === 0 }));
+    const fotos = withReelSlots(
+      photoIds
+        .map((pid) => byId.get(pid))
+        .filter(Boolean)
+        .map((f, i) => ({ ...f!, orden: i, isCover: i === 0 })),
+    );
     const next = { ...prop, fotos, portadaUrl: fotos[0]?.url ?? null };
     MOCK_PROPERTIES[idx] = next;
     return next;
@@ -407,9 +437,11 @@ export const propertiesService: PropertiesService = {
     const idx = MOCK_PROPERTIES.findIndex((p) => p.id === id);
     if (idx < 0) throw new Error(`Propiedad ${id} no encontrada`);
     const prop = MOCK_PROPERTIES[idx];
-    const fotos = prop.fotos
-      .filter((f) => f.id !== photoId)
-      .map((f, i) => ({ ...f, orden: i, isCover: i === 0 }));
+    const fotos = withReelSlots(
+      prop.fotos
+        .filter((f) => f.id !== photoId)
+        .map((f, i) => ({ ...f, orden: i, isCover: i === 0 })),
+    );
     const next = { ...prop, fotos, portadaUrl: fotos[0]?.url ?? null };
     MOCK_PROPERTIES[idx] = next;
     return next;
@@ -420,10 +452,31 @@ export const propertiesService: PropertiesService = {
     if (!prop) throw new Error(`Propiedad ${id} no encontrada`);
     void file;
   },
+  async listReelRoomLabels(): Promise<ReelRoomLabelsResponse> {
+    await delay(80);
+    return MOCK_REEL_ROOM_LABELS;
+  },
+  async patchPhotoRoomLabel(id, photoId, roomLabel) {
+    await delay(120);
+    const idx = MOCK_PROPERTIES.findIndex((p) => p.id === id);
+    if (idx < 0) throw new Error(`Propiedad ${id} no encontrada`);
+    const prop = MOCK_PROPERTIES[idx];
+    const fotos = withReelSlots(
+      prop.fotos.map((f) =>
+        f.id === photoId ? { ...f, roomLabel: roomLabel?.trim() || null } : f,
+      ),
+    );
+    const next = { ...prop, fotos };
+    MOCK_PROPERTIES[idx] = next;
+    return next;
+  },
   async generateReel(id): Promise<Property> {
     await delay(200);
     const idx = MOCK_PROPERTIES.findIndex((p) => p.id === id);
     if (idx < 0) throw new Error(`Propiedad ${id} no encontrada`);
+    if (MOCK_PROPERTIES[idx].fotos.length < 4) {
+      throw new Error("Se necesitan al menos 4 fotos para generar el reel");
+    }
     const marcado = { ...MOCK_PROPERTIES[idx], reelEstado: "generando" as const, reelMensaje: null };
     MOCK_PROPERTIES[idx] = marcado;
     // Primera simulación real de una transición async en este mock (el
@@ -438,6 +491,7 @@ export const propertiesService: PropertiesService = {
         reelEstado: "listo",
         reelUrl:
           "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4",
+        reelCoverUrl: MOCK_PROPERTIES[i].portadaUrl,
         reelMensaje: null,
       };
     }, 4000);
@@ -451,6 +505,7 @@ export const propertiesService: PropertiesService = {
       ...MOCK_PROPERTIES[idx],
       reelEstado: null,
       reelUrl: null,
+      reelCoverUrl: null,
       reelMensaje: null,
     };
     MOCK_PROPERTIES[idx] = next;
