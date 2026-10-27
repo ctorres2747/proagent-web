@@ -72,3 +72,13 @@ body {
 * {
   box-sizing: border-box;
 }
+
+/* Bug real (2026-10-27, Cristhian): ningún botón del sitio mostraba el
+ * cursor de mano al pasar por encima -- Tailwind no lo pone por defecto en
+ * <button> (a diferencia de <a>, que sí lo hereda del navegador). No era
+ * un bug funcional (los botones sí respondían al clic), pero no "invitaba"
+ * visualmente -- confundió el diagnóstico de un bug real aparte (el botón
+ * "Regenerar" del reel) porque parecía deshabilitado sin estarlo. */
+button:not(:disabled) {
+  cursor: pointer;
+}
