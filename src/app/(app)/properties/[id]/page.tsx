@@ -2123,14 +2123,24 @@ function PhotosStep({
     staleTime: 5 * 60_000,
   });
 
+  // Bug real (2026-10-27): el chequeo de Instagram usaba session?.instagramHandle
+  // (el @ del que está VIENDO la ficha) sin importar de quién es realmente la
+  // ficha -- un admin gestionando el inventario de otro asesor (sin su propio
+  // @ configurado, normal: un admin no publica con su Instagram) se quedaba
+  // con "Regenerar" bloqueado en silencio para SIEMPRE, sin ningún aviso
+  // (el mensaje de blockers solo se mostraba antes del primer reel generado).
+  // El @ real que usa el reel es el del DUEÑO de la ficha
+  // (`resolve_owner_instagram` en el backend), no el del viewer.
+  const isOwnFicha = !property.ownerAgenteId || property.ownerAgenteId === session?.id;
   const reelBlockers = useMemo(
     () =>
       reelGenerateBlockers({
         photoCount: fotos.length,
         precio: property.precio,
         instagramHandle: session?.instagramHandle,
+        checkInstagramHandle: isOwnFicha,
       }),
-    [fotos.length, property.precio, session?.instagramHandle],
+    [fotos.length, property.precio, session?.instagramHandle, isOwnFicha],
   );
   const canStartReel = reelBlockers.length === 0;
 
@@ -2512,9 +2522,9 @@ function PhotosStep({
           </Link>
           .
         </div>
-        {reelBlockers.length > 0 && !property.reelEstado ? (
+        {reelBlockers.length > 0 ? (
           <p className="mb-2 text-[12px] text-[#8A4E12]">
-            Para generar: {reelBlockers.join("; ")}.
+            Falta {reelBlockers.join("; ")} para generar o regenerar el reel.
           </p>
         ) : null}
         {reelActionError && (
@@ -2547,7 +2557,7 @@ function PhotosStep({
             <div className="flex gap-2">
               <button
                 type="button"
-                disabled={reelBusy}
+                disabled={reelBusy || !canStartReel}
                 onClick={onRegenerateReel}
                 className="rounded-lg border border-[var(--pa-border)] px-3 py-1.5 text-[12px] font-semibold text-[var(--pa-ink)] disabled:opacity-50"
               >

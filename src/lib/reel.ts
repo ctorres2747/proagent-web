@@ -32,6 +32,14 @@ export function reelGenerateBlockers(input: {
   photoCount: number;
   precio: number | null;
   instagramHandle?: string | null;
+  /** `false` cuando quien mira la ficha no es su dueño (ej. un admin
+   * gestionando el inventario de otro asesor) -- en ese caso `instagramHandle`
+   * es el del VIEWER, no el del dueño real de la ficha, así que no sirve
+   * para bloquear nada acá. El backend sí resuelve el @ del dueño real
+   * (`resolve_owner_instagram`) y devuelve un error claro si de verdad le
+   * falta configurarlo. Default `true` (caso normal: un asesor viendo su
+   * propia ficha). */
+  checkInstagramHandle?: boolean;
 }): string[] {
   const blockers: string[] = [];
   if (input.photoCount < MIN_REEL_PHOTOS) {
@@ -40,7 +48,10 @@ export function reelGenerateBlockers(input: {
   if (input.precio == null || input.precio <= 0) {
     blockers.push("un precio válido en la ficha");
   }
-  if (!(input.instagramHandle ?? "").trim()) {
+  if (
+    (input.checkInstagramHandle ?? true) &&
+    !(input.instagramHandle ?? "").trim()
+  ) {
     blockers.push("tu usuario de Instagram en Ajustes → Perfil");
   }
   return blockers;
