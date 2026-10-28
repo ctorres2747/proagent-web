@@ -2586,6 +2586,12 @@ function PhotosStep({
               poster={property.reelCoverUrl ?? undefined}
               className="w-[220px] rounded-lg"
             />
+            {property.reelInstagramEstado === "publicado" && (
+              <p className="text-[12px] text-[#8A4E12]">
+                Si regeneras el video, en Instagram seguirá la versión anterior hasta
+                que quites el Reel y lo vuelvas a publicar.
+              </p>
+            )}
             <div className="flex gap-2">
               <button
                 type="button"
