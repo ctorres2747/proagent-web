@@ -53,6 +53,8 @@ const DRIVE_FIELDS_DEFAULT = {
   reelUrl: null,
   reelCoverUrl: null,
   reelMensaje: null,
+  reelInstagramEstado: null,
+  reelInstagramMensaje: null,
 } satisfies Pick<
   Property,
   | "numeroApartamento"
@@ -72,6 +74,8 @@ const DRIVE_FIELDS_DEFAULT = {
   | "reelUrl"
   | "reelCoverUrl"
   | "reelMensaje"
+  | "reelInstagramEstado"
+  | "reelInstagramMensaje"
 >;
 
 const MOCK_PROPERTIES: Property[] = [
@@ -507,6 +511,42 @@ export const propertiesService: PropertiesService = {
       reelUrl: null,
       reelCoverUrl: null,
       reelMensaje: null,
+    };
+    MOCK_PROPERTIES[idx] = next;
+    return next;
+  },
+  async publishReelToInstagram(id): Promise<Property> {
+    await delay(150);
+    const idx = MOCK_PROPERTIES.findIndex((p) => p.id === id);
+    if (idx < 0) throw new Error(`Propiedad ${id} no encontrada`);
+    if (MOCK_PROPERTIES[idx].reelEstado !== "listo") {
+      throw new Error("El reel todavía no está listo — genera el video antes de publicarlo");
+    }
+    const marcado = {
+      ...MOCK_PROPERTIES[idx],
+      reelInstagramEstado: "en_proceso" as const,
+      reelInstagramMensaje: null,
+    };
+    MOCK_PROPERTIES[idx] = marcado;
+    setTimeout(() => {
+      const i = MOCK_PROPERTIES.findIndex((p) => p.id === id);
+      if (i < 0 || MOCK_PROPERTIES[i].reelInstagramEstado !== "en_proceso") return;
+      MOCK_PROPERTIES[i] = {
+        ...MOCK_PROPERTIES[i],
+        reelInstagramEstado: "publicado",
+        reelInstagramMensaje: null,
+      };
+    }, 2500);
+    return marcado;
+  },
+  async deleteReelFromInstagram(id): Promise<Property> {
+    await delay(150);
+    const idx = MOCK_PROPERTIES.findIndex((p) => p.id === id);
+    if (idx < 0) throw new Error(`Propiedad ${id} no encontrada`);
+    const next = {
+      ...MOCK_PROPERTIES[idx],
+      reelInstagramEstado: null,
+      reelInstagramMensaje: null,
     };
     MOCK_PROPERTIES[idx] = next;
     return next;

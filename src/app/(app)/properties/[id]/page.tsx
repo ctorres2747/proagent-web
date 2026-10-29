@@ -2286,6 +2286,38 @@ function PhotosStep({
       .finally(() => setReelBusy(false));
   };
 
+  // Publicar el reel ya generado como Reel de Instagram -- corre en
+  // background (instagram_worker, comparte la cola/cupo con los posts de
+  // feed), mismo polling que el render del reel en sí.
+  const [igReelBusy, setIgReelBusy] = useState(false);
+  const [igReelActionError, setIgReelActionError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (property.reelInstagramEstado !== "en_proceso") return;
+    const interval = setInterval(() => onPropertyUpdated(), 3000);
+    return () => clearInterval(interval);
+  }, [property.reelInstagramEstado, onPropertyUpdated]);
+
+  const onPublishReelInstagram = () => {
+    setIgReelBusy(true);
+    setIgReelActionError(null);
+    void propertiesService
+      .publishReelToInstagram(property.id, token)
+      .then(() => onPropertyUpdated())
+      .catch((err: unknown) => setIgReelActionError(formatReelActionError(err)))
+      .finally(() => setIgReelBusy(false));
+  };
+
+  const onDeleteReelInstagram = () => {
+    setIgReelBusy(true);
+    setIgReelActionError(null);
+    void propertiesService
+      .deleteReelFromInstagram(property.id, token)
+      .then(() => onPropertyUpdated())
+      .catch((err: unknown) => setIgReelActionError(formatReelActionError(err)))
+      .finally(() => setIgReelBusy(false));
+  };
+
   const onRoomLabelChange = (photoId: string, label: string) => {
     if (!reelRoomLabels) return;
     void (async () => {
@@ -2554,6 +2586,12 @@ function PhotosStep({
               poster={property.reelCoverUrl ?? undefined}
               className="w-[220px] rounded-lg"
             />
+            {property.reelInstagramEstado === "publicado" && (
+              <p className="text-[12px] text-[#8A4E12]">
+                Si regeneras el video, en Instagram seguirá la versión anterior hasta
+                que quites el Reel y lo vuelvas a publicar.
+              </p>
+            )}
             <div className="flex gap-2">
               <button
                 type="button"
@@ -2570,6 +2608,53 @@ function PhotosStep({
               >
                 ⬇ Descargar
               </a>
+            </div>
+            <div className="mt-2 border-t border-[var(--pa-border)] pt-2">
+              {igReelActionError && (
+                <p className="mb-2 text-[12px] text-[var(--pa-danger)]">{igReelActionError}</p>
+              )}
+              {(!property.reelInstagramEstado || property.reelInstagramEstado === "error") && (
+                <div className="flex flex-col gap-2">
+                  {property.reelInstagramEstado === "error" && (
+                    <p className="text-[12px] text-[var(--pa-danger)]">
+                      {property.reelInstagramMensaje ?? "No se pudo publicar el reel en Instagram."}
+                    </p>
+                  )}
+                  <button
+                    type="button"
+                    disabled={igReelBusy}
+                    onClick={onPublishReelInstagram}
+                    className="w-fit rounded-lg bg-[var(--pa-navy)] px-3 py-1.5 text-[12px] font-bold text-white disabled:opacity-40"
+                  >
+                    {igReelBusy
+                      ? "Publicando…"
+                      : property.reelInstagramEstado === "error"
+                        ? "Reintentar"
+                        : "📸 Publicar como Reel en Instagram"}
+                  </button>
+                </div>
+              )}
+              {property.reelInstagramEstado === "en_proceso" && (
+                <div className="flex items-center gap-2 text-[13px] text-[var(--pa-muted)]">
+                  <span className="h-2 w-2 animate-pulse rounded-full bg-[var(--pa-accent)]" />
+                  Publicando en Instagram…
+                </div>
+              )}
+              {property.reelInstagramEstado === "publicado" && (
+                <div className="flex items-center gap-2">
+                  <span className="text-[12px] font-semibold text-[var(--pa-accent)]">
+                    ✓ Publicado como Reel en Instagram
+                  </span>
+                  <button
+                    type="button"
+                    disabled={igReelBusy}
+                    onClick={onDeleteReelInstagram}
+                    className="rounded-lg border border-[var(--pa-border)] px-3 py-1.5 text-[12px] font-semibold text-[var(--pa-danger)] disabled:opacity-50"
+                  >
+                    Quitar de Instagram
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         )}

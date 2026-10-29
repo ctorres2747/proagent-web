@@ -75,6 +75,8 @@ interface RawProperty {
   reel_url?: string | null;
   reel_cover_url?: string | null;
   reel_mensaje?: string | null;
+  reel_instagram_estado?: string | null;
+  reel_instagram_mensaje?: string | null;
   portada_url?: string | null;
   fotos?: RawPhoto[] | null;
   owner_agente_id?: number | string | null;
@@ -190,6 +192,13 @@ function mapProperty(raw: RawProperty): Property {
     reelUrl: raw.reel_url ?? null,
     reelCoverUrl: raw.reel_cover_url ?? null,
     reelMensaje: raw.reel_mensaje ?? null,
+    reelInstagramEstado:
+      raw.reel_instagram_estado === "en_proceso" ||
+      raw.reel_instagram_estado === "publicado" ||
+      raw.reel_instagram_estado === "error"
+        ? raw.reel_instagram_estado
+        : null,
+    reelInstagramMensaje: raw.reel_instagram_mensaje ?? null,
     portadaUrl: raw.portada_url ?? fotos[0]?.url ?? null,
     fotos,
     ownerAgenteId:
@@ -369,6 +378,20 @@ export const propertiesService: PropertiesService = {
   },
   async deleteReel(id, token?: string): Promise<Property> {
     const raw = await apiFetch<RawProperty>(`${detailPath(id)}/reel`, {
+      method: "DELETE",
+      token,
+    });
+    return mapProperty(raw);
+  },
+  async publishReelToInstagram(id, token?: string): Promise<Property> {
+    const raw = await apiFetch<RawProperty>(`${detailPath(id)}/reel/instagram`, {
+      method: "POST",
+      token,
+    });
+    return mapProperty(raw);
+  },
+  async deleteReelFromInstagram(id, token?: string): Promise<Property> {
+    const raw = await apiFetch<RawProperty>(`${detailPath(id)}/reel/instagram`, {
       method: "DELETE",
       token,
     });

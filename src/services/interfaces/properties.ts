@@ -101,6 +101,11 @@ export interface Property {
    * legado Fase A (FFmpeg) que nunca tuvo cover. */
   reelCoverUrl: string | null;
   reelMensaje: string | null;
+  /** Estado de publicación del Reel ya generado como Reel de Instagram —
+   * distinto de `reelEstado` (que es solo el render local). `null` = nunca
+   * se publicó/ya se quitó. */
+  reelInstagramEstado: "en_proceso" | "publicado" | "error" | null;
+  reelInstagramMensaje: string | null;
   /** Owning agent id (ownership: an agent sees only their own). */
   ownerAgenteId: string | null;
   /** Display name of owning agent (admin inventory filter). */
@@ -228,4 +233,9 @@ export interface PropertiesService {
   generateReel(id: string, token?: string): Promise<Property>;
   /** Borra el reel ya generado (archivo + estado), para poder regenerar. */
   deleteReel(id: string, token?: string): Promise<Property>;
+  /** Publica el reel ya generado (reelEstado "listo") como Reel de
+   * Instagram. Republicar = borra el anterior y crea uno nuevo. */
+  publishReelToInstagram(id: string, token?: string): Promise<Property>;
+  /** Quita el Reel publicado en Instagram (no borra el video local). */
+  deleteReelFromInstagram(id: string, token?: string): Promise<Property>;
 }
