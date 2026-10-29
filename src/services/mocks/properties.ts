@@ -16,9 +16,15 @@ const MOCK_REEL_ROOM_LABELS: ReelRoomLabelsResponse = {
   options: [
     { value: "fachada", label: "Fachada" },
     { value: "cocina", label: "Cocina integral" },
+    { value: "comedor", label: "Comedor" },
     { value: "habitacion", label: "Habitación principal" },
+    { value: "vestier", label: "Vestier / Closet" },
     { value: "bano", label: "Baño" },
+    { value: "balcon", label: "Balcón / Terraza" },
+    { value: "vista", label: "Vista" },
     { value: "sala", label: "Sala" },
+    { value: "sala", label: "Sala comedor" },
+    { value: "zonas_comunes", label: "Zonas comunes" },
   ],
 };
 
