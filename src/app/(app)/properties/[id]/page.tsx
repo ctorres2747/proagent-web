@@ -2479,7 +2479,7 @@ function PhotosStep({
                   onChange={(e) => onRoomLabelChange(p.id, e.target.value)}
                   className="w-full rounded border border-[var(--pa-border)] bg-white px-1 py-0.5 text-[10px] text-[var(--pa-ink)]"
                 >
-                  <option value="">Default por posición</option>
+                  <option value="">Sin etiqueta (no sale texto en el reel)</option>
                   {reelRoomLabels.options.map((opt) => (
                     <option key={`${opt.value}-${opt.label}`} value={opt.label}>
                       {opt.label}
