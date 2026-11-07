@@ -17,13 +17,20 @@ export interface MarketplaceLoginStatus {
 }
 
 export async function triggerMarketplaceLogin(
+  fichaId: string,
   token?: string,
 ): Promise<{ message: string; pendiente: boolean }> {
-  return apiFetch("/api/marketplace/login", { method: "POST", token });
+  return apiFetch(`/api/marketplace/login?ficha_id=${encodeURIComponent(fichaId)}`, {
+    method: "POST",
+    token,
+  });
 }
 
 export async function getMarketplaceLoginStatus(
+  fichaId: string,
   token?: string,
 ): Promise<MarketplaceLoginStatus> {
-  return apiFetch("/api/marketplace/login/status", { token });
+  return apiFetch(`/api/marketplace/login/status?ficha_id=${encodeURIComponent(fichaId)}`, {
+    token,
+  });
 }
