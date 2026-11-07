@@ -3687,6 +3687,7 @@ function ResultsStep({
           )}
           {canRequestMarketplaceLogin &&
             r.id === "facebook" &&
+            mpLoginState !== "done" &&
             r.error?.includes("Sesión de Andreina no activa") && (
               <button
                 type="button"
