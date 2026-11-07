@@ -3337,6 +3337,11 @@ function ResultsStep({
 }) {
   const { session } = useAuth();
   const isAdmin = session?.role === "admin";
+  // Pedido de Cristhian (2026-11-07): el re-login de Marketplace ya no es
+  // solo de admin -- el asesor dueño de la ficha también puede reiniciar SU
+  // propia sesión sin depender de uno (backend: _require_marketplace_login_access).
+  const canRequestMarketplaceLogin =
+    isAdmin || property.ownerAgenteId === session?.id;
   const [retrying, setRetrying] = useState<ChannelId | null>(null);
   const [republishing, setRepublishing] = useState<ChannelId | null>(null);
   const [removing, setRemoving] = useState<ChannelId | null>(null);
@@ -3411,6 +3416,13 @@ function ResultsStep({
     };
   });
   const publishedCount = results.filter((r) => r.status === "published").length;
+  // Único canal que depende de un navegador Playwright corriendo en una PC
+  // puntual -- WhatsApp/WASI/Instagram/Entrega publican vía API desde el VPS
+  // y no se interrumpen si esta computadora se apaga (pedido de Cristhian,
+  // 2026-11-07, alcance confirmado explícitamente a solo Marketplace).
+  const marketplaceInFlight = results.some(
+    (r) => r.id === "facebook" && r.inFlight,
+  );
   const scheduledCount = results.filter(
     (r) => r.status === "progress" && channelResults.find((c) => c.channelId === r.id)?.status === "scheduled",
   ).length;
@@ -3432,7 +3444,7 @@ function ResultsStep({
     setMpLoginState("pending");
     setMpLoginMessage(null);
     try {
-      await triggerMarketplaceLogin(token);
+      await triggerMarketplaceLogin(property.id, token);
     } catch (err) {
       setMpLoginState("error");
       setMpLoginMessage(
@@ -3445,7 +3457,7 @@ function ResultsStep({
     if (mpLoginPollRef.current) clearInterval(mpLoginPollRef.current);
     mpLoginPollRef.current = setInterval(async () => {
       try {
-        const status = await getMarketplaceLoginStatus(token);
+        const status = await getMarketplaceLoginStatus(property.id, token);
         if (status.estado === "pendiente" || status.estado === null) return;
         if (mpLoginPollRef.current) {
           clearInterval(mpLoginPollRef.current);
@@ -3574,6 +3586,18 @@ function ResultsStep({
           />
         </div>
       </div>
+      {marketplaceInFlight && (
+        <div className="mb-3 flex items-start gap-2.5 rounded-xl border border-[var(--pa-warning-ink)] bg-[var(--pa-warning)]/15 px-4 py-3">
+          <span className="text-base leading-none" aria-hidden="true">
+            ⚠️
+          </span>
+          <p className="text-xs font-semibold text-[var(--pa-warning-ink)]">
+            Publicando en Facebook Marketplace — no apagues ni suspendas esta
+            computadora mientras el proceso termina, o la publicación quedará
+            a medias.
+          </p>
+        </div>
+      )}
       {actionError && (
         <p className="mb-3 text-sm text-[var(--pa-danger)]">{actionError}</p>
       )}
@@ -3661,7 +3685,7 @@ function ResultsStep({
               {retrying === r.id ? "Reintentando…" : "Reintentar"}
             </button>
           )}
-          {isAdmin &&
+          {canRequestMarketplaceLogin &&
             r.id === "facebook" &&
             r.error?.includes("Sesión de Andreina no activa") && (
               <button
