@@ -539,8 +539,14 @@ export function ClientDetailModal({
                   {formatAppointment(client.proximaCita)}
                 </p>
               ) : null}
+            </div>
 
-              <div className={`${label} mt-3`}>Fecha del primer contacto</div>
+            {/* Sección propia (revisión 2026-11-10): mezclarla con "Próxima
+                cita" confundía una cita futura con un dato de contacto
+                pasado. */}
+            <div className={section}>
+              <div className={sectionTitle}>Seguimiento</div>
+              <div className={`${label} mt-2.5`}>Fecha del primer contacto</div>
               <input
                 type="date"
                 className={input}
