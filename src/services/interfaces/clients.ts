@@ -68,6 +68,11 @@ export interface Client {
   formaPago: ClientPaymentMethod | null;
   notas: string | null;
   proximaCita: string | null;
+  /** Fecha real del primer contacto con el cliente (no la fecha en que se
+   * creó el registro — `createdAt` es siempre "ahora"). Útil para
+   * seguimiento cuando el cliente viene de una carga masiva o de un
+   * contacto que ocurrió antes de registrarlo en el sistema. */
+  fechaPrimerContacto: string | null;
   linkedProperties: ClientLinkedProperty[];
   events: ClientEvent[];
   actividad: ClientActividadItem[];
@@ -95,6 +100,7 @@ export interface ClientWrite {
   formaPago?: ClientPaymentMethod | null;
   notas?: string | null;
   proximaCita?: string | null;
+  fechaPrimerContacto?: string | null;
 }
 
 export interface ClientListFilters {

@@ -49,6 +49,7 @@ interface RawClient {
   forma_pago?: string | null;
   notas?: string | null;
   proxima_cita?: string | null;
+  fecha_primer_contacto?: string | null;
   linked_properties?: RawLinkedProperty[] | null;
   eventos?: RawEvent[] | null;
   actividad?: RawActividad[] | null;
@@ -80,6 +81,7 @@ function mapClient(raw: RawClient): Client {
     formaPago: (raw.forma_pago as Client["formaPago"]) ?? null,
     notas: raw.notas ?? null,
     proximaCita: raw.proxima_cita ?? null,
+    fechaPrimerContacto: raw.fecha_primer_contacto ?? null,
     linkedProperties: (raw.linked_properties ?? []).map((p) => ({
       id: String(p.id),
       titulo: p.titulo,
@@ -121,6 +123,7 @@ function toWriteBody(data: ClientWrite): Record<string, unknown> {
   if (data.formaPago !== undefined) body.forma_pago = data.formaPago;
   if (data.notas !== undefined) body.notas = data.notas;
   if (data.proximaCita !== undefined) body.proxima_cita = data.proximaCita;
+  if (data.fechaPrimerContacto !== undefined) body.fecha_primer_contacto = data.fechaPrimerContacto;
   return body;
 }
 

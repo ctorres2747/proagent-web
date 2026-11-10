@@ -157,6 +157,9 @@ export function ClientDetailModal({
   );
   const [notas, setNotas] = useState(client.notas ?? "");
   const [proximaCita, setProximaCita] = useState(client.proximaCita ?? "");
+  const [fechaPrimerContacto, setFechaPrimerContacto] = useState(
+    client.fechaPrimerContacto ?? "",
+  );
   const [zonaInput, setZonaInput] = useState("");
   const [propertySearch, setPropertySearch] = useState("");
   const [entered, setEntered] = useState(false);
@@ -174,6 +177,7 @@ export function ClientDetailModal({
     setPresupuestoMax(client.presupuestoMax != null ? String(client.presupuestoMax) : "");
     setNotas(client.notas ?? "");
     setProximaCita(client.proximaCita ?? "");
+    setFechaPrimerContacto(client.fechaPrimerContacto ?? "");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [client.id]);
 
@@ -246,6 +250,9 @@ export function ClientDetailModal({
     if (max !== client.presupuestoMax) patch.presupuestoMax = max;
     if (notas !== (client.notas ?? "")) patch.notas = notas;
     if (proximaCita !== (client.proximaCita ?? "")) patch.proximaCita = proximaCita || null;
+    if (fechaPrimerContacto !== (client.fechaPrimerContacto ?? "")) {
+      patch.fechaPrimerContacto = fechaPrimerContacto || null;
+    }
     if (Object.keys(patch).length === 0) return;
 
     const effectiveMin = patch.presupuestoMin !== undefined ? patch.presupuestoMin : client.presupuestoMin;
@@ -255,7 +262,7 @@ export function ClientDetailModal({
     const t = setTimeout(() => onPatch(patch), 500);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [nombre, telefono, presupuestoMin, presupuestoMax, notas, proximaCita]);
+  }, [nombre, telefono, presupuestoMin, presupuestoMax, notas, proximaCita, fechaPrimerContacto]);
 
   const presupuestoError =
     presupuestoMin.trim() && presupuestoMax.trim() && Number(presupuestoMin) > Number(presupuestoMax);
@@ -532,6 +539,15 @@ export function ClientDetailModal({
                   {formatAppointment(client.proximaCita)}
                 </p>
               ) : null}
+
+              <div className={`${label} mt-3`}>Fecha del primer contacto</div>
+              <input
+                type="date"
+                className={input}
+                value={fechaPrimerContacto ? fechaPrimerContacto.slice(0, 10) : ""}
+                onChange={(e) => setFechaPrimerContacto(e.target.value)}
+                aria-label="Fecha del primer contacto"
+              />
             </div>
 
             <div className={section}>
