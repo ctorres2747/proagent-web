@@ -2,229 +2,234 @@
 
 | Campo | Valor |
 |-------|--------|
-| **Estado** | `spec` — **no activar dev** hasta que Owner revise el flujo de creación/edición de fotos y proveedor de IA |
-| **Fecha spec** | 2026-11-11 |
+| **Estado** | `spec` — spec alineada con revisión staff + decisiones Owner (2026-11-11); aún **no** `ready_for_dev` hasta validación final del flujo reel/fotos |
+| **Fecha spec** | 2026-11-11 (rev. 2) |
 | **Épica** | E-INV-02 (media enriquecida del inventario) |
 | **Repos** | `proagent-web` → `main` · `agente-inmobiliario` → `develop` |
-| **Handoff diseño** | [`design_handoff_editor_fotos_ia/`](../design_handoff_editor_fotos_ia/) |
-| **Referencia interactiva** | [`Inventario - Editor de Fotos IA.dc.html`](../design_handoff_editor_fotos_ia/Inventario%20-%20Editor%20de%20Fotos%20IA.dc.html) (retoques simulados con CSS; solo UX) |
-| **README técnico UX** | [`editor-fotos-ia-README.md`](../design_handoff_editor_fotos_ia/editor-fotos-ia-README.md) |
+| **Ruta web** | **`/properties/[id]`** — pestaña **Fotos y Video** (shell inventario actual; el handoff visual dice `/inventory` por legado de diseño) |
+| **Handoff visual** | [`design_handoff_editor_fotos_ia/`](../design_handoff_editor_fotos_ia/) — **solo UX** (medidas, colores, flujo) |
+| **Fuente de verdad** | **Este archivo** — API, modelo `fichas_fotos`, canales, cupo, deshacer |
+| **Referencia interactiva** | [`Inventario - Editor de Fotos IA.dc.html`](../design_handoff_editor_fotos_ia/Inventario%20-%20Editor%20de%20Fotos%20IA.dc.html) |
 | **Marca** | [`BRAND.md`](../BRAND.md) — tokens `--pa-*` |
-| **Mobile** | **Fuera de alcance** v1 (Expo) |
+| **Mobile** | **Fuera de alcance v1** — excepción explícita a paridad Web↔Mobile (Owner 2026-11-11) |
 
 ---
 
 ## Objetivo
 
-En **Inventario** → pestaña **Fotos y Video** (`/properties/[id]` o ruta shell v2 equivalente), permitir que el asesor:
+En Inventario → **Fotos y Video**, permitir que el asesor:
 
-1. Abra una foto en una **ventana flotante** (overlay difuminado).
-2. **Navegue** entre fotos, **descargue** una sola imagen o el zip existente.
-3. Aplique **cuatro retoques con IA** con vista previa, comparación antes/después, deshacer y **guardar** la versión activa en publicación + reel.
-4. Vea en la grilla qué fotos tienen versión IA guardada (badge **✦ IA** y contador).
+1. Abra una foto en ventana flotante (overlay difuminado).
+2. Navegue, descargue una foto o el zip existente.
+3. Aplique **cuatro retoques con IA** (preview, comparar, deshacer por cadena, guardar).
+4. Vea en grilla badge **✦ IA** y contador de fotos retocadas guardadas.
 
-La **foto original en disco nunca se sobrescribe**; el activo publicado cambia al guardar.
+---
+
+## Qué pasa al guardar (canales vs ficha) — Owner + staff
+
+Hoy **todos** los consumidores leen el archivo referenciado en **`fichas_fotos.archivo`** bajo `FOTOS_DIR` (WASI, Instagram, Marketplace, reel, URLs `/fotos/...`, zip).
+
+| Sistema | Tras **Guardar en la publicación** |
+|---------|--------------------------------------|
+| Grilla Inventario, vista previa web, **reel** (nueva generación / assets que lean `archivo`) | Usan el **archivo activo** retocado |
+| **Canales ya publicados** (WASI, IG, MP, WhatsApp, etc.) | **No** se actualizan solos — siguen la foto que tenían al publicar |
+| Ficha nunca publicada en un canal | Sin aviso en ese canal |
+
+**v1 obligatorio (T2):** en pestaña **Canales**, un aviso **por cada canal donde la ficha ya está publicada** (reel incluido si aplica): *hay fotos actualizadas — republicar para reflejarlas*. Canales sin publicación previa: sin banner.
+
+**No hay** re-publicación automática en v1.
+
+El archivo en **`archivo_original`** (ver modelo) **nunca** se sobrescribe; solo cambia **`archivo`** al guardar.
 
 ---
 
 ## Evidencia visual (handoff)
 
-Las capturas están en el repo junto al HTML de referencia.
+> La maqueta HTML puede mostrar **Deshacer** en cada tarjeta “Aplicado”; en **producción** solo el **último** paso de la cadena es deshacible (ver § Deshacer).
 
 ### 01 — Grilla Fotos y Video
 
 ![Grilla con chip de contador IA y acción de ampliar](../design_handoff_editor_fotos_ia/assets/01-grilla-fotos.png)
 
-- Texto de ayuda ampliado: *"Haz clic en una foto para verla en grande, descargarla o retocarla con IA."*
-- Chip **"{n} de {N} retocadas con IA"** (solo si `n > 0`).
-- Icono **ampliar** al hover/focus; `cursor: zoom-in`.
-- Badge **✦ IA** en fotos con versión guardada.
-
-### 02 — Editor abierto (estado inicial)
+### 02 — Editor abierto
 
 ![Ventana flotante con panel Retoque con IA](../design_handoff_editor_fotos_ia/assets/02-editor-abierto.png)
 
-- Overlay `backdrop-filter: blur(10px)`.
-- Topbar: ambiente, índice, Descargar, Cerrar.
-- Panel derecho: 4 herramientas + **Guardar en la publicación**.
-
-### 03 — Retoque aplicado (luz y color)
+### 03 — Luz aplicada
 
 ![Vista Retocada tras Mejorar luz](../design_handoff_editor_fotos_ia/assets/03-luz-aplicada.png)
 
-- Segmented **Original | Retocada | Comparar** visible si hay retoques.
-- Herramienta en estado **Aplicado** → botón **Deshacer**.
-- Toast: *"Mejorando luz · listo"*.
-
-### 04 — Modo Comparar (cortina)
+### 04 — Comparar
 
 ![Comparación Original vs Retocada](../design_handoff_editor_fotos_ia/assets/04-comparar.png)
 
-- Cortina arrastrable; etiquetas Original / Retocada.
-- Filmstrip con contorno esmeralda en la foto activa.
-
-### 05 — Quitar objetos (modo pincel)
+### 05 — Pincel quitar objetos
 
 ![Modo pincel con slider y hint](../design_handoff_editor_fotos_ia/assets/05-pincel-quitar-objetos.png)
 
-- Hint: *"Pinta sobre el objeto que quieres quitar"*.
-- Slider de tamaño, **Limpiar**, **Quitar** / **Cancelar**.
-
-> Detalle de medidas, colores, teclado y estados: ver [`editor-fotos-ia-README.md`](../design_handoff_editor_fotos_ia/editor-fotos-ia-README.md) (secciones 1–10).
+Medidas, teclado, responsive: [`editor-fotos-ia-README.md`](../design_handoff_editor_fotos_ia/editor-fotos-ia-README.md) §1–10 (**no** §11–§15).
 
 ---
 
-## Alcance / fuera de alcance
-
-### Dentro (v1)
+## Alcance v1
 
 | Área | Entrega |
 |------|---------|
-| Grilla | Clic en imagen → editor; controles existentes con `stopPropagation`; badge ✦ y contador |
-| Modal editor | Navegación circular, filmstrip, descarga unitaria, 4 ops IA, comparar, guardar |
-| Backend | Versiones `draft` / `saved`, pasos encadenados, ownership E-INV-01 |
-| Publicación | Al guardar, la URL activa de la foto en ficha/publicación/reel usa la versión retocada |
+| Grilla + modal | Según handoff visual + AC abajo |
+| Backend | Migración, `PhotoEditProvider` **stub** hasta contratar proveedor real |
+| Cupo | 50 retoques/día por **`owner_agente_id` de la ficha** (intentos fallidos cuentan) |
+| Canales | Solo avisos de republicación; sin push automático |
 
-### Fuera (v1)
+### Fuera de v1
 
-- Amoblado virtual, cambio de pisos/paredes, generación desde cero.
-- Retoque en lote ("mejorar todas").
-- Re-publicación automática en canales al guardar (solo **aviso** en pestaña Canales — TBD v1.1).
-- App Expo.
+- Amoblado virtual, pisos/paredes, generación desde cero, retoque en lote.
+- Re-publicación automática en canales.
+- **App Expo** (editor móvil).
 - Recorte/rotación manual no-IA.
 
 ---
 
-## Decisiones cerradas para dev (TBD → decisión)
+## Decisiones cerradas (Owner 2026-11-11)
 
-| # | Tema | Decisión v1 |
-|---|------|-------------|
-| 1 | Contador IA con `n=0` | **Ocultar** el chip |
-| 2 | Descargar en Comparar | Descarga versión **retocada** |
-| 3 | Cerrar con borrador | **Confirmar** "Salir sin guardar" |
-| 4 | Navegar mientras procesa | **Sí** + spinner en miniatura del filmstrip |
-| 5 | Cielo sin `room_label` | Habilitar herramienta; error amigable si no hay cielo |
-| 6 | Deshacer pasos | Solo el **último** paso de la cadena (re-render backend) |
-| 7 | Límite diario retoques | **50 por asesor** (configurable env) |
-| 8 | Proveedor IA | **TBD Owner** — implementar interfaz `PhotoEditProvider`; stub en dev |
-| 9 | Web &lt; 768px | Pantalla completa + sheet inferior (misma spec §10 README) |
+| # | Tema | Decisión |
+|---|------|----------|
+| 1 | Republicación | Guardar **no** republica; aviso por canal publicado (+ reel) |
+| 2 | Cielo despejado | Botón **siempre habilitado** (no bloquear por `room_label`); si el proveedor no detecta cielo → error claro, foto intacta |
+| 3 | Deshacer | Cada clic elimina el **último paso** de la cadena (LIFO); varios clics = varios pasos atrás |
+| 4 | Cupo | 50/día del **dueño de la ficha**; admin retocando ficha ajena gasta cupo del dueño; **fallos cuentan** |
+| 5 | Paridad mobile | **No** en v1 |
+| 6 | Proveedor | v1 = **`PhotoEditProvider` simulador**; swap cuando Owner contrate servicio |
+| 7 | Contador IA `n=0` | Ocultar chip |
+| 8 | Descargar en Comparar | Versión **retocada** |
+| 9 | Cerrar con borrador | Confirmar |
+| 10 | Navegar mientras procesa | Sí + spinner en filmstrip |
 
 ---
 
-## Modelo de datos (propuesta)
+## Modelo de datos (contrato T1)
 
-Tablas nuevas o extensión de metadata de fotos existente (`fichas.fotos` JSON + archivos en `FOTOS_DIR`):
+### Tabla existente `fichas_fotos` (`agente-inmobiliario`)
 
-```text
-ficha_foto_versions
-  id, ficha_id, foto_ref (uuid/path), status (draft|saved|discarded)
-  active (bool), url/path, created_by_agente_id, created_at, saved_at
-
-ficha_foto_edit_steps
-  id, version_id, op, mask_path?, result_path, provider, duration_ms, status
+```sql
+-- Hoy: id, ficha_id, archivo, orden, room_label
+-- Migración sprint:
+ALTER TABLE fichas_fotos ADD COLUMN archivo_original TEXT;
+-- Backfill: archivo_original = archivo donde NULL
 ```
 
-**Regla:** `original` = archivo inicial inmutable bajo `FOTOS_DIR`. `active` apunta al path servido en `/fotos/...` y en reel.
+| Columna | Rol |
+|---------|-----|
+| `archivo_original` | Path relativo en `FOTOS_DIR` del **upload inicial**; **inmutable** |
+| `archivo` | Path del **activo servido**: publicadores, `/fotos/...`, reel, zip, grilla tras **guardar** |
+| `ia_retoque_guardado` | `BOOLEAN` (o derivable) — badge ✦ cuando hubo save con IA |
 
-Contrato TypeScript (web) — ver README §11; alinear `room_label` con `REEL_ROOM_LABEL_OPTIONS` / `room_label` ya en API web.
+**Borrador:** pasos y preview viven en tablas auxiliares; **`archivo` no cambia** hasta `POST .../save`.
+
+### Tablas nuevas
+
+```text
+ficha_foto_edit_versions
+  id, ficha_foto_id (FK fichas_fotos.id), status (draft|saved|discarded)
+  created_by_agente_id, created_at, saved_at
+
+ficha_foto_edit_steps
+  id, version_id, op, mask_path?, result_path, provider, duration_ms, status, created_at
+```
+
+Cadena ordenada por `created_at`; deshacer = borrar último step y recalcular preview / `result_path` final del borrador.
 
 ---
 
-## API sugerida (`/api/web`, E-INV-01)
+## API (`/api/web`, E-INV-01) — único contrato HTTP
 
-Prefijo propuesto (ajustar a convención existente de fotos web):
+`fotoId` = entero `fichas_fotos.id`.
 
 | Método | Ruta | Descripción |
 |--------|------|-------------|
-| `POST` | `/api/web/properties/{id}/photos/{fotoId}/edits` | `{ op, mask? }` multipart → `{ versionId, stepId, status: processing }` |
-| `GET` | `.../edits/{stepId}` | Poll estado → `{ status, previewUrl? }` (1.5s o SSE) |
-| `DELETE` | `.../versions/{versionId}/steps/last` | Deshacer último paso |
-| `POST` | `.../versions/{versionId}/save` | Promueve a activa + actualiza ficha/reel refs |
-| `DELETE` | `.../versions/{versionId}` | Descarta borrador |
-| `GET` | `.../photos/{fotoId}/download?version=original\|active` | Redirect URL firmada; nombre `§3.1 README` |
+| `POST` | `/api/web/properties/{fichaId}/photos/{fotoId}/edits` | `{ op, mask? }` multipart → `{ versionId, stepId, status: processing }` |
+| `GET` | `/api/web/properties/{fichaId}/photos/{fotoId}/edits/{stepId}` | Poll → `{ status, previewUrl? }` |
+| `DELETE` | `/api/web/properties/{fichaId}/photos/{fotoId}/versions/{versionId}/steps/last` | Deshacer último paso |
+| `POST` | `/api/web/properties/{fichaId}/photos/{fotoId}/versions/{versionId}/save` | Copia resultado a nuevo archivo, actualiza `archivo`, set `ia_retoque_guardado`; devuelve flags de aviso canal |
+| `DELETE` | `/api/web/properties/{fichaId}/photos/{fotoId}/versions/{versionId}` | Descarta borrador |
+| `GET` | `/api/web/properties/{fichaId}/photos/{fotoId}/download?version=original\|active` | Redirect; original → `archivo_original`, active → `archivo` |
 
-**Auth:** mismo JWT que inventario; asesor solo sus fichas; admin dominio `@proinversores`.
+**Cupo:** middleware/chequeo por `owner_agente_id` de la ficha antes de encolar step.
+
+**Auth:** E-INV-01; cupo siempre del dueño de la ficha.
+
+---
+
+## UX: Deshacer (desvío de la maqueta)
+
+- Tarjetas con ops ya aplicadas muestran subtítulo **"Aplicado"** sin botón Deshacer individual.
+- **Un solo** control **Deshacer** (o botón activo solo en la tarjeta del **último** `op` de la cadena) llama `DELETE .../steps/last`.
+- Si la maqueta HTML muestra Deshacer en “luz” y “enderezar” a la vez, **producción sigue esta spec**.
 
 ---
 
 ## Tickets
 
-### T1 — Backend (`agente-inmobiliario` → `develop`)
+### T1 — Backend (`develop`)
 
-- Migración + capa `photo_edits` (provider plugable).
-- Jobs async (cola en proceso o worker liviano; timeout 60s).
-- Endpoints § API; tests pytest (happy path + ownership + límite diario).
-- Al `save`: actualizar referencia de foto activa sin borrar original; reel usa misma URL.
+- Migración `archivo_original` + tablas versiones/steps.
+- `PhotoEditProviderStub` (delays + archivos dummy o filtros locales mínimos).
+- Cola async in-process, timeout 60s.
+- En `save`: escribir nuevo JPEG en `FOTOS_DIR`, actualizar `fichas_fotos.archivo`.
+- Endpoint o campo en GET ficha: `canales_con_fotos_desactualizadas[]` para banners T2.
 
 **AC T1**
 
-- [ ] Original en disco intacto tras guardar retocado.
-- [ ] Cadena de ops acumulativas; deshacer último paso.
-- [ ] `remove_objects` acepta máscara PNG reescalada.
-- [ ] `sky_replace` rechazado o skip con mensaje claro en interiores.
-- [ ] 404/403 según E-INV-01.
+- [ ] `archivo_original` intacto; `archivo` apunta al activo tras save.
+- [ ] WASI/IG/MP **sin cambio** hasta republicar manual (test: archivo en disco no cambia para listing remoto existente).
+- [ ] Cadena acumulativa; `DELETE steps/last` LIFO.
+- [ ] `sky_replace`: siempre invocable; error si no hay cielo (stub puede simular).
+- [ ] Cupo por dueño de ficha; fallo consume cupo.
+- [ ] 403/404 E-INV-01.
 
-### T2 — Web (`proagent-web` → `main`)
+### T2 — Web (`main`)
 
-- Componentes: `PhotoEditorModal`, grilla con badges/contador, integración en pestaña Fotos.
-- Lucide icons (§9 README).
-- Canvas pincel + máscara; comparador `clip-path`.
-- Cliente HTTP + TanStack Query (poll step).
-- `prefers-reduced-motion`, focus trap, teclado §8.
+- Ruta **`/properties/[id]`** pestaña fotos (no inventar `/inventory`).
+- `PhotoEditorModal` + HTTP solo rutas § API.
+- Banners Canales según respuesta backend.
+- Deshacer según § UX Deshacer.
 
-**AC T2**
-
-- [ ] Todos los AC de producto § abajo en desktop ≥1100px.
-- [ ] Responsive 768–1100 según README §10.
-- [ ] `npm run typecheck` + `npm run build` OK.
+**AC T2:** AC producto § + typecheck/build.
 
 ### T3 — Smoke Owner
 
-- Ficha real F-129 (o demo): aplicar luz → comparar → guardar → verificar portada/reel preview.
-- Verificar zip de fotos sigue incluyendo activas.
-- Documentar proveedor IA elegido o modo stub.
+- Guardar retoque → grilla/reel preview usan nueva foto → canal publicado sigue viejo hasta republicar → banner visible.
 
 ---
 
 ## Criterios de aceptación (producto)
 
-Copiados y numerados del handoff; el dev marca en el PR.
-
-- [ ] **AC-01** Clic en imagen de grilla abre editor; flechas/×/selector de ambiente no abren editor.
-- [ ] **AC-02** Hover/focus muestra icono ampliar; retocadas muestran badge ✦ IA.
-- [ ] **AC-03** Modal centrado, blur, cierra con ×, Esc, clic en overlay (con confirmación si borrador).
-- [ ] **AC-04** Navegación circular (‹ ›, filmstrip, ← →); activa con outline `#2FC98A`.
-- [ ] **AC-05** Descargar usa versión visible; nombre `{código}-{n}-{ambiente-slug}{-ia}.jpg`.
-- [ ] **AC-06** Cuatro herramientas + Guardar visibles sin scroll en 820px alto.
-- [ ] **AC-07** Procesamiento: overlay escaneo + spinner; bloqueo de otras ops; toast "· listo".
-- [ ] **AC-08** Aplicado → Deshacer revierte último paso de esa herramienta en la cadena.
-- [ ] **AC-09** Pincel: trazo visible, Limpiar, Quitar solo con trazo, Otro para segunda pasada.
-- [ ] **AC-10** Cielo despejado deshabilitado en interiores (`room_label` no exterior).
-- [ ] **AC-11** Segmented Original/Retocada/Comparar solo si hay retoques; cortina draggable + teclado.
-- [ ] **AC-12** Guardar activo solo con borrador; tras guardar grilla/reel usan retocada.
-- [ ] **AC-13** Original siempre visible/descargable.
-- [ ] **AC-14** Focus trap; al cerrar foco vuelve a miniatura origen.
-- [ ] **AC-15** Error de proveedor: mensaje + Reintentar; foto sin cambios.
-
----
-
-## Riesgos y dependencias
-
-| Riesgo | Mitigación |
-|--------|------------|
-| Costo/latencia IA | Límite diario + cola serial por foto |
-| Canales desincronizados | Aviso en Canales "fotos actualizadas — republicar" (v1.1 si no entra en T2) |
-| Rutas inventario | Confirmar path final (`/properties` vs `/inventory`) al implementar T2 |
-| HTML `.dc` | Requiere visor DC; en dev abrir el `.dc.html` del handoff |
+- [ ] **AC-01** Clic en imagen abre editor; controles de grilla con `stopPropagation`.
+- [ ] **AC-02** Ampliar + badge ✦ en fotos con save IA.
+- [ ] **AC-03** Modal: blur, cierre con confirmación si borrador.
+- [ ] **AC-04** Navegación circular + filmstrip.
+- [ ] **AC-05** Descargar versión visible; nombre `{código}-{n}-{ambiente}{-ia}.jpg`.
+- [ ] **AC-06** Panel sin scroll en 820px.
+- [ ] **AC-07** Estado procesando + toast "· listo".
+- [ ] **AC-08** Deshacer solo último paso de cadena (un control; no por herramienta histórica).
+- [ ] **AC-09** Pincel: máscara, Limpiar, Quitar.
+- [ ] **AC-10** Cielo: **habilitado** siempre; error si no hay cielo; cupo gastado en fallo.
+- [ ] **AC-11** Segmented + comparar con accesibilidad.
+- [ ] **AC-12** Guardar actualiza grilla/reel activo vía `archivo`; **no** actualiza listings remotos.
+- [ ] **AC-13** Original vía `archivo_original` visible/descargable.
+- [ ] **AC-14** Focus trap.
+- [ ] **AC-15** Error + Reintentar.
+- [ ] **AC-16** Aviso republicación **por canal publicado** (y reel si aplica); silencio en canales nunca publicados.
 
 ---
 
-## Checklist Manager (antes de `ready_for_dev`)
+## Checklist antes de `ready_for_dev`
 
-- [ ] Owner elige proveedor IA (o aprueba stub + fase 2).
-- [ ] Owner valida capturas vs producción actual de grilla.
-- [ ] Owner confirma límite 50/día y política de re-publicación en canales.
-- [ ] Actualizar [`SPRINT.md`](../SPRINT.md) cuando se active.
+- [x] Contrato `fichas_fotos.archivo` / `archivo_original` (staff).
+- [x] Decisiones Owner en spec.
+- [x] README marcado handoff visual.
+- [ ] Owner smoke del flujo reel/fotos actual.
+- [ ] Cambiar `SPRINT.md` a `ready_for_dev` cuando apruebe.
 
 ---
 
@@ -232,7 +237,6 @@ Copiados y numerados del handoff; el dev marca en el PR.
 
 | Recurso | Path |
 |---------|------|
-| HTML interactivo | `design_handoff_editor_fotos_ia/Inventario - Editor de Fotos IA.dc.html` |
-| README UX completo | `design_handoff_editor_fotos_ia/editor-fotos-ia-README.md` |
-| Capturas 01–05 | `design_handoff_editor_fotos_ia/assets/*.png` |
-| Fotos API actual | `agente-inmobiliario` `backend/web/router.py` + `ficha_fotos.py` |
+| Handoff visual | `design_handoff_editor_fotos_ia/editor-fotos-ia-README.md` |
+| HTML | `design_handoff_editor_fotos_ia/Inventario - Editor de Fotos IA.dc.html` |
+| Backend fotos | `agente-inmobiliario` `database.py` (`fichas_fotos`), `ficha_fotos.py`, `web/router.py` |

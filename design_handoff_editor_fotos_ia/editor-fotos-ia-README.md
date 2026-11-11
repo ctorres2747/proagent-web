@@ -1,14 +1,18 @@
 # Handoff — Visor y editor de fotos con IA (Inventario › Fotos y Video)
 
+> **Solo handoff visual (UX).** Medidas, colores, estados de pantalla y flujo de la maqueta.  
+> **No implementar** API, modelo de datos ni reglas de negocio desde este archivo.  
+> **Fuente de verdad:** [`sprints/067-inventario-editor-fotos-ia.md`](../sprints/067-inventario-editor-fotos-ia.md) (contrato `fichas_fotos`, `/api/web/properties/...`, cupo, canales, deshacer).
+
 **Producto:** ProAgent Web (Next.js 15, App Router), dentro del shell v2.
-**Pantalla:** `/inventory/[id]`, pestaña **Fotos y Video**.
+**Pantalla:** **`/properties/[id]`** (inventario actual), pestaña **Fotos y Video** — el diseño original decía `/inventory/[id]`; ignorar para dev.
 **Qué se agrega:** al hacer clic en una foto se abre una **ventana flotante** sobre la pantalla, con el fondo difuminado. En la ventana se puede ver la foto en grande, navegar entre fotos, descargarla y aplicarle **retoques con IA**:
 - Mejorar luz y color
 - Enderezar
 - Quitar objetos
 - Cielo despejado
 
-**Referencia interactiva:** `referencia/Inventario - Editor de Fotos IA.dc.html`. En el proyecto de diseño se puede abrir y probar; los retoques ahí son simulados con filtros CSS, solo para mostrar el flujo.
+**Referencia interactiva:** [`Inventario - Editor de Fotos IA.dc.html`](Inventario%20-%20Editor%20de%20Fotos%20IA.dc.html). Retoques simulados con CSS. La maqueta puede mostrar **Deshacer en cada herramienta**; en producción solo se deshace el **último paso** de la cadena (ver sprint).
 
 **Capturas:**
 - `01-grilla-fotos.png`: grilla con la acción de ampliar.
@@ -315,6 +319,8 @@ La maqueta usa glifos de texto (☀ ⊞ ⌫ ☁) solo como placeholder. **En pro
 
 ## 11. Modelo de datos
 
+> **Obsoleto para implementación** — conservado como boceto de diseño. Usar § *Modelo de datos* en [`sprints/067-inventario-editor-fotos-ia.md`](../sprints/067-inventario-editor-fotos-ia.md) (`fichas_fotos.archivo` / `archivo_original`).
+
 ```ts
 interface PropertyPhoto {
   id: string;
@@ -352,6 +358,8 @@ interface PhotoEditStep {
 ---
 
 ## 12. API sugerida
+
+> **Obsoleto para implementación** — usar solo rutas `/api/web/properties/{fichaId}/photos/{fotoId}/...` del sprint 067.
 
 - `POST /api/photos/:photoId/edits` con `{ op, mask? }` (máscara en multipart) → `{ versionId, stepId, status:'processing' }`.
   - Si no hay borrador, crea uno a partir de la versión activa.

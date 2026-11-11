@@ -4,8 +4,9 @@
 |-------|--------|
 | **ID activo (dev)** | — *(ninguno — solo spec en cola)* |
 | **Próximo en cola (spec)** | [`067`](sprints/067-inventario-editor-fotos-ia.md) — Editor de fotos IA |
-| **Estado 067** | `spec` — **no** `ready_for_dev` hasta revisión Owner |
-| **Handoff** | [`design_handoff_editor_fotos_ia/`](design_handoff_editor_fotos_ia/) |
+| **Estado 067** | `spec` (rev. 2 — staff + Owner) — **no** `ready_for_dev` hasta smoke Owner reel/fotos |
+| **Handoff** | [`design_handoff_editor_fotos_ia/`](design_handoff_editor_fotos_ia/) (solo UX) |
+| **Spec** | [`sprints/067-inventario-editor-fotos-ia.md`](sprints/067-inventario-editor-fotos-ia.md) |
 | **Actualizado** | 2026-11-11 |
 
 ## Qué hacer ahora
