@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+body{margin:0;font-family:'Plus Jakarta Sans',sans-serif;background:#F6F7F9;color:#16212B}
+a{color:#0A3D62;text-decoration:none}a:hover{color:#2FC98A}
+@keyframes pa-spin{to{transform:rotate(360deg)}}
+@keyframes pa-scan{0%{transform:translateY(-100%)}100%{transform:translateY(100%)}}
+</style>
+</helmet>
+<div style="display:flex;min-height:100vh">
+  <aside style="width:280px;flex:none;background:#0A3D62;color:#fff;display:flex;flex-direction:column">
+    <div style="height:68px;display:flex;align-items:center;gap:12px;padding:0 18px;border-bottom:1px solid rgba(255,255,255,.1)">
+      <div style="width:40px;height:40px;border-radius:10px;background:#fff;color:#0A3D62;display:grid;place-items:center;font-weight:800">P</div>
+      <div style="display:flex;flex-direction:column"><div style="font-weight:800;font-size:17px">ProAgent</div><div style="font-size:10.5px;font-weight:700;letter-spacing:.06em;color:rgba(255,255,255,.7)">BY PROINVERSORES</div></div>
+    </div>
+    <div style="padding:28px 12px 0;display:flex;flex-direction:column;gap:4px">
+      <div style="font-size:11px;font-weight:800;letter-spacing:.08em;color:rgba(255,255,255,.6);padding:0 6px 10px">OPERACIÓN</div>
+      <div style="height:44px;display:flex;align-items:center;padding:0 12px;border-radius:10px;font-weight:600;color:rgba(255,255,255,.85)">Inicio</div>
+      <div style="height:44px;display:flex;align-items:center;padding:0 12px;border-radius:10px;font-weight:600;color:rgba(255,255,255,.85)">Captación</div>
+      <div style="height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 12px;border-radius:10px;font-weight:700;background:rgba(255,255,255,.12);box-shadow:inset 3px 0 0 #2FC98A"><span>Inventario</span><span style="font-size:12px;color:rgba(255,255,255,.7)">89</span></div>
+      <div style="height:44px;display:flex;align-items:center;padding:0 12px;border-radius:10px;font-weight:600;color:rgba(255,255,255,.85)">Publicación</div>
+      <div style="font-size:11px;font-weight:800;letter-spacing:.08em;color:rgba(255,255,255,.6);padding:24px 6px 10px">CARTERA</div>
+      <div style="height:44px;display:flex;align-items:center;padding:0 12px;border-radius:10px;font-weight:600;color:rgba(255,255,255,.85)">Prospectos</div>
+      <div style="height:44px;display:flex;align-items:center;padding:0 12px;border-radius:10px;font-weight:600;color:rgba(255,255,255,.85)">Clientes</div>
+    </div>
+  </aside>
+  <main style="flex:1;min-width:0;display:flex;flex-direction:column">
+    <div style="height:68px;background:#fff;border-bottom:1px solid #E4E8EC;display:flex;align-items:center;padding:0 32px;gap:8px;font-size:15px">
+      <span style="color:#5B6B79">Operación</span><span style="color:#9AA6B2">/</span><span style="font-weight:700">Inventario</span>
+    </div>
+    <div style="padding:40px 48px;max-width:1240px;display:flex;flex-direction:column;gap:20px">
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <div style="font-size:14px;font-weight:700;color:#5B6B79;letter-spacing:.02em">VENTA DE CASA EN ENVIGADO · F-129</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px">
+          <div style="padding:9px 18px;border-radius:10px;color:#45525E;font-weight:600;font-size:14px">Contenido</div>
+          <div style="padding:9px 18px;border-radius:10px;background:#fff;box-shadow:0 1px 3px rgba(16,33,49,.1);font-weight:700;font-size:14px">Fotos y Video</div>
+          <div style="padding:9px 18px;border-radius:10px;color:#45525E;font-weight:600;font-size:14px">Canales</div>
+          <div style="padding:9px 18px;border-radius:10px;color:#45525E;font-weight:600;font-size:14px">Personalizar</div>
+          <div style="padding:9px 18px;border-radius:10px;color:#45525E;font-weight:600;font-size:14px">Vista previa</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+        <div style="flex:1;min-width:280px;font-size:14px;line-height:1.55;color:#45525E;text-wrap:pretty">La primera foto es la portada. Haz clic en una foto para verla en grande, descargarla o retocarla con IA.</div>
+        <div style="display:flex;align-items:center;gap:8px;padding:9px 14px;border-radius:10px;background:#E6F5EE;color:#1E6B47;font-size:13px;font-weight:700">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 4.6L18.5 9l-4.7 1.4L12 15l-1.8-4.6L5.5 9l4.7-1.4z"></path><path d="M19 15l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z"></path></svg>
+          <span>{{ editedCount }} de 8 retocadas con IA</span>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px">
+        <sc-for list="{{ grid }}" as="p" hint-placeholder-count="8">
+          <div style="background:#fff;border-radius:14px;border:1px solid #E4E8EC;overflow:hidden;display:flex;flex-direction:column">
+            <div onClick="{{ p.open }}" style="position:relative;aspect-ratio:4/3;cursor:zoom-in;overflow:hidden;background:#DDE2E7">
+              <img src="{{ p.src }}" alt="{{ p.label }}" style="width:100%;height:100%;object-fit:cover;display:block;filter:{{ p.filter }}">
+              <sc-if value="{{ p.cover }}"><div style="position:absolute;top:10px;left:10px;background:#0A3D62;color:#fff;font-size:11.5px;font-weight:800;padding:4px 9px;border-radius:7px">★ Portada</div></sc-if>
+              <sc-if value="{{ p.edited }}"><div style="position:absolute;top:10px;right:10px;display:flex;align-items:center;gap:4px;background:#2FC98A;color:#06331F;font-size:11px;font-weight:800;padding:4px 8px;border-radius:7px">✦ IA</div></sc-if>
+              <div style="position:absolute;right:10px;bottom:10px;width:34px;height:34px;border-radius:9px;background:rgba(8,26,42,.72);display:grid;place-items:center;color:#fff">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"></path></svg>
+              </div>
+              <div style="position:absolute;left:10px;bottom:10px;min-width:26px;height:26px;border-radius:7px;background:rgba(8,26,42,.72);color:#fff;font-size:12px;font-weight:800;display:grid;place-items:center">{{ p.n }}</div>
+            </div>
+            <div style="padding:10px 12px;display:flex;flex-direction:column;gap:2px">
+              <div style="font-size:10.5px;font-weight:800;letter-spacing:.05em;color:#9AA6B2">AMBIENTE</div>
+              <div style="font-size:13px;font-weight:600;color:#16212B">{{ p.label }}</div>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </main>
+</div>
+
+<sc-if value="{{ open }}" hint-placeholder-val="{{ false }}">
+  <div onClick="{{ close }}" style="position:fixed;inset:0;z-index:50;background:rgba(10,30,50,.42);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);display:flex;align-items:center;justify-content:center;padding:24px">
+  <div onClick="{{ stop }}" style="width:min(1320px,100%);height:min(820px,100%);background:#0B1620;border-radius:18px;overflow:hidden;box-shadow:0 30px 80px rgba(8,26,42,.45);display:flex;flex-direction:column;color:#fff;position:relative">
+    <div style="height:56px;flex:none;display:flex;align-items:center;gap:16px;padding:0 20px;border-bottom:1px solid rgba(255,255,255,.08)">
+      <div style="display:flex;flex-direction:column;min-width:0">
+        <div style="font-size:15px;font-weight:800;white-space:nowrap">{{ cur.label }}</div>
+        <div style="font-size:12px;color:rgba(255,255,255,.6);font-weight:600">Foto {{ cur.n }} de 8 · F-129</div>
+      </div>
+      <div style="flex:1"></div>
+      <sc-if value="{{ hasEdits }}">
+        <div style="display:flex;background:rgba(255,255,255,.08);border-radius:10px;padding:3px">
+          <div onClick="{{ showOriginal }}" style="height:34px;padding:0 14px;display:flex;align-items:center;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;background:{{ segOrigBg }};color:{{ segOrigFg }}">Original</div>
+          <div onClick="{{ showEdited }}" style="height:34px;padding:0 14px;display:flex;align-items:center;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;background:{{ segEditBg }};color:{{ segEditFg }}">Retocada</div>
+          <div onClick="{{ toggleCompare }}" style="height:34px;padding:0 14px;display:flex;align-items:center;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;background:{{ segCmpBg }};color:{{ segCmpFg }}">Comparar</div>
+        </div>
+      </sc-if>
+      <div style="flex:1"></div>
+      <a href="{{ cur.src }}" download="{{ cur.file }}" style="height:40px;padding:0 14px;display:flex;align-items:center;gap:8px;border-radius:10px;border:1px solid rgba(255,255,255,.18);color:#fff;font-size:13px;font-weight:700">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"></path></svg>
+        <span>Descargar</span>
+      </a>
+      <div onClick="{{ close }}" title="Cerrar (Esc)" style="width:40px;height:40px;border-radius:10px;display:grid;place-items:center;cursor:pointer;background:rgba(255,255,255,.08)" style-hover="background:rgba(255,255,255,.16)">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"></path></svg>
+      </div>
+    </div>
+
+    <div style="flex:1;min-height:0;display:flex">
+      <div style="flex:1;min-width:0;display:flex;flex-direction:column">
+        <div style="flex:1;min-height:0;position:relative;display:flex;align-items:center;justify-content:center;padding:16px 68px">
+          <div onClick="{{ prev }}" style="position:absolute;left:16px;top:50%;margin-top:-24px;width:48px;height:48px;border-radius:24px;background:rgba(255,255,255,.1);display:grid;place-items:center;cursor:pointer" style-hover="background:rgba(255,255,255,.2)">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"></path></svg>
+          </div>
+          <div onClick="{{ next }}" style="position:absolute;right:16px;top:50%;margin-top:-24px;width:48px;height:48px;border-radius:24px;background:rgba(255,255,255,.1);display:grid;place-items:center;cursor:pointer" style-hover="background:rgba(255,255,255,.2)">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"></path></svg>
+          </div>
+          <div ref="{{ boxRef }}" onMouseDown="{{ onDown }}" onMouseMove="{{ onMove }}" onMouseUp="{{ onUp }}" onMouseLeave="{{ onUp }}" style="position:relative;width:100%;max-width:1100px;aspect-ratio:4/3;max-height:100%;border-radius:12px;overflow:hidden;background:#000;cursor:{{ boxCursor }};user-select:none">
+            <img src="{{ cur.src }}" alt="" draggable="false" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:{{ baseFilter }};transform:{{ baseTransform }};transition:filter .5s,transform .5s">
+            <sc-if value="{{ compare }}">
+              <div style="position:absolute;inset:0;clip-path:{{ clip }}">
+                <img src="{{ cur.src }}" alt="" draggable="false" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:{{ editFilter }};transform:{{ editTransform }}">
+              </div>
+              <div style="position:absolute;top:0;bottom:0;left:{{ splitPct }};width:2px;margin-left:-1px;background:#fff"></div>
+              <div style="position:absolute;top:50%;left:{{ splitPct }};width:40px;height:40px;margin:-20px 0 0 -20px;border-radius:20px;background:#fff;color:#0A3D62;display:grid;place-items:center;box-shadow:0 4px 14px rgba(0,0,0,.35)">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l-5 6 5 6M15 6l5 6-5 6"></path></svg>
+              </div>
+              <div style="position:absolute;top:14px;left:14px;background:rgba(8,26,42,.75);font-size:12px;font-weight:800;padding:5px 10px;border-radius:8px">Original</div>
+              <div style="position:absolute;top:14px;right:14px;background:#2FC98A;color:#06331F;font-size:12px;font-weight:800;padding:5px 10px;border-radius:8px">Retocada</div>
+            </sc-if>
+            <sc-for list="{{ marks }}" as="m">
+              <div style="position:absolute;left:{{ m.x }};top:{{ m.y }};width:{{ m.s }};height:{{ m.s }};margin-left:{{ m.o }};margin-top:{{ m.o }};border-radius:50%;background:rgba(47,201,138,.45);pointer-events:none"></div>
+            </sc-for>
+            <sc-if value="{{ brushing }}">
+              <div style="position:absolute;left:50%;top:14px;transform:translateX(-50%);background:rgba(8,26,42,.82);font-size:13px;font-weight:700;padding:8px 14px;border-radius:10px;white-space:nowrap">Pinta sobre el objeto que quieres quitar</div>
+            </sc-if>
+            <sc-if value="{{ processing }}">
+              <div style="position:absolute;inset:0;background:rgba(8,26,42,.45);display:flex;align-items:center;justify-content:center;overflow:hidden">
+                {{ scan }}
+                <div style="display:flex;align-items:center;gap:12px;background:rgba(8,26,42,.88);padding:14px 20px;border-radius:12px;font-size:14px;font-weight:700">{{ spinner }}<span>{{ processingLabel }}</span></div>
+              </div>
+            </sc-if>
+          </div>
+        </div>
+        <div style="height:76px;flex:none;display:flex;align-items:center;justify-content:center;gap:8px;padding:0 20px;border-top:1px solid rgba(255,255,255,.08)">
+          <sc-for list="{{ grid }}" as="t" hint-placeholder-count="8">
+            <div onClick="{{ t.go }}" style="position:relative;width:68px;height:50px;border-radius:8px;overflow:hidden;cursor:pointer;outline:{{ t.ring }};outline-offset:2px;opacity:{{ t.op }}">
+              <img src="{{ t.src }}" alt="" style="width:100%;height:100%;object-fit:cover;display:block;filter:{{ t.filter }}">
+              <sc-if value="{{ t.edited }}"><div style="position:absolute;top:4px;right:4px;width:16px;height:16px;border-radius:8px;background:#2FC98A;color:#06331F;font-size:9px;font-weight:800;display:grid;place-items:center">✦</div></sc-if>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+
+      <div style="width:clamp(270px,26vw,330px);flex:none;background:#fff;color:#16212B;display:flex;flex-direction:column">
+        <div style="padding:16px 18px 12px;display:flex;flex-direction:column;gap:2px;border-bottom:1px solid #EEF0F3">
+          <div style="display:flex;align-items:center;gap:8px;font-size:16px;font-weight:800;color:#0A3D62">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2FC98A" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 4.6L18.5 9l-4.7 1.4L12 15l-1.8-4.6L5.5 9l4.7-1.4z"></path><path d="M19 15l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z"></path></svg>
+            <span>Retoque con IA</span>
+          </div>
+          <div style="font-size:12.5px;color:#5B6B79;line-height:1.45">La foto original siempre se conserva.</div>
+        </div>
+        <div style="flex:1;min-height:0;padding:12px 14px;display:flex;flex-direction:column;gap:8px">
+          <sc-for list="{{ tools }}" as="tl" hint-placeholder-count="4">
+            <div style="border:1px solid {{ tl.border }};background:{{ tl.bg }};border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:8px;opacity:{{ tl.op }}">
+              <div style="display:flex;gap:10px;align-items:center">
+                <div style="width:32px;height:32px;flex:none;border-radius:9px;background:#EAF0F5;color:#0A3D62;display:grid;place-items:center;font-size:15px">{{ tl.icon }}</div>
+                <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:1px">
+                  <div style="font-size:13.5px;font-weight:700;white-space:nowrap">{{ tl.name }}</div>
+                  <div style="font-size:11.5px;color:#5B6B79;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="{{ tl.desc }}">{{ tl.sub }}</div>
+                </div>
+                <div onClick="{{ tl.action }}" style="height:30px;padding:0 12px;flex:none;display:flex;align-items:center;border-radius:8px;font-size:12px;font-weight:700;white-space:nowrap;cursor:{{ tl.cursor }};background:{{ tl.btnBg }};color:{{ tl.btnFg }}">{{ tl.btn }}</div>
+              </div>
+              <sc-if value="{{ tl.isBrush }}">
+                <div style="display:flex;align-items:center;gap:10px;font-size:11.5px;font-weight:700;color:#45525E;padding-left:42px">
+                  <span>Pincel</span>
+                  <input type="range" min="20" max="90" value="{{ brush }}" onChange="{{ setBrush }}" style="flex:1;accent-color:#0A3D62">
+                  <span onClick="{{ clearMarks }}" style="cursor:pointer;color:#0A3D62">Limpiar</span>
+                </div>
+              </sc-if>
+            </div>
+          </sc-for>
+        </div>
+        <div style="padding:12px 14px;border-top:1px solid #EEF0F3;background:#FAFBFC;display:flex;flex-direction:column;gap:6px">
+          <div onClick="{{ save }}" style="height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:13.5px;font-weight:800;white-space:nowrap;cursor:{{ saveCursor }};background:{{ saveBg }};color:#fff">{{ saveLabel }}</div>
+          <div style="font-size:11.5px;color:#5B6B79;text-align:center">Reemplaza la foto en la publicación y en el reel.</div>
+        </div>
+      </div>
+    </div>
+    <sc-if value="{{ toast }}">
+      <div style="position:absolute;left:50%;bottom:96px;transform:translateX(-50%);background:#16212B;color:#fff;font-size:13px;font-weight:600;padding:12px 18px;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.35);white-space:nowrap">{{ toast }}</div>
+    </sc-if>
+  </div>
+  </div>
+</sc-if>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;startOpen&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;}}">
+class Component extends DCLogic {
+  PH = [
+    ['fachada', 'Fachada', true], ['cocina', 'Cocina integral', false], ['hab1', 'Habitación principal', false], ['bano', 'Baño', false],
+    ['patio', 'Patio de ropas', true], ['hab2', 'Habitación 2', false], ['hab3', 'Habitación 3', false], ['hall', 'Hall de acceso', false]
+  ].map(([k, label, ext], i) => ({ i, n: i + 1, src: `reel/f129-${k}.png`, file: `F-129-${i + 1}-${k}.jpg`, label, ext }));
+  state = { open: this.props.startOpen ?? true, idx: 1, edits: {}, saved: {}, view: 'edit', compare: false, split: 50, brushOn: false, marks: [], brush: 44, processing: null, toast: null };
+  boxRef = React.createRef();
+  componentDidMount() {
+    this.key = e => {
+      if (!this.state.open) return;
+      if (e.key === 'Escape') this.setState({ open: false, brushOn: false, marks: [] });
+      if (e.key === 'ArrowRight') this.go(this.state.idx + 1);
+      if (e.key === 'ArrowLeft') this.go(this.state.idx - 1);
+    };
+    window.addEventListener('keydown', this.key);
+  }
+  componentWillUnmount() { window.removeEventListener('keydown', this.key); clearTimeout(this.tt); }
+  go(i) { this.setState({ idx: (i + 8) % 8, compare: false, view: 'edit', brushOn: false, marks: [] }); }
+  flash(t) { clearTimeout(this.tt); this.setState({ toast: t }); this.tt = setTimeout(() => this.setState({ toast: null }), 2600); }
+  ed(i) { return this.state.edits[i] || {}; }
+  filterOf(e) {
+    const f = [];
+    if (e.light) f.push('brightness(1.14) contrast(1.07) saturate(1.16)');
+    if (e.sky) f.push('saturate(1.25) hue-rotate(-4deg)');
+    return f.join(' ') || 'none';
+  }
+  transformOf(e) { return e.straight ? 'rotate(-0.8deg) scale(1.045)' : 'none'; }
+  run(key, label, ms) {
+    this.setState({ processing: label });
+    setTimeout(() => this.setState(s => ({
+      processing: null, brushOn: key === 'objects' ? false : s.brushOn, marks: key === 'objects' ? [] : s.marks, view: 'edit',
+      edits: { ...s.edits, [s.idx]: { ...(s.edits[s.idx] || {}), [key]: true } }, saved: { ...s.saved, [s.idx]: false }
+    }), () => this.flash(label.replace('…', '') + ' · listo')), ms);
+  }
+  undo(key) { this.setState(s => { const e = { ...(s.edits[s.idx] || {}) }; delete e[key]; return { edits: { ...s.edits, [s.idx]: e }, saved: { ...s.saved, [s.idx]: false } }; }); }
+  pos(e) { const r = this.boxRef.current.getBoundingClientRect(); return { x: (e.clientX - r.left) / r.width * 100, y: (e.clientY - r.top) / r.height * 100 }; }
+  renderVals() {
+    const s = this.state, cur = this.PH[s.idx], e = this.ed(s.idx);
+    const has = Object.keys(e).length > 0;
+    const showEdit = has && s.view === 'edit';
+    const isSaved = s.saved[s.idx];
+    const grid = this.PH.map(p => {
+      const pe = s.saved[p.i] ? this.ed(p.i) : {};
+      const edited = !!s.saved[p.i] && Object.keys(pe).length > 0;
+      return { ...p, cover: p.i === 0, edited, filter: this.filterOf(pe),
+        open: () => this.setState({ open: true, idx: p.i, compare: false, view: 'edit', marks: [], brushOn: false }),
+        go: () => this.go(p.i), ring: p.i === s.idx ? '2px solid #2FC98A' : '2px solid transparent', op: p.i === s.idx ? 1 : 0.6 };
+    });
+    const busy = !!s.processing;
+    const mk = (key, icon, name, desc, btn, runLabel, ms, disabled, note) => {
+      const applied = !!e[key];
+      return { icon, name, desc, sub: applied ? '' : (note || desc), applied, isBrush: false, op: disabled ? 0.55 : 1,
+        border: applied ? '#2FC98A' : '#E4E8EC', bg: applied ? '#F2FBF7' : '#fff',
+        btn: applied ? 'Deshacer' : btn, btnBg: applied ? '#fff' : (disabled ? '#EEF0F3' : '#0A3D62'), btnFg: applied ? '#45525E' : (disabled ? '#9AA6B2' : '#fff'),
+        cursor: disabled ? 'default' : 'pointer',
+        action: () => { if (busy || disabled) return; applied ? this.undo(key) : this.run(key, runLabel, ms); } };
+    };
+    const objects = (() => {
+      const applied = !!e.objects, n = s.marks.length;
+      const desc = 'Pinta sobre cables, carros, personas o desorden y la IA rellena el espacio.';
+      const t = { icon: '⌫', name: 'Quitar objetos', desc, sub: s.brushOn ? 'Pinta sobre la foto' : (applied ? 'Aplicado' : 'Cables, carros, desorden'), applied, isBrush: s.brushOn, op: 1,
+        border: applied || s.brushOn ? '#2FC98A' : '#E4E8EC', bg: applied ? '#F2FBF7' : '#fff', cursor: 'pointer' };
+      if (s.brushOn) Object.assign(t, { btn: n ? 'Quitar' : 'Cancelar', btnBg: n ? '#0A3D62' : '#EEF0F3', btnFg: n ? '#fff' : '#45525E',
+        action: () => { if (busy) return; n ? this.run('objects', 'Quitando objetos…', 2200) : this.setState({ brushOn: false }); } });
+      else Object.assign(t, { btn: applied ? 'Otro' : 'Pincel', btnBg: applied ? '#fff' : '#0A3D62', btnFg: applied ? '#45525E' : '#fff',
+        action: () => !busy && this.setState({ brushOn: true, compare: false, view: 'edit' }) });
+      return t;
+    })();
+    const tools = [
+      mk('light', '☀', 'Mejorar luz y color', 'Exposición, sombras y balance', 'Aplicar', 'Mejorando luz…', 1600),
+      mk('straight', '⊞', 'Enderezar', 'Paredes y marcos verticales', 'Aplicar', 'Enderezando…', 1300),
+      objects,
+      mk('sky', '☁', 'Cielo despejado', 'Cielo gris → azul', 'Aplicar', 'Cambiando cielo…', 1800, !cur.ext, cur.ext ? '' : 'Solo fotos exteriores')
+    ];
+    tools.forEach(t => { if (t.applied && t.sub === '') t.sub = 'Aplicado'; });
+    const pill = on => on ? ['#fff', '#0A3D62'] : ['transparent', 'rgba(255,255,255,.75)'];
+    const [ob, of] = pill(!s.compare && s.view === 'orig'), [eb, ef] = pill(!s.compare && s.view === 'edit'), [cb, cf] = pill(s.compare);
+    const canSave = has && !isSaved && !busy;
+    const editedCount = this.PH.filter(p => s.saved[p.i] && Object.keys(this.ed(p.i)).length).length;
+    return {
+      grid, editedCount, open: s.open, cur, hasEdits: has, compare: s.compare && has,
+      segOrigBg: ob, segOrigFg: of, segEditBg: eb, segEditFg: ef, segCmpBg: cb, segCmpFg: cf,
+      showOriginal: () => this.setState({ view: 'orig', compare: false }),
+      showEdited: () => this.setState({ view: 'edit', compare: false }),
+      toggleCompare: () => this.setState(x => ({ compare: !x.compare, brushOn: false, split: 50 })),
+      baseFilter: s.compare ? 'none' : (showEdit ? this.filterOf(e) : 'none'),
+      baseTransform: s.compare ? 'none' : (showEdit ? this.transformOf(e) : 'none'),
+      editFilter: this.filterOf(e), editTransform: this.transformOf(e),
+      clip: `inset(0 0 0 ${s.split}%)`, splitPct: s.split + '%',
+      boxRef: this.boxRef, boxCursor: s.brushOn ? 'crosshair' : (s.compare ? 'ew-resize' : 'default'),
+      onDown: ev => { this.drag = true; if (s.brushOn) { const p = this.pos(ev); this.setState(x => ({ marks: [...x.marks, p] })); } else if (s.compare) this.setState({ split: Math.max(0, Math.min(100, this.pos(ev).x)) }); },
+      onMove: ev => { if (!this.drag) return; const p = this.pos(ev); if (s.brushOn) this.setState(x => ({ marks: [...x.marks, p] })); else if (s.compare) this.setState({ split: Math.max(0, Math.min(100, p.x)) }); },
+      onUp: () => { this.drag = false; },
+      marks: s.marks.map(m => ({ x: m.x + '%', y: m.y + '%', s: s.brush + 'px', o: -s.brush / 2 + 'px' })),
+      brushing: s.brushOn && !busy, brush: s.brush, setBrush: ev => this.setState({ brush: +ev.target.value }), clearMarks: () => this.setState({ marks: [] }),
+      processing: busy, processingLabel: s.processing,
+      spinner: React.createElement('div', { style: { width: 18, height: 18, borderRadius: 9, border: '2.5px solid rgba(255,255,255,.25)', borderTopColor: '#2FC98A', animation: 'pa-spin .8s linear infinite' } }),
+      scan: React.createElement('div', { style: { position: 'absolute', inset: 0, background: 'linear-gradient(180deg, transparent 40%, rgba(47,201,138,.28) 50%, transparent 60%)', animation: 'pa-scan 1.4s linear infinite' } }),
+      tools, stop: ev => ev.stopPropagation(), close: () => this.setState({ open: false, brushOn: false, marks: [] }),
+      prev: () => this.go(s.idx - 1), next: () => this.go(s.idx + 1),
+      save: () => { if (canSave) { this.setState(x => ({ saved: { ...x.saved, [x.idx]: true } })); this.flash('Foto actualizada en la publicación'); } },
+      saveBg: canSave ? '#0A3D62' : '#C9D0D7', saveCursor: canSave ? 'pointer' : 'not-allowed',
+      saveLabel: isSaved && has ? 'Guardada ✓' : 'Guardar en la publicación',
+      toast: s.toast
+    };
+  }
+}
+</script>
+</body>
+</html>
