@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import JSZip from "jszip";
+import { Maximize2, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -93,6 +94,8 @@ import {
   platformContentForChannel,
 } from "@/lib/publicationContent";
 import { usePublicationPoll } from "@/hooks/usePublicationPoll";
+import { PhotoEditorModal } from "@/features/properties/photo-editor/PhotoEditorModal";
+import { normalizeStalePhotoChannel } from "@/lib/photoEdit";
 
 type StepId =
   | "content"
@@ -1132,6 +1135,7 @@ export default function PublishWizardPage() {
         <ChannelsStep
           toggles={selectedChannels}
           connections={channelConnections ?? []}
+          stalePhotoChannels={property.canalesConFotosDesactualizadas ?? []}
           channelSelectable={channelSelectable}
           channelToggleHint={channelToggleHint}
           onToggle={(id) => {
@@ -2219,6 +2223,8 @@ function PhotosStep({
   // reels con IA -- no había ninguna forma de bajarlas hasta ahora).
   const [downloading, setDownloading] = useState(false);
   const [downloadError, setDownloadError] = useState<string | null>(null);
+  const [editorIndex, setEditorIndex] = useState<number | null>(null);
+  const iaCount = fotos.filter((f) => f.iaRetoqueGuardado).length;
 
   const run = async (fn: () => Promise<void>) => {
     setBusy(true);
@@ -2431,12 +2437,21 @@ function PhotosStep({
   return (
     <div className="max-w-[920px]">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-        <div className="text-[13px] text-[var(--pa-muted)]">
+        <div className="min-w-0 flex-1 text-[13px] text-[var(--pa-muted)]">
           La primera foto es la portada. Arrastra una foto y suéltala donde
           quieras (o usa las flechas). Las primeras {REEL_SLOT_COUNT} fotos
           alimentan el reel automático (etiqueta de ambiente opcional). Facebook
           Marketplace e Instagram usan como máximo 10 fotos por publicación.
+          Haz clic en una foto para verla en grande, descargarla o retocarla con
+          IA.
         </div>
+        <div className="flex shrink-0 flex-wrap items-center gap-2">
+        {iaCount > 0 && (
+          <span className="inline-flex items-center gap-1.5 rounded-[10px] bg-[#E6F5EE] px-3.5 py-2 text-[13px] font-bold text-[#1E6B47]">
+            <Sparkles className="h-3.5 w-3.5" strokeWidth={2.2} />
+            {iaCount} de {fotos.length} retocadas con IA
+          </span>
+        )}
         {fotos.length > 0 && (
           <button
             type="button"
@@ -2447,6 +2462,7 @@ function PhotosStep({
             {downloading ? "Descargando…" : "⬇ Descargar fotos (.zip)"}
           </button>
         )}
+        </div>
       </div>
       {error && (
         <p className="mb-3 text-sm text-[var(--pa-danger)]">{error}</p>
@@ -2475,36 +2491,67 @@ function PhotosStep({
               setDragIndex(null);
               setOverIndex(null);
             }}
-            className={`relative cursor-grab overflow-hidden rounded-xl bg-[var(--pa-bg-alt)] transition-opacity active:cursor-grabbing ${
+            className={`group relative cursor-grab overflow-hidden rounded-xl bg-[var(--pa-bg-alt)] transition-opacity active:cursor-grabbing ${
               dragIndex === i ? "opacity-40" : ""
             } ${overIndex === i && dragIndex !== null && dragIndex !== i ? "ring-2 ring-[var(--pa-accent)]" : ""}`}
           >
             <div className="relative aspect-[4/3] w-full">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={p.url}
-                alt=""
-                draggable={false}
-                className="h-full w-full object-cover"
-              />
+              <button
+                type="button"
+                aria-label={`Ampliar foto ${i + 1}: ${p.roomLabel ?? "sin ambiente"}`}
+                onClick={() => setEditorIndex(i)}
+                className="absolute inset-0 z-0 cursor-zoom-in"
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={p.url}
+                  alt=""
+                  draggable={false}
+                  className="h-full w-full object-cover"
+                />
+              </button>
               {i === 0 && (
-                <span className="absolute left-2 top-2 rounded-md bg-[var(--pa-navy)] px-2 py-0.5 text-[10px] font-bold text-white">
+                <span className="pointer-events-none absolute left-2 top-2 z-[1] rounded-md bg-[var(--pa-navy)] px-2 py-0.5 text-[10px] font-bold text-white">
                   ★ Portada
                 </span>
               )}
-              {i < REEL_SLOT_COUNT && (
-                <span className="absolute right-2 top-2 rounded-md bg-[rgba(22,33,43,0.65)] px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-white">
-                  Reel
-                </span>
-              )}
-              <span className="absolute bottom-2 right-2 flex h-[22px] w-[22px] items-center justify-center rounded-md bg-[rgba(22,33,43,0.6)] text-[11px] font-bold text-white">
+              <div className="pointer-events-none absolute right-2 top-2 z-[1] flex flex-col items-end gap-1.5">
+                {i < REEL_SLOT_COUNT && (
+                  <span className="rounded-md bg-[rgba(22,33,43,0.65)] px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-white">
+                    Reel
+                  </span>
+                )}
+                {p.iaRetoqueGuardado && (
+                  <span className="rounded-[7px] bg-[#2FC98A] px-2 py-1 text-[11px] font-extrabold text-[#06331F]">
+                    ✦ IA
+                  </span>
+                )}
+              </div>
+              <span className="pointer-events-none absolute bottom-2 left-1/2 z-[1] flex h-[22px] w-[22px] -translate-x-1/2 items-center justify-center rounded-md bg-[rgba(22,33,43,0.6)] text-[11px] font-bold text-white">
                 {i + 1}
               </span>
-              <div className="absolute left-2 bottom-2 flex gap-1">
+              <button
+                type="button"
+                aria-label={`Ampliar foto ${i + 1}`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setEditorIndex(i);
+                }}
+                className="absolute bottom-2.5 right-2.5 z-[2] flex h-[34px] w-[34px] items-center justify-center rounded-[9px] bg-[rgba(8,26,42,.72)] text-white opacity-100 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 [@media(hover:hover)]:group-focus-within:opacity-100"
+              >
+                <Maximize2 className="h-4 w-4" strokeWidth={2.2} />
+              </button>
+              <div
+                className="absolute left-2 bottom-2 z-[2] flex gap-1"
+                onClick={(e) => e.stopPropagation()}
+              >
               <button
                 type="button"
                 disabled={busy || i === 0}
-                onClick={() => move(i, -1)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  move(i, -1);
+                }}
                 className="rounded bg-[rgba(22,33,43,0.7)] px-1.5 py-0.5 text-[10px] font-bold text-white disabled:opacity-40"
               >
                 ←
@@ -2512,7 +2559,10 @@ function PhotosStep({
               <button
                 type="button"
                 disabled={busy || i === fotos.length - 1}
-                onClick={() => move(i, 1)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  move(i, 1);
+                }}
                 className="rounded bg-[rgba(22,33,43,0.7)] px-1.5 py-0.5 text-[10px] font-bold text-white disabled:opacity-40"
               >
                 →
@@ -2520,7 +2570,10 @@ function PhotosStep({
               <button
                 type="button"
                 disabled={busy}
-                onClick={() => onDelete(p.id)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDelete(p.id);
+                }}
                 className="rounded bg-[rgba(194,59,43,0.9)] px-1.5 py-0.5 text-[10px] font-bold text-white disabled:opacity-40"
               >
                 ✕
@@ -2528,13 +2581,17 @@ function PhotosStep({
               </div>
             </div>
             {reelRoomLabels && i < reelRoomLabels.reelSlotCount ? (
-              <div className="border-t border-[var(--pa-border)] bg-white p-1.5">
+              <div
+                className="border-t border-[var(--pa-border)] bg-white p-1.5"
+                onClick={(e) => e.stopPropagation()}
+              >
                 <label className="mb-0.5 block text-[9px] font-bold uppercase tracking-wide text-[var(--pa-muted)]">
                   Ambiente (reel)
                 </label>
                 <select
                   value={p.roomLabel ?? ""}
                   disabled={busy}
+                  onClick={(e) => e.stopPropagation()}
                   onChange={(e) => onRoomLabelChange(p.id, e.target.value)}
                   className="w-full rounded border border-[var(--pa-border)] bg-white px-1 py-0.5 text-[10px] text-[var(--pa-ink)]"
                 >
@@ -2737,6 +2794,16 @@ function PhotosStep({
       <PrimaryBlock onClick={onNext} disabled={busy} className="w-[220px]">
         Continuar a canales
       </PrimaryBlock>
+      {editorIndex !== null && fotos.length > 0 && (
+        <PhotoEditorModal
+          property={property}
+          photos={fotos}
+          startIndex={Math.min(editorIndex, fotos.length - 1)}
+          token={token}
+          onClose={() => setEditorIndex(null)}
+          onSaved={onPropertyUpdated}
+        />
+      )}
     </div>
   );
 }
@@ -2793,6 +2860,7 @@ function connectionBadge(conn: ChannelConnection | undefined): {
 function ChannelsStep({
   toggles,
   connections,
+  stalePhotoChannels,
   channelSelectable,
   channelToggleHint,
   onToggle,
@@ -2806,6 +2874,7 @@ function ChannelsStep({
 }: {
   toggles: Record<ChannelId, boolean>;
   connections: ChannelConnection[];
+  stalePhotoChannels: string[];
   channelSelectable: (id: ChannelId) => boolean;
   channelToggleHint: (id: ChannelId) => string | undefined;
   onToggle: (id: ChannelId) => void;
@@ -2820,6 +2889,7 @@ function ChannelsStep({
   const [aiBusy, setAiBusy] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
   const [lastAction, setLastAction] = useState<string>("generate");
+  const stale = new Set(stalePhotoChannels.map(normalizeStalePhotoChannel));
 
   const runAi = async (
     action: (typeof AI_ACTIONS)[number]["action"],
@@ -2857,6 +2927,12 @@ function ChannelsStep({
       <div className="mb-6 text-[13px] text-[var(--pa-muted)]">
         Activa los canales conectados para esta propiedad.
       </div>
+      {stale.has("reel") && (
+        <div className="mb-4 rounded-xl border border-[var(--pa-warning)]/30 bg-[var(--pa-warning-bg)] px-4 py-3 text-[13px] text-[var(--pa-warning-ink)]">
+          <span className="font-bold">Reel.</span> Hay fotos actualizadas.
+          Vuelve a publicar para reflejarlas.
+        </div>
+      )}
       <div className="mb-8 grid grid-cols-[repeat(auto-fill,minmax(260px,1fr))] gap-4">
         {CHANNEL_ORDER.map((id) => {
           const meta = CHANNEL_META[id];
@@ -2914,6 +2990,11 @@ function ChannelsStep({
                   {toggleHint}
                 </p>
               ) : null}
+              {stale.has(id) && (
+                <p className="mt-2 rounded-lg bg-[var(--pa-warning-bg)] px-2.5 py-1.5 text-[11px] leading-snug text-[var(--pa-warning-ink)]">
+                  Hay fotos actualizadas. Vuelve a publicar para reflejarlas.
+                </p>
+              )}
             </div>
           );
         })}

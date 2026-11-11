@@ -133,3 +133,22 @@ export async function apiUploadForm<T>(
   if (res.status === 204) return undefined as T;
   return (await res.json()) as T;
 }
+
+/** Authenticated download that follows redirects and returns a Blob. */
+export async function apiDownloadBlob(
+  path: string,
+  token?: string,
+  query?: Record<string, string>,
+): Promise<Blob> {
+  const headers: Record<string, string> = { Accept: "*/*" };
+  if (token) headers["Authorization"] = `Bearer ${token}`;
+  let url = `${API_URL}${path}`;
+  if (query) {
+    const params = new URLSearchParams(query);
+    const qs = params.toString();
+    if (qs) url += `?${qs}`;
+  }
+  const res = await fetch(url, { method: "GET", headers, redirect: "follow" });
+  if (!res.ok) await parseError(res);
+  return res.blob();
+}
