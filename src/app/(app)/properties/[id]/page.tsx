@@ -1100,6 +1100,16 @@ export default function PublishWizardPage() {
           form={contentForm}
           onPatch={patchContent}
           token={token ?? undefined}
+          // Pedido de Cristhian 2026-11-10 (Nataly, sin WASI propio conectado
+          // todavía): sin esto, Ciudad/Barrio quedaban atados al catálogo de
+          // WASI aunque el asesor no tuviera ninguna cuenta WASI que
+          // consultar -- el combobox nunca validaba nada y el campo Barrio
+          // se bloqueaba (disabled) para siempre. Con el canal no conectado,
+          // el bloque de Ubicación cae a texto libre sin ningún catálogo.
+          wasiConnected={
+            (channelConnections ?? []).find((c) => c.channelId === "wasi")?.status ===
+            "connected"
+          }
           busy={actionBusy}
           isDirty={isContentDirty}
           onSave={() => void saveContentChanges()}
@@ -1445,6 +1455,7 @@ function ContentStep({
   form,
   onPatch,
   token,
+  wasiConnected,
   busy,
   isDirty,
   onSave,
@@ -1454,6 +1465,10 @@ function ContentStep({
   form: ContentFormSnapshot;
   onPatch: (patch: Partial<ContentFormSnapshot>) => void;
   token?: string;
+  /** false = este asesor no tiene WASI conectado (ni propio ni pool) --
+   * Ciudad/Barrio caen a texto libre en vez de combobox validado contra un
+   * catálogo que no existe para él. */
+  wasiConnected: boolean;
   busy: boolean;
   isDirty: boolean;
   onSave: () => void;
@@ -1472,28 +1487,44 @@ function ContentStep({
   useEffect(() => {
     let active = true;
     const saved = (property.municipio || form.municipio || "").trim();
+    if (!wasiConnected) {
+      // Sin WASI conectado no hay catálogo contra qué validar -- texto
+      // libre siempre "válido" (no hay nada que reconocer o rechazar).
+      setCiudadValida(Boolean(saved));
+      setLegacyCiudad(null);
+      return;
+    }
     if (!saved) {
       setCiudadValida(false);
       setLegacyCiudad(null);
       return;
     }
-    void wasiCiudadesService.resolve(saved, token).then((result) => {
-      if (!active) return;
-      if (result.canonical) {
-        if (!matchesWasiOption(saved, result.canonical)) {
-          onPatch({ municipio: result.canonical });
+    wasiCiudadesService
+      .resolve(saved, token)
+      .then((result) => {
+        if (!active) return;
+        if (result.canonical) {
+          if (!matchesWasiOption(saved, result.canonical)) {
+            onPatch({ municipio: result.canonical });
+          }
+          setCiudadValida(true);
+          setLegacyCiudad(null);
+        } else {
+          setCiudadValida(false);
+          setLegacyCiudad(saved);
         }
-        setCiudadValida(true);
-        setLegacyCiudad(null);
-      } else {
+      })
+      .catch(() => {
+        // Error de red/servidor puntual -- no dejar el campo atascado en
+        // "inválido" para siempre; se trata como no reconocido (texto libre).
+        if (!active) return;
         setCiudadValida(false);
         setLegacyCiudad(saved);
-      }
-    });
+      });
     return () => {
       active = false;
     };
-  }, [property.id, token]);
+  }, [property.id, token, wasiConnected]);
 
   const debouncedCiudadQuery = useDebouncedValue(ciudadQuery, 300);
 
@@ -1509,7 +1540,7 @@ function ContentStep({
   const { data: ciudadesData, isFetching: ciudadesLoading } = useQuery({
     queryKey: ["wasi-ciudades", debouncedCiudadQuery],
     queryFn: () => wasiCiudadesService.search(debouncedCiudadQuery, token),
-    enabled: debouncedCiudadQuery.trim().length >= 2,
+    enabled: wasiConnected && debouncedCiudadQuery.trim().length >= 2,
     retry: false,
   });
 
@@ -1521,13 +1552,18 @@ function ContentStep({
   const { data: wasiZonas, isFetching: zonasLoading } = useQuery({
     queryKey: ["wasi-zonas", form.municipio],
     queryFn: () => wasiZonasService.list(form.municipio, token),
-    enabled: ciudadValida && Boolean(form.municipio.trim()),
+    enabled: wasiConnected && ciudadValida && Boolean(form.municipio.trim()),
     retry: false,
   });
 
   const barrioOptions = wasiZonas?.zonas ?? [];
 
   useEffect(() => {
+    if (!wasiConnected) {
+      setBarrioValido(Boolean((form.barrio || "").trim()));
+      setLegacyBarrio(null);
+      return;
+    }
     if (!ciudadValida) return;
     const savedBarrio = (form.barrio || "").trim();
     if (!savedBarrio) {
@@ -1543,7 +1579,7 @@ function ContentStep({
       setBarrioValido(false);
       setLegacyBarrio(savedBarrio);
     }
-  }, [ciudadValida, form.barrio, barrioOptions]);
+  }, [wasiConnected, ciudadValida, form.barrio, barrioOptions]);
 
   // Bug real 2026-10-01 (ficha F-114, Nataly): WASI nunca valida el barrio
   // contra un catalogo fijo — "zone" viaja como texto libre y WASI crea la
@@ -1747,50 +1783,73 @@ function ContentStep({
 
         <Card title="Ubicación">
           <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
-            <WasiLocationCombobox
-              label="Ciudad"
-              value={form.municipio}
-              onChange={(value) => {
-                setCiudadQuery(value);
-                if (!matchesWasiOption(value, form.municipio)) {
-                  onPatch({ municipio: value, barrio: "" });
-                  setBarrioValido(false);
-                  setLegacyBarrio(null);
-                } else {
-                  onPatch({ municipio: value });
-                }
-              }}
-              onValidChange={setCiudadValida}
-              options={ciudadOptions}
-              loading={ciudadesLoading}
-              missing={fieldMissing("city") || !ciudadValida}
-              helperText={
-                legacyCiudad
-                  ? "No reconocido por WASI — selecciona de la lista"
-                  : null
-              }
-              placeholder="Escribe para buscar ciudad…"
-            />
-            <WasiLocationCombobox
-              label="Barrio / zona / conjunto *"
-              value={form.barrio}
-              onChange={(value) => onPatch({ barrio: value })}
-              onValidChange={setBarrioValido}
-              options={barrioOptions}
-              loading={zonasLoading}
-              disabled={!ciudadValida}
-              missing={fieldMissing("neighborhood") || !barrioValido}
-              helperText={
-                legacyBarrio
-                  ? "No reconocido por WASI — selecciona de la lista"
-                  : !ciudadValida
-                    ? "Selecciona primero una ciudad válida"
-                    : null
-              }
-              placeholder={
-                ciudadValida ? "Escribe para buscar barrio…" : "Elige ciudad primero"
-              }
-            />
+            {wasiConnected ? (
+              <>
+                <WasiLocationCombobox
+                  label="Ciudad"
+                  value={form.municipio}
+                  onChange={(value) => {
+                    setCiudadQuery(value);
+                    if (!matchesWasiOption(value, form.municipio)) {
+                      onPatch({ municipio: value, barrio: "" });
+                      setBarrioValido(false);
+                      setLegacyBarrio(null);
+                    } else {
+                      onPatch({ municipio: value });
+                    }
+                  }}
+                  onValidChange={setCiudadValida}
+                  options={ciudadOptions}
+                  loading={ciudadesLoading}
+                  missing={fieldMissing("city") || !ciudadValida}
+                  helperText={
+                    legacyCiudad
+                      ? "No reconocido por WASI — selecciona de la lista"
+                      : null
+                  }
+                  placeholder="Escribe para buscar ciudad…"
+                />
+                <WasiLocationCombobox
+                  label="Barrio / zona / conjunto *"
+                  value={form.barrio}
+                  onChange={(value) => onPatch({ barrio: value })}
+                  onValidChange={setBarrioValido}
+                  options={barrioOptions}
+                  loading={zonasLoading}
+                  disabled={!ciudadValida}
+                  missing={fieldMissing("neighborhood") || !barrioValido}
+                  helperText={
+                    legacyBarrio
+                      ? "No reconocido por WASI — selecciona de la lista"
+                      : !ciudadValida
+                        ? "Selecciona primero una ciudad válida"
+                        : null
+                  }
+                  placeholder={
+                    ciudadValida ? "Escribe para buscar barrio…" : "Elige ciudad primero"
+                  }
+                />
+              </>
+            ) : (
+              <>
+                {/* Sin WASI conectado para este asesor no hay catálogo que
+                    consultar -- texto libre, igual que Dirección/Código
+                    postal (pedido de Cristhian 2026-11-10, caso real: Nataly
+                    sin su propia cuenta WASI todavía). */}
+                <ControlledField
+                  label="Ciudad"
+                  value={form.municipio}
+                  onChange={(v) => onPatch({ municipio: v })}
+                  missing={fieldMissing("city")}
+                />
+                <ControlledField
+                  label="Barrio / zona / conjunto *"
+                  value={form.barrio}
+                  onChange={(v) => onPatch({ barrio: v })}
+                  missing={fieldMissing("neighborhood")}
+                />
+              </>
+            )}
             <ControlledField
               label="Dirección *"
               value={form.direccion}
