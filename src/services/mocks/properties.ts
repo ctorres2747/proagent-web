@@ -609,6 +609,15 @@ export const propertiesService: PropertiesService = {
     if (Date.now() < step.readyAt) {
       return { status: "processing" as const, previewUrl: null, message: null };
     }
+    if (draft && !draft.previewUrl) {
+      const sep = step.key.indexOf(":");
+      const pid = step.key.slice(0, sep);
+      const fid = step.key.slice(sep + 1);
+      const photo = MOCK_PROPERTIES.find((p) => p.id === pid)?.fotos.find(
+        (f) => f.id === fid,
+      );
+      draft.previewUrl = photo?.url ?? null;
+    }
     return {
       status: "done" as const,
       previewUrl: draft?.previewUrl ?? null,
@@ -637,9 +646,7 @@ export const propertiesService: PropertiesService = {
       fotos,
       canalesConFotosDesactualizadas: stale,
     };
-    const key = `${propertyId}:${photoId}`;
-    const draft = MOCK_EDIT_DRAFTS.get(key);
-    if (draft) draft.steps = [...draft.steps];
+    MOCK_EDIT_DRAFTS.delete(`${propertyId}:${photoId}`);
     return { canalesConFotosDesactualizadas: stale };
   },
   async discardPhotoEdit(propertyId, photoId) {

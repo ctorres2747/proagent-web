@@ -233,31 +233,37 @@ export function PhotoEditorModal({
         mask ?? null,
         token,
       );
+      // T1 enqueue is `{ versionId, stepId, status }` without previewUrl.
+      // Stub síncrono puede devolver `ready`/`done` ya en el POST: hay que
+      // pollar GET al menos una vez para tomar previewUrl.
       let previewUrl = start.previewUrl ?? null;
       let status = start.status;
-      if (status === "processing") {
-        const deadline = Date.now() + 60_000;
-        while (Date.now() < deadline) {
-          await sleep(1500);
-          const poll = await propertiesService.pollPhotoEdit(
-            property.id,
-            photo.id,
-            start.stepId,
-            token,
-          );
-          status = poll.status;
-          if (poll.previewUrl) previewUrl = poll.previewUrl;
-          if (status === "done") break;
-          if (status === "error") {
-            throw new ApiError(400, poll.message || "error");
-          }
-        }
-        if (status !== "done") {
-          throw new Error("timeout");
-        }
-      }
       if (status === "error") {
         throw new ApiError(400, start.message || "error");
+      }
+      const deadline = Date.now() + 60_000;
+      let polled = false;
+      while (status === "processing" || !previewUrl || !polled) {
+        if (Date.now() >= deadline) {
+          throw new Error("timeout");
+        }
+        if (polled) await sleep(1500);
+        const poll = await propertiesService.pollPhotoEdit(
+          property.id,
+          photo.id,
+          start.stepId,
+          token,
+        );
+        polled = true;
+        status = poll.status;
+        if (poll.previewUrl) previewUrl = poll.previewUrl;
+        if (status === "error") {
+          throw new ApiError(400, poll.message || "error");
+        }
+        if (status === "done") break;
+      }
+      if (status !== "done") {
+        throw new Error("timeout");
       }
       setDrafts((prev) => {
         const cur = prev[photo.id] ?? EMPTY_DRAFT;
@@ -325,7 +331,12 @@ export function PhotoEditorModal({
         draft.versionId,
         token,
       );
-      patchDraft(photo.id, { dirty: false });
+      patchDraft(photo.id, {
+        versionId: null,
+        steps: [],
+        previewUrl: null,
+        dirty: false,
+      });
       setSavedFlash(true);
       window.setTimeout(() => setSavedFlash(false), 2200);
       setToast("Foto actualizada en la publicación");
