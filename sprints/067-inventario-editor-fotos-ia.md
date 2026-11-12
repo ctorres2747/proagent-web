@@ -2,7 +2,7 @@
 
 | Campo | Valor |
 |-------|--------|
-| **Estado** | `spec` — spec alineada con revisión staff + decisiones Owner (2026-11-11); aún **no** `ready_for_dev` hasta validación final del flujo reel/fotos |
+| **Estado** | `ready_for_dev` — spec en `main` (PR #160); activado por Owner post-merge 2026-11-11 |
 | **Fecha spec** | 2026-11-11 (rev. 2) |
 | **Épica** | E-INV-02 (media enriquecida del inventario) |
 | **Repos** | `proagent-web` → `main` · `agente-inmobiliario` → `develop` |
@@ -223,13 +223,14 @@ Cadena ordenada por `created_at`; deshacer = borrar último step y recalcular pr
 
 ---
 
-## Checklist antes de `ready_for_dev`
+## Checklist activación
 
 - [x] Contrato `fichas_fotos.archivo` / `archivo_original` (staff).
 - [x] Decisiones Owner en spec.
 - [x] README marcado handoff visual.
-- [ ] Owner smoke del flujo reel/fotos actual.
-- [ ] Cambiar `SPRINT.md` a `ready_for_dev` cuando apruebe.
+- [x] Spec mergeada a `main` (PR #160).
+- [x] `SPRINT.md` → `ready_for_dev`.
+- [ ] Owner smoke reel/fotos (puede hacerse en paralelo al T1 stub).
 
 ---
 
