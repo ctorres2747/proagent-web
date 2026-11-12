@@ -220,7 +220,12 @@ export function PhotoEditorModal({
   };
 
   const runEdit = async (op: PhotoEditOp, mask?: File | null) => {
-    if (!photo || processing) return;
+    // Alcance por foto: `processing` puede seguir apuntando a OTRA foto si el
+    // usuario navega mientras esa edición sigue en curso — sin este chequeo
+    // acotado, el clic en la foto nueva no hacía nada visible (el botón
+    // quedaba deshabilitado por el `processing` global sin dar ningún
+    // feedback de por qué).
+    if (!photo || processingHere) return;
     setError(null);
     setBrush(false);
     setHasStroke(false);
@@ -292,7 +297,7 @@ export function PhotoEditorModal({
   };
 
   const onUndo = async () => {
-    if (!photo || !draft.versionId || draft.steps.length === 0 || processing) return;
+    if (!photo || !draft.versionId || draft.steps.length === 0 || processingHere) return;
     setError(null);
     try {
       const result = await propertiesService.undoLastPhotoEditStep(
@@ -321,7 +326,7 @@ export function PhotoEditorModal({
   };
 
   const onSave = async () => {
-    if (!photo || !draft.versionId || !draft.dirty || processing) return;
+    if (!photo || !draft.versionId || !draft.dirty || processingHere) return;
     setSaving(true);
     setError(null);
     try {
@@ -394,7 +399,9 @@ export function PhotoEditorModal({
   };
 
   const title = photo?.roomLabel?.trim() || `Foto ${n}`;
-  const blocked = Boolean(processing) || saving;
+  // Acotado a la foto actual: una edición en curso en OTRA foto no debe
+  // deshabilitar los controles de esta (ver `processingHere` arriba).
+  const blocked = Boolean(processingHere) || saving;
   const showSegmented = hasRetouch;
 
   if (!photo) return null;
