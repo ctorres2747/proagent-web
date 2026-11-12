@@ -1,10 +1,12 @@
 import type {
+  PhotoEditOp,
   PropertiesService,
   Property,
   PropertyChannel,
   PropertyPhoto,
   ReelRoomLabelsResponse,
 } from "@/services/interfaces/properties";
+import { ApiError } from "@/services/http/client";
 import { REEL_SLOT_COUNT } from "@/lib/reel";
 import type { ChannelId, ChannelStatus } from "@/design-system/channels";
 import { CHANNEL_ORDER } from "@/design-system/channels";
@@ -31,6 +33,8 @@ const MOCK_REEL_ROOM_LABELS: ReelRoomLabelsResponse = {
 function withReelSlots(fotos: PropertyPhoto[]): PropertyPhoto[] {
   return fotos.map((f, i) => ({
     ...f,
+    originalUrl: f.originalUrl || f.url,
+    iaRetoqueGuardado: Boolean(f.iaRetoqueGuardado),
     roomLabel: f.roomLabel ?? null,
     reelSlot: i < REEL_SLOT_COUNT ? i + 1 : null,
   }));
@@ -61,6 +65,7 @@ const DRIVE_FIELDS_DEFAULT = {
   reelMensaje: null,
   reelInstagramEstado: null,
   reelInstagramMensaje: null,
+  canalesConFotosDesactualizadas: [] as string[],
 } satisfies Pick<
   Property,
   | "numeroApartamento"
@@ -82,6 +87,7 @@ const DRIVE_FIELDS_DEFAULT = {
   | "reelMensaje"
   | "reelInstagramEstado"
   | "reelInstagramMensaje"
+  | "canalesConFotosDesactualizadas"
 >;
 
 const MOCK_PROPERTIES: Property[] = [
@@ -402,14 +408,19 @@ export const propertiesService: PropertiesService = {
     if (idx < 0) throw new Error(`Propiedad ${id} no encontrada`);
     const prop = MOCK_PROPERTIES[idx];
     const start = prop.fotos.length;
-    const added = files.map((file, i) => ({
-      id: `mock-photo-${Date.now()}-${i}`,
-      url: URL.createObjectURL(file),
-      orden: start + i,
-      isCover: start + i === 0,
-      roomLabel: null,
-      reelSlot: null,
-    }));
+    const added = files.map((file, i) => {
+      const url = URL.createObjectURL(file);
+      return {
+        id: `mock-photo-${Date.now()}-${i}`,
+        url,
+        originalUrl: url,
+        orden: start + i,
+        isCover: start + i === 0,
+        roomLabel: null,
+        reelSlot: null,
+        iaRetoqueGuardado: false,
+      };
+    });
     const fotos = withReelSlots(
       [...prop.fotos, ...added].map((f, i) => ({
         ...f,
@@ -557,4 +568,103 @@ export const propertiesService: PropertiesService = {
     MOCK_PROPERTIES[idx] = next;
     return next;
   },
+  async startPhotoEdit(propertyId, photoId, op) {
+    const key = `${propertyId}:${photoId}`;
+    const draft = MOCK_EDIT_DRAFTS.get(key) ?? {
+      versionId: `v-${Date.now()}`,
+      steps: [] as PhotoEditOp[],
+      previewUrl: null as string | null,
+      readyAt: 0,
+    };
+    if (op === "sky_replace") {
+      const prop = MOCK_PROPERTIES.find((p) => p.id === propertyId);
+      const photo = prop?.fotos.find((f) => f.id === photoId);
+      const label = (photo?.roomLabel ?? "").toLowerCase();
+      const outdoor =
+        /fachada|patio|terraza|balc[oó]n|zona/.test(label);
+      if (photo?.roomLabel && !outdoor) {
+        throw new ApiError(400, "No se detectó cielo en esta foto");
+      }
+    }
+    const stepId = `s-${Date.now()}`;
+    draft.steps.push(op);
+    draft.readyAt = Date.now() + 400;
+    MOCK_EDIT_DRAFTS.set(key, draft);
+    MOCK_EDIT_STEPS.set(stepId, { key, readyAt: draft.readyAt });
+    return {
+      versionId: draft.versionId,
+      stepId,
+      status: "processing" as const,
+      previewUrl: null,
+      message: null,
+    };
+  },
+  async pollPhotoEdit(_propertyId, photoId, stepId) {
+    void photoId;
+    const step = MOCK_EDIT_STEPS.get(stepId);
+    if (!step) {
+      return { status: "error" as const, previewUrl: null, message: "Paso no encontrado" };
+    }
+    const draft = MOCK_EDIT_DRAFTS.get(step.key);
+    if (Date.now() < step.readyAt) {
+      return { status: "processing" as const, previewUrl: null, message: null };
+    }
+    if (draft && !draft.previewUrl) {
+      const sep = step.key.indexOf(":");
+      const pid = step.key.slice(0, sep);
+      const fid = step.key.slice(sep + 1);
+      const photo = MOCK_PROPERTIES.find((p) => p.id === pid)?.fotos.find(
+        (f) => f.id === fid,
+      );
+      draft.previewUrl = photo?.url ?? null;
+    }
+    return {
+      status: "done" as const,
+      previewUrl: draft?.previewUrl ?? null,
+      message: null,
+    };
+  },
+  async undoLastPhotoEditStep(propertyId, photoId) {
+    const key = `${propertyId}:${photoId}`;
+    const draft = MOCK_EDIT_DRAFTS.get(key);
+    if (draft?.steps.length) draft.steps.pop();
+    return { previewUrl: draft?.previewUrl ?? null };
+  },
+  async savePhotoEdit(propertyId, photoId) {
+    const idx = MOCK_PROPERTIES.findIndex((p) => p.id === propertyId);
+    if (idx < 0) throw new Error(`Propiedad ${propertyId} no encontrada`);
+    const fotos = MOCK_PROPERTIES[idx].fotos.map((f) =>
+      f.id === photoId ? { ...f, iaRetoqueGuardado: true } : f,
+    );
+    const published = MOCK_PROPERTIES[idx].channels
+      .filter((c) => c.status === "published")
+      .map((c) => c.id);
+    const stale: string[] = [...published];
+    if (MOCK_PROPERTIES[idx].reelInstagramEstado === "publicado") stale.push("reel");
+    MOCK_PROPERTIES[idx] = {
+      ...MOCK_PROPERTIES[idx],
+      fotos,
+      canalesConFotosDesactualizadas: stale,
+    };
+    MOCK_EDIT_DRAFTS.delete(`${propertyId}:${photoId}`);
+    return { canalesConFotosDesactualizadas: stale };
+  },
+  async discardPhotoEdit(propertyId, photoId) {
+    MOCK_EDIT_DRAFTS.delete(`${propertyId}:${photoId}`);
+  },
+  async downloadPhoto(_propertyId, _photoId, _version, filename, _token, fallbackUrl) {
+    if (!fallbackUrl) throw new Error("No se pudo descargar la foto");
+    const a = document.createElement("a");
+    a.href = fallbackUrl;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  },
 };
+
+const MOCK_EDIT_DRAFTS = new Map<
+  string,
+  { versionId: string; steps: PhotoEditOp[]; previewUrl: string | null; readyAt: number }
+>();
+const MOCK_EDIT_STEPS = new Map<string, { key: string; readyAt: number }>();

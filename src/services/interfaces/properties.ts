@@ -11,12 +11,44 @@ export interface PropertyChannel {
 export interface PropertyPhoto {
   id: string;
   url: string;
+  /** URL of the immutable original upload (`archivo_original`). */
+  originalUrl: string;
   orden: number;
   isCover: boolean;
   /** Etiqueta de ambiente (reel Opción B); null = default por posición al renderizar. */
   roomLabel: string | null;
   /** 1..8 si la foto entra en el reel por orden; null si queda fuera. */
   reelSlot: number | null;
+  /** Badge ✦ IA — true after a saved IA retouch. */
+  iaRetoqueGuardado: boolean;
+}
+
+export type PhotoEditOp =
+  | "enhance_light"
+  | "straighten"
+  | "sky_replace"
+  | "remove_objects";
+
+export interface PhotoEditStart {
+  versionId: string;
+  stepId: string;
+  status: "processing" | "done" | "error";
+  previewUrl: string | null;
+  message: string | null;
+}
+
+export interface PhotoEditPoll {
+  status: "processing" | "done" | "error";
+  previewUrl: string | null;
+  message: string | null;
+}
+
+export interface PhotoEditUndo {
+  previewUrl: string | null;
+}
+
+export interface PhotoEditSave {
+  canalesConFotosDesactualizadas: string[];
 }
 
 export interface ReelRoomLabelOption {
@@ -115,6 +147,11 @@ export interface Property {
   capturedAt?: string | null;
   /** Link to the original scraped listing (linked lead); null for manual alta. */
   sourceUrl?: string | null;
+  /**
+   * Published channels (and `reel` if applicable) whose remote listing still
+   * has the pre-save photo. Empty when nothing was published or banners are clear.
+   */
+  canalesConFotosDesactualizadas: string[];
 }
 
 export interface PropertiesService {
@@ -238,4 +275,43 @@ export interface PropertiesService {
   publishReelToInstagram(id: string, token?: string): Promise<Property>;
   /** Quita el Reel publicado en Instagram (no borra el video local). */
   deleteReelFromInstagram(id: string, token?: string): Promise<Property>;
+  startPhotoEdit(
+    propertyId: string,
+    photoId: string,
+    op: PhotoEditOp,
+    mask?: File | null,
+    token?: string,
+  ): Promise<PhotoEditStart>;
+  pollPhotoEdit(
+    propertyId: string,
+    photoId: string,
+    stepId: string,
+    token?: string,
+  ): Promise<PhotoEditPoll>;
+  undoLastPhotoEditStep(
+    propertyId: string,
+    photoId: string,
+    versionId: string,
+    token?: string,
+  ): Promise<PhotoEditUndo>;
+  savePhotoEdit(
+    propertyId: string,
+    photoId: string,
+    versionId: string,
+    token?: string,
+  ): Promise<PhotoEditSave>;
+  discardPhotoEdit(
+    propertyId: string,
+    photoId: string,
+    versionId: string,
+    token?: string,
+  ): Promise<void>;
+  downloadPhoto(
+    propertyId: string,
+    photoId: string,
+    version: "original" | "active",
+    filename: string,
+    token?: string,
+    fallbackUrl?: string,
+  ): Promise<void>;
 }

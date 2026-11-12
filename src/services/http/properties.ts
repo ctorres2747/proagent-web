@@ -1,5 +1,9 @@
 import type {
   Intent,
+  PhotoEditPoll,
+  PhotoEditSave,
+  PhotoEditStart,
+  PhotoEditUndo,
   PropertiesService,
   Property,
   PropertyChannel,
@@ -8,7 +12,8 @@ import type {
 } from "@/services/interfaces/properties";
 import type { ChannelStatus } from "@/design-system/channels";
 import { CHANNEL_ORDER } from "@/design-system/channels";
-import { apiFetch, apiUploadForm } from "./client";
+import { normalizeStalePhotoChannel } from "@/lib/photoEdit";
+import { apiDownloadBlob, apiFetch, apiUploadForm } from "./client";
 
 // Dedicated web API (backend/web en agente-inmobiliario). Reemplazó al puente
 // temporal /api/mobile/properties*. El DTO web ya viene en el shape que espera
@@ -19,10 +24,14 @@ const detailPath = (id: string) => `/api/web/properties/${id}`;
 interface RawPhoto {
   id: string | number;
   url?: string | null;
+  original_url?: string | null;
+  archivo_original_url?: string | null;
   orden?: number | null;
   is_cover?: boolean | null;
   room_label?: string | null;
   reel_slot?: number | null;
+  ia_retoque_guardado?: boolean | null;
+  iaRetoqueGuardado?: boolean | null;
 }
 
 interface RawProperty {
@@ -84,6 +93,8 @@ interface RawProperty {
   channels?: { id: string; status: string }[] | null;
   captured_at?: string | null;
   source_url?: string | null;
+  canales_con_fotos_desactualizadas?: string[] | null;
+  canalesConFotosDesactualizadas?: string[] | null;
 }
 
 function num(v: number | string | null | undefined): number | null {
@@ -105,16 +116,32 @@ function mapChannels(raw: RawProperty["channels"]): PropertyChannel[] {
   return CHANNEL_ORDER.map((id) => ({ id, status: byId.get(id) ?? "none" }));
 }
 
+function mapStaleChannels(raw: RawProperty): string[] {
+  const list =
+    raw.canales_con_fotos_desactualizadas ??
+    raw.canalesConFotosDesactualizadas ??
+    [];
+  return Array.isArray(list)
+    ? list.map((id) => normalizeStalePhotoChannel(String(id)))
+    : [];
+}
+
 function mapPhotos(raw: RawProperty["fotos"]): PropertyPhoto[] {
-  return (raw ?? []).map((f, index) => ({
-    id: String(f.id),
-    url: f.url ?? "",
-    orden: typeof f.orden === "number" ? f.orden : index,
-    isCover: Boolean(f.is_cover ?? index === 0),
-    roomLabel: f.room_label?.trim() ? f.room_label.trim() : null,
-    reelSlot:
-      typeof f.reel_slot === "number" && f.reel_slot >= 1 ? f.reel_slot : null,
-  }));
+  return (raw ?? []).map((f, index) => {
+    const url = f.url ?? "";
+    const original = f.original_url ?? f.archivo_original_url ?? url;
+    return {
+      id: String(f.id),
+      url,
+      originalUrl: original || url,
+      orden: typeof f.orden === "number" ? f.orden : index,
+      isCover: Boolean(f.is_cover ?? index === 0),
+      roomLabel: f.room_label?.trim() ? f.room_label.trim() : null,
+      reelSlot:
+        typeof f.reel_slot === "number" && f.reel_slot >= 1 ? f.reel_slot : null,
+      iaRetoqueGuardado: Boolean(f.ia_retoque_guardado ?? f.iaRetoqueGuardado),
+    };
+  });
 }
 
 function mapProperty(raw: RawProperty): Property {
@@ -211,6 +238,7 @@ function mapProperty(raw: RawProperty): Property {
     channels: mapChannels(raw.channels),
     capturedAt: raw.captured_at ?? null,
     sourceUrl: raw.source_url ?? null,
+    canalesConFotosDesactualizadas: mapStaleChannels(raw),
   };
 }
 
@@ -397,4 +425,127 @@ export const propertiesService: PropertiesService = {
     });
     return mapProperty(raw);
   },
+  async startPhotoEdit(propertyId, photoId, op, mask, token) {
+    const form = new FormData();
+    form.append("op", op);
+    if (mask) form.append("mask", mask, mask.name || "mask.png");
+    const raw = await apiUploadForm<Record<string, unknown>>(
+      `${detailPath(propertyId)}/photos/${photoId}/edits`,
+      form,
+      token,
+    );
+    return mapEditStart(raw);
+  },
+  async pollPhotoEdit(propertyId, photoId, stepId, token) {
+    const raw = await apiFetch<Record<string, unknown>>(
+      `${detailPath(propertyId)}/photos/${photoId}/edits/${stepId}`,
+      { token },
+    );
+    return mapEditPoll(raw);
+  },
+  async undoLastPhotoEditStep(propertyId, photoId, versionId, token) {
+    const raw = await apiFetch<Record<string, unknown> | undefined>(
+      `${detailPath(propertyId)}/photos/${photoId}/versions/${versionId}/steps/last`,
+      { method: "DELETE", token },
+    );
+    return mapEditUndo(raw ?? {});
+  },
+  async savePhotoEdit(propertyId, photoId, versionId, token) {
+    const raw = await apiFetch<Record<string, unknown>>(
+      `${detailPath(propertyId)}/photos/${photoId}/versions/${versionId}/save`,
+      { method: "POST", token },
+    );
+    return mapEditSave(raw);
+  },
+  async discardPhotoEdit(propertyId, photoId, versionId, token) {
+    await apiFetch(
+      `${detailPath(propertyId)}/photos/${photoId}/versions/${versionId}`,
+      { method: "DELETE", token },
+    );
+  },
+  async downloadPhoto(propertyId, photoId, version, filename, token, fallbackUrl) {
+    try {
+      const blob = await apiDownloadBlob(
+        `${detailPath(propertyId)}/photos/${photoId}/download`,
+        token,
+        { version },
+      );
+      const href = URL.createObjectURL(blob);
+      triggerDownload(href, filename);
+      URL.revokeObjectURL(href);
+    } catch {
+      if (!fallbackUrl) throw new Error("No se pudo descargar la foto");
+      const res = await fetch(fallbackUrl, { cache: "no-store" });
+      if (!res.ok) throw new Error("No se pudo descargar la foto");
+      const blob = await res.blob();
+      const href = URL.createObjectURL(blob);
+      triggerDownload(href, filename);
+      URL.revokeObjectURL(href);
+    }
+  },
 };
+
+function strField(v: unknown): string | null {
+  if (v === null || v === undefined) return null;
+  const s = String(v).trim();
+  return s ? s : null;
+}
+
+function mapEditStatus(raw: unknown): "processing" | "done" | "error" {
+  const s = String(raw ?? "").toLowerCase();
+  if (s === "done" || s === "completed" || s === "ready" || s === "ok") return "done";
+  if (s === "error" || s === "failed" || s === "fail") return "error";
+  return "processing";
+}
+
+function mapEditStart(raw: Record<string, unknown>): PhotoEditStart {
+  return {
+    versionId: String(raw.versionId ?? raw.version_id ?? ""),
+    stepId: String(raw.stepId ?? raw.step_id ?? ""),
+    status: mapEditStatus(raw.status),
+    previewUrl: strField(
+      raw.previewUrl ?? raw.preview_url ?? raw.resultUrl ?? raw.result_url,
+    ),
+    message: strField(raw.message ?? raw.error ?? raw.detail),
+  };
+}
+
+function mapEditPoll(raw: Record<string, unknown>): PhotoEditPoll {
+  return {
+    status: mapEditStatus(raw.status),
+    previewUrl: strField(
+      raw.previewUrl ?? raw.preview_url ?? raw.resultUrl ?? raw.result_url,
+    ),
+    message: strField(raw.message ?? raw.error ?? raw.detail),
+  };
+}
+
+function mapEditUndo(raw: Record<string, unknown>): PhotoEditUndo {
+  return {
+    previewUrl: strField(
+      raw.previewUrl ?? raw.preview_url ?? raw.resultUrl ?? raw.result_url,
+    ),
+  };
+}
+
+function mapEditSave(raw: Record<string, unknown>): PhotoEditSave {
+  const list =
+    raw.canales_con_fotos_desactualizadas ??
+    raw.canalesConFotosDesactualizadas ??
+    [];
+  return {
+    canalesConFotosDesactualizadas: Array.isArray(list)
+      ? list.map((id) => normalizeStalePhotoChannel(String(id)))
+      : [],
+  };
+}
+
+function triggerDownload(href: string, filename: string) {
+  const a = document.createElement("a");
+  a.href = href;
+  a.download = filename;
+  a.rel = "noopener";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+}
