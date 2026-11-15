@@ -4,20 +4,23 @@
 |-------|--------|
 | **ID activo (dev)** | **`067`** — Editor de fotos IA |
 | **Spec** | [`sprints/067-inventario-editor-fotos-ia.md`](sprints/067-inventario-editor-fotos-ia.md) |
-| **Estado 067** | `ready_for_dev` (Owner: merge spec PR #160, 2026-11-11) |
-| **Handoff** | [`design_handoff_editor_fotos_ia/`](design_handoff_editor_fotos_ia/) (solo UX) |
-| **Actualizado** | 2026-11-11 |
+| **Estado 067** | Código mergeado (API #503/#504, web #162). Smoke Owner del simulador sigue pendiente |
+| **Siguiente** | **`068`** — fidelidad del retoque + contrato Seedream — **`draft`**, no implementar |
+| **Spec 068** | [`sprints/068-retoque-fotos-fidelidad-seedream.md`](sprints/068-retoque-fotos-fidelidad-seedream.md) |
+| **Handoff** | [`design_handoff_editor_fotos_ia/`](design_handoff_editor_fotos_ia/) (solo UX del 067) |
+| **Actualizado** | 2026-11-15 |
 
 ## Qué hacer ahora (Dev)
 
-1. **T1** `agente-inmobiliario` → `develop`: migración `archivo_original`, API edits, `PhotoEditProvider` stub, cupo, pytest.
-2. **T2** `proagent-web` → `main`: modal editor + grilla (spec § AC); HTTP solo rutas `/api/web/properties/...`.
-3. **T3** smoke Owner al cerrar T1+T2.
+Nada del 068 hasta que el Owner escriba «activar 068» en el PR de la spec. El 067 de implementación ya está en `develop` / `main`.
 
-Handoff visual: [`design_handoff_editor_fotos_ia/`](design_handoff_editor_fotos_ia/). Contrato: spec 067 (no el README §11–12).
+1. **Owner:** smoke del editor con el simulador (guardar no republica; banner por canal).
+2. **Owner:** leer el prompt canónico del 068. Si el texto sirve, comentar «activar 068».
+3. Contratar Seedream es el §6 de esa spec. La clave no entra en git. El flag del VPS se queda en `stub` hasta el ensayo de 20 fotos.
 
 ## Historial reciente (web)
 
 | Sprint | Tema | Estado |
 |--------|------|--------|
-| 067 | Inventario editor fotos IA | `ready_for_dev` |
+| 068 | Prompt de fidelidad + Seedream | `draft` |
+| 067 | Inventario editor fotos IA | código mergeado; smoke Owner pendiente |
