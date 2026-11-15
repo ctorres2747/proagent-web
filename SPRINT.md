@@ -4,7 +4,7 @@
 |-------|--------|
 | **ID activo (dev)** | **`067`** — Editor de fotos IA |
 | **Spec** | [`sprints/067-inventario-editor-fotos-ia.md`](sprints/067-inventario-editor-fotos-ia.md) |
-| **Estado 067** | Código mergeado (API #503/#504, web #162). Smoke Owner del simulador sigue pendiente |
+| **Estado 067** | Código en `develop` / `main` (API #503/#504, web #162); smoke Owner en simulador **pendiente** (no confundir con prod/VPS) |
 | **Siguiente** | **`068`** — fidelidad del retoque + contrato Seedream — **`draft`**, no implementar |
 | **Spec 068** | [`sprints/068-retoque-fotos-fidelidad-seedream.md`](sprints/068-retoque-fotos-fidelidad-seedream.md) |
 | **Handoff** | [`design_handoff_editor_fotos_ia/`](design_handoff_editor_fotos_ia/) (solo UX del 067) |

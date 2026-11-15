@@ -44,6 +44,55 @@ La defensa no es un aviso en pantalla. Es un **prompt fijo**, versionado, que el
 | Proveedor | BytePlus ModelArk (Singapur), familia Seedream. Stub por defecto hasta el corte §6 |
 | Mobile | No |
 
+### Enmienda respecto al sprint 067
+
+La spec [`067`](067-inventario-editor-fotos-ia.md) dejaba **«Cielo despejado»** en el panel y en `EDIT_OPS`. **El 068 lo supersede:** el botón y `op=sky_replace` salen del producto; el AC del 067 de panel sin scroll a 820 px también queda sin efecto (§1).
+
+---
+
+## Invariantes del 067 — no regresión (Manager)
+
+T1/T2 **no** pueden romper lo ya mergeado en API [#503](https://github.com/ctorres2747/agente-inmobiliario/pull/503) / [#504](https://github.com/ctorres2747/agente-inmobiliario/pull/504) y web [#162](https://github.com/ctorres2747/proagent-web/pull/162), incluidos los fixes Owner posteriores al ACCEPT (banners, cupo atómico):
+
+| Invariante | Comportamiento que debe seguir igual |
+|------------|--------------------------------------|
+| `archivo_original` | Primer enhance no machaca; guardar reemplaza solo `ficha_fotos.archivo` del slot |
+| Borrador + undo | LIFO, `step_id` stale, un paso en curso por foto |
+| Banner canales | `ia_guardado_at` vs `publicaciones_ficha`; se apaga al republicar después del último guardado IA |
+| Republicación | Guardar en el editor **no** publica; el usuario republica manualmente |
+| Cupo | 50/día por dueño de la ficha; contador atómico (`BEGIN IMMEDIATE`) |
+| Aislamiento | `owner_agente_id` / E-INV-01 |
+
+Los tests del 067 que pierden sentido (p. ej. cupo en `sky_replace`) se **reescriben** en T1; el resto debe seguir en verde.
+
+---
+
+## Pipeline `POST .../photos/{fotoId}/edits` (orden obligatorio)
+
+Implementación en `service.py` (T1). No invertir pasos respecto al 068:
+
+1. Auth Bearer + permiso sobre la ficha (dueño / admin dominio).
+2. Validar `op` ∈ ops permitidas, máscara si `remove_objects`, `instruction` si `custom`.
+3. **Rechazo local §3** (`fidelity.py` / regex): si falla → respuesta sin cupo y **sin** `INSERT` en `ficha_foto_edit_steps`.
+4. `consume_quota` del dueño de la ficha (solo si lo anterior pasó).
+5. `INSERT` step (`pending` / metadata: `op`, `instruction`, `prompt_version`).
+6. Llamada al proveedor (ver «Modelo de ejecución» más abajo).
+7. Guardas §4 sobre el JPEG devuelto; actualizar step y preview del borrador o `error` + `errorCode`.
+
+Esto alinea 400/422 sin cupo con el fix del 067 (validación antes de consumir) y añade «sin fila de step» en rechazos locales.
+
+### Política de cupo (referencia para tests)
+
+| Caso | HTTP / estado | ¿Consume cupo? | ¿Nuevo step? |
+|------|----------------|----------------|--------------|
+| `op` inválido, `sky_replace`, máscara inválida, `custom` vacío o fuera de 8–280 | 400 | No | No |
+| `custom` prohibido (§3) | 422 `fidelity_refused` | No | No |
+| Timeout / error de red del proveedor | step `failed` (código acordado) | **Sí** | Sí |
+| Proveedor OK pero §4 descarta el JPEG | step `error` + `errorCode` | **Sí** | Sí |
+| Éxito y preview actualizado | step `completed` | **Sí** | Sí |
+
+Sustituir en T1 el test del 067 que esperaba cupo en error de `sky_replace` por filas de esta tabla.
+
 ---
 
 ## §1 — Qué cambia en el producto
@@ -101,6 +150,12 @@ Pedido de esta foto:
 
 Si un modelo de consola no acepta la segunda imagen, el PR no se da por cerrado con un dibujo rojo encima de la foto. Se documenta el rechazo y se deja `remove_objects` en el stub hasta tener endpoint que acepte máscara.
 
+**Criterio de cierre T1 (Owner / Manager):** si BytePlus no acepta máscara como segunda imagen en el ensayo §6:
+
+- **Opción A (preferida):** `remove_objects` sigue en **stub** aunque `PHOTO_EDIT_PROVIDER=seedream`; luz, enderezar y `custom` usan Seedream.
+- **Opción B:** el endpoint responde **501** o mensaje claro en web («Quitar objetos sigue en simulador hasta soporte de máscara»).
+- **Prohibido:** simular máscara pintando encima de la foto en el cliente o en el servidor sin contrato Ark.
+
 ---
 
 ## §3 — Rechazo local (antes de llamar al modelo y antes del cupo)
@@ -145,8 +200,24 @@ Guardar sigue siendo un acto del asesor. Nada de esta versión publica solo.
 | Campo | Regla |
 |-------|--------|
 | `op` | `enhance_light` \| `straighten` \| `remove_objects` \| `custom` |
-| `instruction` | Obligatorio si `op=custom` |
+| `instruction` | Obligatorio si `op=custom`. Nombre del campo multipart: **`instruction`** (no alias) |
 | `mask` | Obligatorio si `op=remove_objects`. Ignorado en las otras |
+
+**Breaking change controlado:** clientes que envíen `op=sky_replace` reciben **400** (mensaje §3). No hay periodo de compatibilidad.
+
+**Compatibilidad de datos:** steps históricos con `op=sky_replace` en BD pueden seguir en poll/undo para borradores viejos; **no** se crean steps nuevos con esa op. La web deja de mostrar el botón; el historial del modal puede mostrar la etiqueta legada sin ofrecer repetir la op.
+
+**Poll / schemas (`backend/web/schemas.py`):** mantener `errorCode` en el step. Mapa mínimo para T2:
+
+| `errorCode` | Copy orientativo (es) |
+|-------------|------------------------|
+| `fidelity_refused` | Pedido bloqueado antes del modelo (422 en POST) o modelo devolvió `FIDELITY_REFUSED` |
+| `fidelity_rejected` | El modelo alteró fuera de reglas (§4, p. ej. máscara) |
+| `framing_changed` | Proporción distinta |
+| `quota_exceeded` | Cupo diario agotado |
+| `provider_error` | Red, timeout, 5xx Ark |
+
+Opcional en poll: devolver `instruction` truncada (p. ej. 80 chars) en steps `custom` para UX «último pedido»; si se expone, no loguear el texto completo en INFO.
 
 ### Migración
 
@@ -184,6 +255,8 @@ Sin `ARK_API_KEY`, aunque el flag diga `seedream`, se arranca en stub y se deja 
 
 ### Variables (solo nombres en `.env.example`)
 
+Archivo: **`agente-inmobiliario/.env.example`** (AC T1 — el PR de API debe actualizarlo).
+
 ```text
 PHOTO_EDIT_PROVIDER=stub
 ARK_API_KEY=
@@ -191,7 +264,23 @@ ARK_BASE_URL=https://ark.ap-southeast.bytepluses.com/api/v3
 ARK_IMAGE_MODEL=
 ```
 
-La clave real va en el `.env` del VPS. No va al repo, ni al instalador del worker, ni al cliente web.
+La clave real va en el `.env` del VPS. No va al repo, ni al instalador del worker, ni al cliente web. **No loguear** `ARK_API_KEY` ni el prompt completo con datos personales del asesor.
+
+### Modelo de ejecución (decisión Owner antes de T1)
+
+| Modo | Comportamiento |
+|------|----------------|
+| `stub` | Igual que 067: puede seguir **`run_sync`** en el request si el deploy tiene un solo worker (comportamiento actual). |
+| `seedream` | Llamada HTTP hasta **60 s**; **no** bloquear el event loop de uvicorn con varios workers sin plan. |
+
+**Owner elige una fila en la activación (comentario en el PR):**
+
+1. **VPS 1 worker + sync:** mismo patrón que el stub; Seedream corre dentro del `POST` (aceptable si el timeout y la carga lo permiten).
+2. **Multi-worker:** hilo/cola + poll obligatorio para provider real (reabre diseño del P2 del 067; T1 documenta en código y tests).
+
+Sin decisión explícita, Dev implementa (1) y deja comentario en `service.py` con el límite conocido.
+
+**Resiliencia Ark:** documentar en código reintento solo en **429** / errores transitorios (máx. 1), sin segundo consumo de cupo en el mismo step.
 
 ### Web
 
@@ -200,6 +289,15 @@ La clave real va en el `.env` del VPS. No va al repo, ni al instalador del worke
 - `startPhotoEdit` manda `instruction` cuando `op=custom`.
 - Mocks: un pedido bloqueado responde 422; uno permitido devuelve preview como el stub.
 - Copy de error 422: «Ese pedido cambiaría el inmueble. Prueba con luz, sombras o un detalle que ya esté en la foto.»
+
+### Handoff visual (Owner)
+
+El handoff [`design_handoff_editor_fotos_ia/`](../design_handoff_editor_fotos_ia/) refleja el panel de **cuatro** botones del 067. **Antes de ACCEPT de T2:**
+
+- Owner actualiza el artifact (HTML o captura) con **tres** botones + campo de pedido + copy §1, **o**
+- Manager acepta T2 con captura en el PR que muestre scroll y el pedido libre.
+
+Sin uno de los dos, T2 queda en revisión de UX.
 
 ---
 
@@ -212,16 +310,19 @@ La clave real va en el `.env` del VPS. No va al repo, ni al instalador del worke
 - `sky_replace` fuera de `EDIT_OPS`.
 - `PhotoEditProviderSeedream` + selección por env. Default stub.
 - Guardas §4.
-- Tests en `tests/test_photo_edit.py` (y uno nuevo de fidelidad si el archivo crece):
+- Actualizar `agente-inmobiliario/.env.example` (nombres §5).
+- Tests en `tests/test_photo_edit.py` y, si aplica, `tests/test_photo_edit_fidelity.py` (regex §3 con casos del spec):
   - [ ] Los tres pedidos fijos contienen el bloque «No puedes» y no piden cambiar el cielo.
   - [ ] «Aclara la sombra del sofá» llega al proveedor con el prefijo.
   - [ ] «Pon un sofá» y «cielo azul» → 422, cupo del día intacto, cero steps nuevos.
-  - [ ] `sky_replace` → 400, cupo intacto.
+  - [ ] `sky_replace` → 400, cupo intacto, cero steps nuevos.
   - [ ] `remove_objects` sin máscara → 400, cupo intacto.
   - [ ] Resultado con otra proporción → step `framing_changed`, preview anterior sigue.
   - [ ] Máscara: píxeles fuera de la zona dilatada alterados → `fidelity_rejected`.
   - [ ] Cliente Seedream de prueba (HTTP mock): `watermark` es false, la foto viaja en base64, no aparece la clave en logs.
   - [ ] Sin `ARK_API_KEY`, `PHOTO_EDIT_PROVIDER=seedream` usa stub.
+  - [ ] Migración: columnas nuevas en DB existente sin romper steps viejos.
+  - [ ] `prompts/listing_fidelity_v1.txt` empaquetado en deploy (ruta estable en `build_prompt`).
 
 ### T2 — Web (`main`)
 
@@ -233,10 +334,28 @@ La clave real va en el `.env` del VPS. No va al repo, ni al instalador del worke
 
 ### T3 — Smoke Owner (con stub, antes del corte)
 
+Recomendado: cerrar **smoke del 067** (simulador) antes de mergear T2 del 068 en `main`.
+
 - Luz y enderezar siguen pudiendo guardarse.
 - «Pon una piscina» muestra el error y el cupo no baja.
 - Quitar objetos con pincel sigue pidiendo máscara.
 - Guardar no republica.
+- Banner por canal sigue coherente tras guardar IA (regresión 067).
+
+---
+
+## Checklist Owner / Manager (revisar en el PR de esta spec)
+
+Usar este bloque en la conversación del PR **antes** de escribir «activar 068»:
+
+- [ ] Texto de §2 (`listing_fidelity_v1`) aprobado.
+- [ ] Breaking change `sky_replace` y panel de 3 botones aceptados (enmienda 067).
+- [ ] Decisión «Modelo de ejecución»: sync 1 worker **o** poll multi-worker.
+- [ ] Handoff visual §5 actualizado **o** acuerdo de captura en PR T2.
+- [ ] Criterio `remove_objects` + Ark (opción A/B) entendido si el ensayo §6 falla en máscara.
+- [ ] Smoke 067 hecho o explícitamente aplazado con riesgo anotado.
+
+Cuando todo lo anterior está marcado, el Owner comenta **«activar 068»** (§0).
 
 ---
 
