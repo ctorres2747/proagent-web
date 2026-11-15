@@ -56,8 +56,8 @@ T1/T2 **no** pueden romper lo ya mergeado en API [#503](https://github.com/ctorr
 
 | Invariante | Comportamiento que debe seguir igual |
 |------------|--------------------------------------|
-| `archivo_original` | Primer enhance no machaca; guardar reemplaza solo `ficha_fotos.archivo` del slot |
-| Borrador + undo | LIFO, `step_id` stale, un paso en curso por foto |
+| `archivo_original` | El primer retoque no pisa el upload. Guardar reemplaza solo `fichas_fotos.archivo` del slot |
+| Borrador + undo | LIFO con `DELETE .../steps/last`. La web no lanza otro retoque de la misma foto mientras ese paso sigue en curso. El 068 no agrega un lock nuevo en la base |
 | Banner canales | `ia_guardado_at` vs `publicaciones_ficha`; se apaga al republicar después del último guardado IA |
 | Republicación | Guardar en el editor **no** publica; el usuario republica manualmente |
 | Cupo | 50/día por dueño de la ficha; contador atómico (`BEGIN IMMEDIATE`) |
@@ -74,10 +74,10 @@ Implementación en `service.py` (T1). No invertir pasos respecto al 068:
 1. Auth Bearer + permiso sobre la ficha (dueño / admin dominio).
 2. Validar `op` ∈ ops permitidas, máscara si `remove_objects`, `instruction` si `custom`.
 3. **Rechazo local §3** (`fidelity.py` / regex): si falla → respuesta sin cupo y **sin** `INSERT` en `ficha_foto_edit_steps`.
-4. `consume_quota` del dueño de la ficha (solo si lo anterior pasó).
-5. `INSERT` step (`pending` / metadata: `op`, `instruction`, `prompt_version`).
+4. `consume_quota` del dueño de la ficha (solo si lo anterior pasó). Si el cupo está lleno → **429** en este POST, sin step.
+5. `INSERT` del step con `status='processing'` y metadata `op`, `instruction`, `prompt_version`. Esos son los estados que ya persiste el 067: `processing`, `ready`, `error`. No se inventan `pending`, `completed` ni `failed`.
 6. Llamada al proveedor (ver «Modelo de ejecución» más abajo).
-7. Guardas §4 sobre el JPEG devuelto; actualizar step y preview del borrador o `error` + `errorCode`.
+7. Guardas §4 sobre el JPEG devuelto. Si pasa, el step queda `ready` y el poll sigue mandando `status: "ready"` (la web ya lo traduce a `done`). Si no pasa, el step queda `error` con `errorCode`.
 
 Esto alinea 400/422 sin cupo con el fix del 067 (validación antes de consumir) y añade «sin fila de step» en rechazos locales.
 
@@ -85,11 +85,13 @@ Esto alinea 400/422 sin cupo con el fix del 067 (validación antes de consumir) 
 
 | Caso | HTTP / estado | ¿Consume cupo? | ¿Nuevo step? |
 |------|----------------|----------------|--------------|
-| `op` inválido, `sky_replace`, máscara inválida, `custom` vacío o fuera de 8–280 | 400 | No | No |
-| `custom` prohibido (§3) | 422 `fidelity_refused` | No | No |
-| Timeout / error de red del proveedor | step `failed` (código acordado) | **Sí** | Sí |
-| Proveedor OK pero §4 descarta el JPEG | step `error` + `errorCode` | **Sí** | Sí |
-| Éxito y preview actualizado | step `completed` | **Sí** | Sí |
+| `op` inválido, `sky_replace`, máscara inválida, `custom` vacío o fuera de 8–280 | 400 en el POST | No | No |
+| `custom` prohibido (§3) | 422 `fidelity_refused` en el POST | No | No |
+| Cupo diario lleno | 429 en el POST. No queda step, así que no hay poll con `errorCode` | No | No |
+| El step sigue `processing` más de 60 s | step `error`, `errorCode=timeout` (código que ya usa el poll del 067) | **Sí** | Sí |
+| Error de red, 429 de Ark o 5xx | step `error`, `errorCode=provider_error`. Un solo reintento en 429/transitorio, sin un segundo cobro de cupo | **Sí** | Sí |
+| El modelo responde `FIDELITY_REFUSED` o §4 descarta el JPEG | step `error` + `errorCode` de §5 | **Sí** | Sí |
+| Éxito y preview actualizado | step `ready` | **Sí** | Sí |
 
 Sustituir en T1 el test del 067 que esperaba cupo en error de `sky_replace` por filas de esta tabla.
 
@@ -209,13 +211,15 @@ Guardar sigue siendo un acto del asesor. Nada de esta versión publica solo.
 
 **Poll / schemas (`backend/web/schemas.py`):** mantener `errorCode` en el step. Mapa mínimo para T2:
 
-| `errorCode` | Copy orientativo (es) |
-|-------------|------------------------|
-| `fidelity_refused` | Pedido bloqueado antes del modelo (422 en POST) o modelo devolvió `FIDELITY_REFUSED` |
-| `fidelity_rejected` | El modelo alteró fuera de reglas (§4, p. ej. máscara) |
-| `framing_changed` | Proporción distinta |
-| `quota_exceeded` | Cupo diario agotado |
-| `provider_error` | Red, timeout, 5xx Ark |
+| `errorCode` | Cuándo aparece | Copy orientativo (es) |
+|-------------|---------------|------------------------|
+| `fidelity_refused` | El modelo contestó `FIDELITY_REFUSED` (hay step). El rechazo local §3 es un 422 del POST y no llega al poll | «Ese pedido cambiaría el inmueble…» |
+| `fidelity_rejected` | §4 descartó el JPEG (p. ej. la máscara) | «El retoque cambió partes de la foto que había que dejar iguales.» |
+| `framing_changed` | La proporción no coincide | «El retoque cambió el encuadre. La foto quedó igual.» |
+| `timeout` | El step pasó de 60 s en `processing` | «El retoque tardó demasiado. Intenta de nuevo.» |
+| `provider_error` | Red, 5xx o 429 de Ark ya reintentado | «No se pudo aplicar el retoque. Intenta de nuevo.» |
+
+El cupo agotado no está en esta tabla: responde **429** en el POST y no crea step. El 067, cuando insertaba el step antes de cobrar, usaba `error_code=quota`. Ese step de error ya no se crea.
 
 Opcional en poll: devolver `instruction` truncada (p. ej. 80 chars) en steps `custom` para UX «último pedido»; si se expone, no loguear el texto completo en INFO.
 
@@ -280,13 +284,14 @@ La clave real va en el `.env` del VPS. No va al repo, ni al instalador del worke
 
 Sin decisión explícita, Dev implementa (1) y deja comentario en `service.py` con el límite conocido.
 
-**Resiliencia Ark:** documentar en código reintento solo en **429** / errores transitorios (máx. 1), sin segundo consumo de cupo en el mismo step.
+**Resiliencia Ark:** un reintento solo en **429** o error transitorio (máx. 1), sobre el mismo step, sin un segundo `consume_quota`. El `errorCode` de ese fallo es `provider_error`. El tope de 60 s del step sigue siendo `errorCode=timeout`, el que ya escribe el poll del 067.
 
 ### Web
 
-- `src/lib/photoEdit.ts`: quitar `sky_replace` de `PHOTO_EDIT_OPS`. Sumar `custom` solo como tipo de API, no como cuarta tarjeta igual a las otras.
-- `PhotoEditorModal.tsx`: campo + Aplicar pedido. El botón deshabilitado si el texto no tiene entre 8 y 280 caracteres, o si ya hay un paso en curso.
-- `startPhotoEdit` manda `instruction` cuando `op=custom`.
+- `src/lib/photoEdit.ts`: quitar `sky_replace` de `PHOTO_EDIT_OPS`. `custom` no es una cuarta tarjeta. Sí necesita textos de «procesando» y «listo», porque el modal llama `photoEditMeta(op)` mientras corre el pedido.
+- `PhotoEditorModal.tsx`: campo + Aplicar pedido. El botón deshabilitado si el texto no tiene entre 8 y 280 caracteres, o si ya hay un paso en curso en esa foto.
+- `startPhotoEdit` manda el campo multipart `instruction` cuando `op=custom`.
+- `mapEditPoll` en `src/services/http/properties.ts` hoy arma `message` solo con `message`, `error` y `detail`. El poll real manda `errorMessage` (`WebPhotoEditStepOut`). T2 tiene que leer `errorMessage` y `errorCode`, o el toast de un retoque fallido sigue diciendo «error».
 - Mocks: un pedido bloqueado responde 422; uno permitido devuelve preview como el stub.
 - Copy de error 422: «Ese pedido cambiaría el inmueble. Prueba con luz, sombras o un detalle que ya esté en la foto.»
 
@@ -331,6 +336,8 @@ Sin uno de los dos, T2 queda en revisión de UX.
 - [ ] No queda botón «Cielo despejado».
 - [ ] Pedido de 3 caracteres no llama a la API.
 - [ ] Pedido permitido llama `op=custom` con `instruction`.
+- [ ] Mientras corre el pedido libre, el panel muestra el texto de proceso y no rompe `photoEditMeta`.
+- [ ] Un poll con `status: "error"` y `errorMessage` muestra ese texto, no la palabra «error».
 
 ### T3 — Smoke Owner (con stub, antes del corte)
 
