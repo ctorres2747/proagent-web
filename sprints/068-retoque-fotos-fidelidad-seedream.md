@@ -2,7 +2,7 @@
 
 | Campo | Valor |
 |-------|--------|
-| Estado | **`draft`** — no activar Dev hasta el gate §0 |
+| Estado | **`ready_for_dev`** — activado Owner 2026-11-15 (PR [#164](https://github.com/ctorres2747/proagent-web/pull/164)) |
 | Fecha spec | 2026-11-15 |
 | Owner | Cristhian |
 | Manager | Agent Manager |
@@ -16,11 +16,20 @@
 
 ## §0 — Gate de activación (Owner)
 
-**Este sprint no pasa a `ready_for_dev` hasta que el Owner escriba «activar 068» en el PR de esta spec.**
+**`ready_for_dev` desde 2026-11-15** — Owner: «activar 068» (chat agente + PR #164).
 
-Eso confirma el texto canónico de §2. No hace falta tener ya la clave de BytePlus para activar el código: sin `ARK_API_KEY` el servidor sigue en el simulador `PhotoEditProviderStub`.
+| Ítem checklist | Estado al activar |
+|----------------|-------------------|
+| Prompt §2 (`listing_fidelity_v1`) | Aprobado tal cual en esta spec |
+| Breaking `sky_replace` + panel 3 botones | Aceptado (enmienda 067) |
+| Modelo de ejecución | **Opción 1:** sync en el `POST`, deploy 1 worker (revisar si más adelante hay multi-worker) |
+| Handoff visual | Captura en PR T2 vale si el artifact 067 no se actualiza antes |
+| `remove_objects` sin máscara Ark | **Opción A:** stub para máscara aunque `seedream` esté on en otras ops |
+| Smoke 067 | Puede correr en paralelo; no bloquea T1/T2 en stub |
 
-El corte a Seedream en el VPS es otro paso, §6. No se enciende en el mismo PR que el prompt.
+No hace falta tener ya la clave de BytePlus para el código: sin `ARK_API_KEY` el servidor sigue en `PhotoEditProviderStub`.
+
+El corte a Seedream en el VPS sigue siendo §6 (después de T1 + T3 en stub). No se pone `PHOTO_EDIT_PROVIDER=seedream` en el mismo merge que introduce el cliente.
 
 ---
 
@@ -362,7 +371,7 @@ Usar este bloque en la conversación del PR **antes** de escribir «activar 068�
 - [ ] Criterio `remove_objects` + Ark (opción A/B) entendido si el ensayo §6 falla en máscara.
 - [ ] Smoke 067 hecho o explícitamente aplazado con riesgo anotado.
 
-Cuando todo lo anterior está marcado, el Owner comenta **«activar 068»** (§0).
+~~Cuando todo lo anterior está marcado, el Owner comenta **«activar 068»** (§0).~~ **Hecho 2026-11-15** (ver §0).
 
 ---
 
