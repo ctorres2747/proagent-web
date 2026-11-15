@@ -581,7 +581,7 @@ export const propertiesService: PropertiesService = {
       if (text.length < 8 || text.length > 280) {
         throw new ApiError(400, "El pedido debe tener entre 8 y 280 caracteres.");
       }
-      if (/pon un sof|piscina|cielo azul|amoblar/i.test(text)) {
+      if (/pon un sof|piscina|cielo azul|amoblar|amueblar/i.test(text)) {
         throw new ApiError(
           422,
           "Ese pedido cambiaría el inmueble. Prueba con luz, sombras o un detalle que ya esté en la foto.",

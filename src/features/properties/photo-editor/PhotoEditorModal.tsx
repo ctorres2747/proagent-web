@@ -714,23 +714,39 @@ export function PhotoEditorModal({
               <p className="px-1 pt-1 text-[12px] leading-snug text-[#5B6B79]">
                 Solo luz, verticales y lo que pintes. El inmueble no se puede cambiar: la foto se publica para la venta.
               </p>
-              <textarea
-                value={instruction}
-                onChange={(e) => setInstruction(e.target.value.slice(0, 280))}
-                rows={3}
-                maxLength={280}
-                disabled={blocked}
-                placeholder="Ej: subir un poco las sombras del sofá. No pidas muebles, cielo ni acabados distintos."
-                className="w-full resize-none rounded-xl border border-[#E4E8EC] px-3 py-2 text-[13px] text-[#16212B] outline-none placeholder:text-[#9AA6B2] focus:border-[#0A3D62]"
-              />
-              <button
-                type="button"
-                disabled={blocked || instruction.trim().length < 8}
-                onClick={() => void runEdit("custom", null, instruction.trim())}
-                className="h-[34px] rounded-lg bg-[#0A3D62] text-[12.5px] font-bold text-white disabled:bg-[#EEF0F3] disabled:text-[#9AA6B2]"
-              >
-                Aplicar pedido
-              </button>
+              <div className="rounded-xl border border-[#E4E8EC] px-3 py-2.5">
+                <label className="text-[12px] font-bold text-[#16212B]" htmlFor="custom-edit">
+                  Pedido libre
+                </label>
+                <textarea
+                  id="custom-edit"
+                  value={instruction}
+                  onChange={(e) => setInstruction(e.target.value.slice(0, 280))}
+                  rows={3}
+                  maxLength={280}
+                  disabled={blocked}
+                  placeholder="Ej: subir un poco las sombras del sofá. No pidas muebles, cielo ni acabados distintos."
+                  className="mt-2 w-full resize-none rounded-lg border border-[#E4E8EC] px-2.5 py-2 text-[13px] text-[#16212B] outline-none placeholder:text-[#9AA6B2] focus:border-[#0A3D62]"
+                />
+                <p className="mt-1.5 text-[11px] text-[#5B6B79]">
+                  {instruction.trim().length}/280
+                  {instruction.trim().length > 0 && instruction.trim().length < 8
+                    ? " — mínimo 8 caracteres"
+                    : ""}
+                </p>
+                <button
+                  type="button"
+                  disabled={
+                    blocked ||
+                    instruction.trim().length < 8 ||
+                    instruction.trim().length > 280
+                  }
+                  onClick={() => void runEdit("custom", null, instruction.trim())}
+                  className="mt-2 h-[34px] w-full rounded-lg bg-[#0A3D62] text-[12.5px] font-bold text-white disabled:bg-[#EEF0F3] disabled:text-[#9AA6B2]"
+                >
+                  Aplicar pedido
+                </button>
+              </div>
 
               {brush && (
                 <div className="flex items-center gap-3 px-1 pt-1">

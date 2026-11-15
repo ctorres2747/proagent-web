@@ -12,7 +12,7 @@ import type {
 } from "@/services/interfaces/properties";
 import type { ChannelStatus } from "@/design-system/channels";
 import { CHANNEL_ORDER } from "@/design-system/channels";
-import { normalizeStalePhotoChannel } from "@/lib/photoEdit";
+import { normalizeStalePhotoChannel, photoEditCopyFromErrorCode } from "@/lib/photoEdit";
 import { apiDownloadBlob, apiFetch, apiUploadForm } from "./client";
 
 // Dedicated web API (backend/web en agente-inmobiliario). Reemplazó al puente
@@ -428,8 +428,8 @@ export const propertiesService: PropertiesService = {
   async startPhotoEdit(propertyId, photoId, op, mask, token, instruction) {
     const form = new FormData();
     form.append("op", op);
-    if (instruction) form.append("instruction", instruction);
     if (mask) form.append("mask", mask, mask.name || "mask.png");
+    if (instruction?.trim()) form.append("instruction", instruction.trim());
     const raw = await apiUploadForm<Record<string, unknown>>(
       `${detailPath(propertyId)}/photos/${photoId}/edits`,
       form,
@@ -499,6 +499,16 @@ function mapEditStatus(raw: unknown): "processing" | "done" | "error" {
   return "processing";
 }
 
+function mapEditFailureMessage(raw: Record<string, unknown>): string | null {
+  const errorMessage = strField(raw.errorMessage ?? raw.error_message);
+  if (errorMessage) return errorMessage;
+  const fromCode = photoEditCopyFromErrorCode(
+    strField(raw.errorCode ?? raw.error_code) ?? undefined,
+  );
+  if (fromCode) return fromCode;
+  return strField(raw.message ?? raw.error ?? raw.detail);
+}
+
 function mapEditStart(raw: Record<string, unknown>): PhotoEditStart {
   return {
     versionId: String(raw.versionId ?? raw.version_id ?? ""),
@@ -507,7 +517,7 @@ function mapEditStart(raw: Record<string, unknown>): PhotoEditStart {
     previewUrl: strField(
       raw.previewUrl ?? raw.preview_url ?? raw.resultUrl ?? raw.result_url,
     ),
-    message: strField(raw.message ?? raw.error ?? raw.detail),
+    message: mapEditFailureMessage(raw),
   };
 }
 
@@ -517,9 +527,7 @@ function mapEditPoll(raw: Record<string, unknown>): PhotoEditPoll {
     previewUrl: strField(
       raw.previewUrl ?? raw.preview_url ?? raw.resultUrl ?? raw.result_url,
     ),
-    message: strField(
-      raw.errorMessage ?? raw.error_message ?? raw.message ?? raw.error ?? raw.detail,
-    ),
+    message: mapEditFailureMessage(raw),
   };
 }
 
