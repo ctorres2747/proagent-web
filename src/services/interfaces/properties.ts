@@ -26,7 +26,7 @@ export interface PropertyPhoto {
 export type PhotoEditOp =
   | "enhance_light"
   | "straighten"
-  | "sky_replace"
+  | "custom"
   | "remove_objects";
 
 export interface PhotoEditStart {
@@ -281,6 +281,7 @@ export interface PropertiesService {
     op: PhotoEditOp,
     mask?: File | null,
     token?: string,
+    instruction?: string | null,
   ): Promise<PhotoEditStart>;
   pollPhotoEdit(
     propertyId: string,

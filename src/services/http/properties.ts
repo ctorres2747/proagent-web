@@ -425,10 +425,11 @@ export const propertiesService: PropertiesService = {
     });
     return mapProperty(raw);
   },
-  async startPhotoEdit(propertyId, photoId, op, mask, token) {
+  async startPhotoEdit(propertyId, photoId, op, mask, token, instruction) {
     const form = new FormData();
     form.append("op", op);
     if (mask) form.append("mask", mask, mask.name || "mask.png");
+    if (instruction?.trim()) form.append("instruction", instruction.trim());
     const raw = await apiUploadForm<Record<string, unknown>>(
       `${detailPath(propertyId)}/photos/${photoId}/edits`,
       form,
@@ -511,12 +512,30 @@ function mapEditStart(raw: Record<string, unknown>): PhotoEditStart {
 }
 
 function mapEditPoll(raw: Record<string, unknown>): PhotoEditPoll {
+  const errorMessage = strField(raw.errorMessage ?? raw.error_message);
+  const errorCode = strField(raw.errorCode ?? raw.error_code);
+  const fallback = strField(raw.message ?? raw.error ?? raw.detail);
+  let message = errorMessage ?? fallback;
+  if (!message && errorCode) {
+    if (errorCode === "fidelity_refused") {
+      message =
+        "Ese pedido cambiaría el inmueble. Prueba con luz, sombras o un detalle que ya esté en la foto.";
+    } else if (errorCode === "fidelity_rejected") {
+      message = "El retoque cambió partes de la foto que había que dejar iguales.";
+    } else if (errorCode === "framing_changed") {
+      message = "El retoque cambió el encuadre. La foto quedó igual.";
+    } else if (errorCode === "timeout") {
+      message = "El retoque tardó demasiado. Intenta de nuevo.";
+    } else if (errorCode === "provider_error") {
+      message = "No se pudo aplicar el retoque. Intenta de nuevo.";
+    }
+  }
   return {
     status: mapEditStatus(raw.status),
     previewUrl: strField(
       raw.previewUrl ?? raw.preview_url ?? raw.resultUrl ?? raw.result_url,
     ),
-    message: strField(raw.message ?? raw.error ?? raw.detail),
+    message,
   };
 }
 

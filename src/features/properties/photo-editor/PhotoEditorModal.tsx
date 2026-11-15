@@ -4,7 +4,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ChevronLeft,
   ChevronRight,
-  Cloud,
   Download,
   Eraser,
   Grid2x2,
@@ -48,7 +47,7 @@ const OP_ICON = {
   enhance_light: Sun,
   straighten: Grid2x2,
   remove_objects: Eraser,
-  sky_replace: Cloud,
+  custom: Sparkles,
 } as const;
 
 export function PhotoEditorModal({
@@ -96,6 +95,7 @@ export function PhotoEditorModal({
   const [saving, setSaving] = useState(false);
   const [savedFlash, setSavedFlash] = useState(false);
   const [panelOpen, setPanelOpen] = useState(true);
+  const [customInstruction, setCustomInstruction] = useState("");
 
   useFocusTrap(dialogRef, true);
 
@@ -219,7 +219,11 @@ export function PhotoEditorModal({
     }));
   };
 
-  const runEdit = async (op: PhotoEditOp, mask?: File | null) => {
+  const runEdit = async (
+    op: PhotoEditOp,
+    mask?: File | null,
+    instruction?: string | null,
+  ) => {
     // Alcance por foto: `processing` puede seguir apuntando a OTRA foto si el
     // usuario navega mientras esa edición sigue en curso — sin este chequeo
     // acotado, el clic en la foto nueva no hacía nada visible (el botón
@@ -237,6 +241,7 @@ export function PhotoEditorModal({
         op,
         mask ?? null,
         token,
+        instruction ?? null,
       );
       // T1 enqueue is `{ versionId, stepId, status }` without previewUrl.
       // Stub síncrono puede devolver `ready`/`done` ya en el POST: hay que
@@ -621,6 +626,11 @@ export function PhotoEditorModal({
             </div>
 
             <div className="flex flex-col gap-2 px-3.5 py-3">
+              <p className="px-1 text-[11.5px] leading-snug text-[#5B6B79]">
+                Solo luz, verticales y lo que pintes. El inmueble no se puede cambiar: la foto
+                se publica para la venta.
+              </p>
+
               {PHOTO_EDIT_OPS.map((tool) => {
                 const Icon = OP_ICON[tool.op];
                 const applied = draft.steps.includes(tool.op);
@@ -708,6 +718,37 @@ export function PhotoEditorModal({
                   </div>
                 );
               })}
+
+              <div className="mt-1 rounded-xl border border-[#E4E8EC] px-3 py-2.5">
+                <label className="text-[12px] font-bold text-[#16212B]" htmlFor="custom-edit">
+                  Pedido libre
+                </label>
+                <textarea
+                  id="custom-edit"
+                  value={customInstruction}
+                  onChange={(e) => setCustomInstruction(e.target.value)}
+                  placeholder="Ej: subir un poco las sombras del sofá. No pidas muebles, cielo ni acabados distintos."
+                  rows={3}
+                  className="mt-2 w-full resize-y rounded-lg border border-[#E4E8EC] px-2.5 py-2 text-[12.5px] text-[#16212B]"
+                />
+                {customInstruction.trim().length > 0 &&
+                (customInstruction.trim().length < 8 ||
+                  customInstruction.trim().length > 280) ? (
+                  <p className="mt-1.5 text-[11px] text-[#8A4E12]">Entre 8 y 280 caracteres.</p>
+                ) : null}
+                <button
+                  type="button"
+                  disabled={
+                    blocked ||
+                    customInstruction.trim().length < 8 ||
+                    customInstruction.trim().length > 280
+                  }
+                  onClick={() => void runEdit("custom", null, customInstruction.trim())}
+                  className="mt-2 h-[30px] w-full rounded-lg bg-[#0A3D62] text-[12px] font-bold text-white disabled:bg-[#EEF0F3] disabled:text-[#9AA6B2]"
+                >
+                  Aplicar pedido
+                </button>
+              </div>
 
               {brush && (
                 <div className="flex items-center gap-3 px-1 pt-1">

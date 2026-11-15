@@ -1,8 +1,8 @@
 export type PhotoEditOp =
   | "enhance_light"
   | "straighten"
-  | "sky_replace"
-  | "remove_objects";
+  | "remove_objects"
+  | "custom";
 
 export const PHOTO_EDIT_OPS: {
   op: PhotoEditOp;
@@ -32,16 +32,18 @@ export const PHOTO_EDIT_OPS: {
     processing: "Quitando objetos…",
     ready: "Quitar objetos · listo",
   },
-  {
-    op: "sky_replace",
-    name: "Cielo despejado",
-    subtitle: "Cielo gris → azul",
-    processing: "Cambiando cielo…",
-    ready: "Cielo despejado · listo",
-  },
 ];
 
+const CUSTOM_META = {
+  op: "custom" as const,
+  name: "Pedido libre",
+  subtitle: "Describe un detalle que ya esté en la foto",
+  processing: "Aplicando tu pedido…",
+  ready: "Pedido aplicado · listo",
+};
+
 export function photoEditMeta(op: PhotoEditOp) {
+  if (op === "custom") return CUSTOM_META;
   return PHOTO_EDIT_OPS.find((item) => item.op === op)!;
 }
 
@@ -85,6 +87,9 @@ export function normalizeStalePhotoChannel(id: string): string {
   return CHANNEL_ALIASES[key] ?? key;
 }
 
+const FIDELITY_422 =
+  "Ese pedido cambiaría el inmueble. Prueba con luz, sombras o un detalle que ya esté en la foto.";
+
 export function photoEditErrorMessage(err: unknown, op: PhotoEditOp): string {
   const raw =
     err && typeof err === "object" && "message" in err
@@ -93,17 +98,21 @@ export function photoEditErrorMessage(err: unknown, op: PhotoEditOp): string {
         ? err.message
         : "";
   const lower = raw.toLowerCase();
+  const status =
+    err && typeof err === "object" && "status" in err
+      ? (err as { status: number }).status
+      : undefined;
+  if (status === 422 || lower.includes("cambiaría el inmueble")) {
+    return FIDELITY_422;
+  }
   if (
     lower.includes("quota") ||
     lower.includes("cupo") ||
     lower.includes("límite") ||
     lower.includes("limite") ||
-    (err && typeof err === "object" && "status" in err && (err as { status: number }).status === 429)
+    status === 429
   ) {
     return "Llegaste al límite de retoques de hoy (50). Intenta de nuevo mañana.";
-  }
-  if (op === "sky_replace" && (lower.includes("cielo") || lower.includes("sky"))) {
-    return "No se detectó cielo en esta foto. La foto quedó igual.";
   }
   const verb =
     op === "enhance_light"
@@ -112,7 +121,7 @@ export function photoEditErrorMessage(err: unknown, op: PhotoEditOp): string {
         ? "enderezar"
         : op === "remove_objects"
           ? "quitar objetos"
-          : "cambiar el cielo";
+          : "aplicar tu pedido";
   if (raw && raw !== "Failed to fetch" && !/^error$/i.test(raw)) {
     return raw;
   }
