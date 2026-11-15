@@ -425,9 +425,10 @@ export const propertiesService: PropertiesService = {
     });
     return mapProperty(raw);
   },
-  async startPhotoEdit(propertyId, photoId, op, mask, token) {
+  async startPhotoEdit(propertyId, photoId, op, mask, token, instruction) {
     const form = new FormData();
     form.append("op", op);
+    if (instruction) form.append("instruction", instruction);
     if (mask) form.append("mask", mask, mask.name || "mask.png");
     const raw = await apiUploadForm<Record<string, unknown>>(
       `${detailPath(propertyId)}/photos/${photoId}/edits`,
@@ -516,7 +517,9 @@ function mapEditPoll(raw: Record<string, unknown>): PhotoEditPoll {
     previewUrl: strField(
       raw.previewUrl ?? raw.preview_url ?? raw.resultUrl ?? raw.result_url,
     ),
-    message: strField(raw.message ?? raw.error ?? raw.detail),
+    message: strField(
+      raw.errorMessage ?? raw.error_message ?? raw.message ?? raw.error ?? raw.detail,
+    ),
   };
 }
 

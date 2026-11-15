@@ -4,7 +4,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ChevronLeft,
   ChevronRight,
-  Cloud,
   Download,
   Eraser,
   Grid2x2,
@@ -48,7 +47,6 @@ const OP_ICON = {
   enhance_light: Sun,
   straighten: Grid2x2,
   remove_objects: Eraser,
-  sky_replace: Cloud,
 } as const;
 
 export function PhotoEditorModal({
@@ -87,6 +85,7 @@ export function PhotoEditorModal({
     op: PhotoEditOp;
     message: string;
     mask?: File | null;
+    instruction?: string;
   } | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [brush, setBrush] = useState(false);
@@ -96,6 +95,7 @@ export function PhotoEditorModal({
   const [saving, setSaving] = useState(false);
   const [savedFlash, setSavedFlash] = useState(false);
   const [panelOpen, setPanelOpen] = useState(true);
+  const [instruction, setInstruction] = useState("");
 
   useFocusTrap(dialogRef, true);
 
@@ -219,7 +219,7 @@ export function PhotoEditorModal({
     }));
   };
 
-  const runEdit = async (op: PhotoEditOp, mask?: File | null) => {
+  const runEdit = async (op: PhotoEditOp, mask?: File | null, instructionText?: string) => {
     // Alcance por foto: `processing` puede seguir apuntando a OTRA foto si el
     // usuario navega mientras esa edición sigue en curso — sin este chequeo
     // acotado, el clic en la foto nueva no hacía nada visible (el botón
@@ -237,6 +237,7 @@ export function PhotoEditorModal({
         op,
         mask ?? null,
         token,
+        instructionText,
       );
       // T1 enqueue is `{ versionId, stepId, status }` without previewUrl.
       // Stub síncrono puede devolver `ready`/`done` ya en el POST: hay que
@@ -290,6 +291,7 @@ export function PhotoEditorModal({
         op,
         message: photoEditErrorMessage(err, op),
         mask: mask ?? null,
+        instruction: instructionText,
       });
     } finally {
       setProcessing(null);
@@ -620,7 +622,7 @@ export function PhotoEditorModal({
               </p>
             </div>
 
-            <div className="flex flex-col gap-2 px-3.5 py-3">
+            <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto px-3.5 py-3">
               {PHOTO_EDIT_OPS.map((tool) => {
                 const Icon = OP_ICON[tool.op];
                 const applied = draft.steps.includes(tool.op);
@@ -709,6 +711,27 @@ export function PhotoEditorModal({
                 );
               })}
 
+              <p className="px-1 pt-1 text-[12px] leading-snug text-[#5B6B79]">
+                Solo luz, verticales y lo que pintes. El inmueble no se puede cambiar: la foto se publica para la venta.
+              </p>
+              <textarea
+                value={instruction}
+                onChange={(e) => setInstruction(e.target.value.slice(0, 280))}
+                rows={3}
+                maxLength={280}
+                disabled={blocked}
+                placeholder="Ej: subir un poco las sombras del sofá. No pidas muebles, cielo ni acabados distintos."
+                className="w-full resize-none rounded-xl border border-[#E4E8EC] px-3 py-2 text-[13px] text-[#16212B] outline-none placeholder:text-[#9AA6B2] focus:border-[#0A3D62]"
+              />
+              <button
+                type="button"
+                disabled={blocked || instruction.trim().length < 8}
+                onClick={() => void runEdit("custom", null, instruction.trim())}
+                className="h-[34px] rounded-lg bg-[#0A3D62] text-[12.5px] font-bold text-white disabled:bg-[#EEF0F3] disabled:text-[#9AA6B2]"
+              >
+                Aplicar pedido
+              </button>
+
               {brush && (
                 <div className="flex items-center gap-3 px-1 pt-1">
                   <span className="text-[12px] font-bold text-[#45525E]">Pincel</span>
@@ -747,7 +770,7 @@ export function PhotoEditorModal({
                         setBrush(true);
                         return;
                       }
-                      void runEdit(retry.op, retry.mask);
+                      void runEdit(retry.op, retry.mask, retry.instruction);
                     }}
                   >
                     Reintentar
