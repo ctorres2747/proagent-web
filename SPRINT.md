@@ -2,22 +2,32 @@
 
 | Campo | Valor |
 |-------|--------|
-| **ID activo (dev)** | **`067`** — Editor de fotos IA |
-| **Spec** | [`sprints/067-inventario-editor-fotos-ia.md`](sprints/067-inventario-editor-fotos-ia.md) |
-| **Estado 067** | `ready_for_dev` (Owner: merge spec PR #160, 2026-11-11) |
-| **Handoff** | [`design_handoff_editor_fotos_ia/`](design_handoff_editor_fotos_ia/) (solo UX) |
-| **Actualizado** | 2026-11-11 |
+| **ID activo (dev)** | **`068`** — Retoque fiel + Seedream (código en stub) |
+| **Estado** | **`ready_for_dev`** — activado Owner 2026-11-15 |
+| **Spec** | [`sprints/068-retoque-fotos-fidelidad-seedream.md`](sprints/068-retoque-fotos-fidelidad-seedream.md) |
+| **Base** | 067 mergeado (API #503/#504, web #162) |
+| **Handoff** | [`design_handoff_editor_fotos_ia/`](design_handoff_editor_fotos_ia/) — actualizar o captura en PR T2 (§5 spec 068) |
+| **PR spec** | [#164](https://github.com/ctorres2747/proagent-web/pull/164) |
+| **Actualizado** | 2026-11-15 |
 
 ## Qué hacer ahora (Dev)
 
-1. **T1** `agente-inmobiliario` → `develop`: migración `archivo_original`, API edits, `PhotoEditProvider` stub, cupo, pytest.
-2. **T2** `proagent-web` → `main`: modal editor + grilla (spec § AC); HTTP solo rutas `/api/web/properties/...`.
-3. **T3** smoke Owner al cerrar T1+T2.
+Implementar **solo** el sprint 068. Orden obligatorio:
 
-Handoff visual: [`design_handoff_editor_fotos_ia/`](design_handoff_editor_fotos_ia/). Contrato: spec 067 (no el README §11–12).
+1. **T1 — `agente-inmobiliario` → `develop`:** prompt, `fidelity.py`, quitar `sky_replace`, `custom`, cliente Seedream (default **stub**), tests — PR companion.
+2. **T2 — `proagent-web` → `main`:** panel 3 botones + pedido libre; typecheck + build — **después** de T1 mergeable o en stack API-first.
+3. **T3 — smoke Owner** con stub (checklist spec); **no** encender Seedream en VPS (eso es §6 Owner).
+
+Mobile **fuera de alcance**. No reabrir invariantes 067 (tabla en spec 068).
+
+## Owner (paralelo, no bloquea Dev)
+
+- Smoke 067 simulador si aún no.
+- §6 BytePlus cuando T1 esté en VPS y T3 stub OK.
 
 ## Historial reciente (web)
 
 | Sprint | Tema | Estado |
 |--------|------|--------|
-| 067 | Inventario editor fotos IA | `ready_for_dev` |
+| 068 | Fidelidad + Seedream | **`ready_for_dev`** — implementar T1→T2 |
+| 067 | Editor fotos IA | código en `main`/`develop`; smoke Owner opcional en paralelo |
