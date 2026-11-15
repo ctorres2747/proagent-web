@@ -45,14 +45,25 @@ interface FailedChannelDetail {
 function detailToMessage(detail: unknown): string | null {
   if (typeof detail === "string") return detail;
   if (detail && typeof detail === "object") {
-    const d = detail as { message?: string; failed_channels?: FailedChannelDetail[] };
-    if (d.message) {
+    const d = detail as {
+      message?: string;
+      errorMessage?: string;
+      error_message?: string;
+      errorCode?: string;
+      error_code?: string;
+      failed_channels?: FailedChannelDetail[];
+    };
+    const msg = d.errorMessage ?? d.error_message ?? d.message;
+    if (msg) {
       const channels = Array.isArray(d.failed_channels)
         ? d.failed_channels
             .map((f) => (f.plataforma ? `${f.plataforma}${f.mensaje ? `: ${f.mensaje}` : ""}` : null))
             .filter((x): x is string => Boolean(x))
         : [];
-      return channels.length ? `${d.message} (${channels.join(", ")})` : d.message;
+      return channels.length ? `${msg} (${channels.join(", ")})` : msg;
+    }
+    if (d.errorCode || d.error_code) {
+      return String(d.errorCode ?? d.error_code);
     }
   }
   return null;

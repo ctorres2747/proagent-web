@@ -1,11 +1,19 @@
 export type PhotoEditOp =
   | "enhance_light"
   | "straighten"
-  | "sky_replace"
-  | "remove_objects";
+  | "remove_objects"
+  | "custom";
+
+const CUSTOM_META = {
+  op: "custom" as const,
+  name: "Pedido",
+  subtitle: "Texto libre, con las reglas del servidor",
+  processing: "Aplicando pedido…",
+  ready: "Pedido · listo",
+};
 
 export const PHOTO_EDIT_OPS: {
-  op: PhotoEditOp;
+  op: Exclude<PhotoEditOp, "custom">;
   name: string;
   subtitle: string;
   processing: string;
@@ -32,16 +40,10 @@ export const PHOTO_EDIT_OPS: {
     processing: "Quitando objetos…",
     ready: "Quitar objetos · listo",
   },
-  {
-    op: "sky_replace",
-    name: "Cielo despejado",
-    subtitle: "Cielo gris → azul",
-    processing: "Cambiando cielo…",
-    ready: "Cielo despejado · listo",
-  },
 ];
 
 export function photoEditMeta(op: PhotoEditOp) {
+  if (op === "custom") return CUSTOM_META;
   return PHOTO_EDIT_OPS.find((item) => item.op === op)!;
 }
 
@@ -85,6 +87,27 @@ export function normalizeStalePhotoChannel(id: string): string {
   return CHANNEL_ALIASES[key] ?? key;
 }
 
+export const FIDELITY_REFUSED_COPY =
+  "Ese pedido cambiaría el inmueble. Prueba con luz, sombras o un detalle que ya esté en la foto.";
+
+/** Copy del poll T1 (`errorCode` en `WebPhotoEditStepOut`). */
+export function photoEditCopyFromErrorCode(code: string | null | undefined): string | null {
+  switch ((code ?? "").trim().toLowerCase()) {
+    case "fidelity_refused":
+      return FIDELITY_REFUSED_COPY;
+    case "fidelity_rejected":
+      return "El retoque cambió partes de la foto que había que dejar iguales.";
+    case "framing_changed":
+      return "El retoque cambió el encuadre. La foto quedó igual.";
+    case "timeout":
+      return "El retoque tardó demasiado. Intenta de nuevo.";
+    case "provider_error":
+      return "No se pudo aplicar el retoque. Intenta de nuevo.";
+    default:
+      return null;
+  }
+}
+
 export function photoEditErrorMessage(err: unknown, op: PhotoEditOp): string {
   const raw =
     err && typeof err === "object" && "message" in err
@@ -93,17 +116,26 @@ export function photoEditErrorMessage(err: unknown, op: PhotoEditOp): string {
         ? err.message
         : "";
   const lower = raw.toLowerCase();
+  const status =
+    err && typeof err === "object" && "status" in err
+      ? (err as { status: number }).status
+      : undefined;
+  const fromCode = photoEditCopyFromErrorCode(raw);
+  if (fromCode) return fromCode;
+  if (status === 422 || lower.includes("cambiaría el inmueble") || lower.includes("fidelity")) {
+    return FIDELITY_REFUSED_COPY;
+  }
   if (
     lower.includes("quota") ||
     lower.includes("cupo") ||
     lower.includes("límite") ||
     lower.includes("limite") ||
-    (err && typeof err === "object" && "status" in err && (err as { status: number }).status === 429)
+    status === 429
   ) {
     return "Llegaste al límite de retoques de hoy (50). Intenta de nuevo mañana.";
   }
-  if (op === "sky_replace" && (lower.includes("cielo") || lower.includes("sky"))) {
-    return "No se detectó cielo en esta foto. La foto quedó igual.";
+  if (op === "remove_objects" && (lower.includes("máscara") || lower.includes("mascara"))) {
+    return "Marca con el pincel lo que hay que quitar.";
   }
   const verb =
     op === "enhance_light"
@@ -112,7 +144,7 @@ export function photoEditErrorMessage(err: unknown, op: PhotoEditOp): string {
         ? "enderezar"
         : op === "remove_objects"
           ? "quitar objetos"
-          : "cambiar el cielo";
+          : "aplicar el pedido";
   if (raw && raw !== "Failed to fetch" && !/^error$/i.test(raw)) {
     return raw;
   }

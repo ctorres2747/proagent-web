@@ -568,7 +568,7 @@ export const propertiesService: PropertiesService = {
     MOCK_PROPERTIES[idx] = next;
     return next;
   },
-  async startPhotoEdit(propertyId, photoId, op) {
+  async startPhotoEdit(propertyId, photoId, op, _mask, _token, instruction) {
     const key = `${propertyId}:${photoId}`;
     const draft = MOCK_EDIT_DRAFTS.get(key) ?? {
       versionId: `v-${Date.now()}`,
@@ -576,14 +576,16 @@ export const propertiesService: PropertiesService = {
       previewUrl: null as string | null,
       readyAt: 0,
     };
-    if (op === "sky_replace") {
-      const prop = MOCK_PROPERTIES.find((p) => p.id === propertyId);
-      const photo = prop?.fotos.find((f) => f.id === photoId);
-      const label = (photo?.roomLabel ?? "").toLowerCase();
-      const outdoor =
-        /fachada|patio|terraza|balc[oó]n|zona/.test(label);
-      if (photo?.roomLabel && !outdoor) {
-        throw new ApiError(400, "No se detectó cielo en esta foto");
+    if (op === "custom") {
+      const text = (instruction ?? "").trim();
+      if (text.length < 8 || text.length > 280) {
+        throw new ApiError(400, "El pedido debe tener entre 8 y 280 caracteres.");
+      }
+      if (/pon un sof|piscina|cielo azul|amoblar|amueblar/i.test(text)) {
+        throw new ApiError(
+          422,
+          "Ese pedido cambiaría el inmueble. Prueba con luz, sombras o un detalle que ya esté en la foto.",
+        );
       }
     }
     const stepId = `s-${Date.now()}`;
