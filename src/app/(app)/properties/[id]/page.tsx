@@ -266,6 +266,10 @@ function snapshotFromProperty(property: Property): ContentFormSnapshot {
   };
 }
 
+function capitalize(text: string): string {
+  return text ? text.charAt(0).toUpperCase() + text.slice(1) : text;
+}
+
 function parsePrecioInput(v: string): number | null {
   const t = v.replace(/\./g, "").replace(/,/g, "").trim();
   if (!t) return null;
@@ -961,14 +965,14 @@ export default function PublishWizardPage() {
 
   if (isLoading || draftBusy) {
     return (
-      <div className="px-6 py-10 text-sm text-[var(--pa-muted)] md:px-10">
+      <div className="py-3 text-sm text-[var(--pa-muted)]">
         Cargando propiedad…
       </div>
     );
   }
   if (isError || !property) {
     return (
-      <div className="px-6 py-10 md:px-10">
+      <div>
         <button
           onClick={() => router.push("/publications")}
           className="text-sm text-[var(--pa-muted)] hover:underline"
@@ -983,7 +987,7 @@ export default function PublishWizardPage() {
   }
   if (draftError || !publication) {
     return (
-      <div className="px-6 py-10 md:px-10">
+      <div>
         <button
           onClick={() => router.push("/publications")}
           className="text-sm text-[var(--pa-muted)] hover:underline"
@@ -1031,12 +1035,15 @@ export default function PublishWizardPage() {
   };
 
   return (
-    <div className="px-6 py-8 md:px-10">
+    <div>
       <div className="mb-1.5 flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <div className="text-[13px] font-semibold text-[var(--pa-faint)]">
-            {property.titulo} · {property.code}
-          </div>
+        <div className="min-w-0">
+          <h1 className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[20px] font-extrabold leading-tight text-[var(--pa-ink)]">
+            <span className="min-w-0">{property.titulo || "Propiedad sin título"}</span>
+            <span className="rounded-md bg-[var(--pa-bg-alt)] px-2 py-0.5 text-[11px] font-bold text-[var(--pa-muted)]">
+              {property.code}
+            </span>
+          </h1>
           {capturedAtLabel(property.capturedAt) ? (
             <div className="mt-0.5 text-[12px] text-[var(--pa-muted)]">
               {capturedAtLabel(property.capturedAt)}
@@ -1050,7 +1057,7 @@ export default function PublishWizardPage() {
             setDeleteDialogOpen(true);
           }}
           disabled={deletePending}
-          className="text-xs font-bold text-[var(--pa-danger)] hover:underline disabled:opacity-50"
+          className="rounded-lg border border-[var(--pa-border)] bg-[var(--pa-surface)] px-3 py-1.5 text-xs font-semibold text-[var(--pa-muted)] transition-colors hover:border-[var(--pa-danger)] hover:text-[var(--pa-danger)] disabled:opacity-50"
         >
           Eliminar propiedad
         </button>
@@ -1109,11 +1116,15 @@ export default function PublishWizardPage() {
       />
 
       {/* Stepper */}
-      <div className="mb-7 flex items-center gap-1 overflow-x-auto">
+      <nav
+        aria-label="Pasos de la publicación"
+        className="mb-7 mt-4 flex items-center gap-1 overflow-x-auto [scrollbar-width:thin]"
+      >
         {STEPS.map((st, i) => (
           <div key={st.id} className="flex items-center">
             <button
               type="button"
+              aria-current={step === st.id ? "step" : undefined}
               onClick={() => setStep(st.id)}
               className={`whitespace-nowrap rounded-[9px] px-4 py-2 text-xs transition-colors ${
                 step === st.id
@@ -1121,14 +1132,15 @@ export default function PublishWizardPage() {
                   : "font-semibold text-[var(--pa-muted)] hover:bg-white/60"
               }`}
             >
+              <span className="mr-1.5 tabular-nums opacity-70">{i + 1}.</span>
               {st.label}
             </button>
             {i < STEPS.length - 1 && (
-              <span className="px-1 text-sm text-[#C9D1D8]">›</span>
+              <span aria-hidden className="px-1 text-sm text-[#C9D1D8]">›</span>
             )}
           </div>
         ))}
-      </div>
+      </nav>
 
       {remoteUpdateNotice && (
         <p
@@ -1317,7 +1329,12 @@ function Chip({
   }`;
   if (onClick) {
     return (
-      <button type="button" onClick={onClick} className={className}>
+      <button
+        type="button"
+        onClick={onClick}
+        aria-pressed={active}
+        className={className}
+      >
         {children}
       </button>
     );
@@ -1701,6 +1718,14 @@ function ContentStep({
     done: isFieldComplete(item.key, liveMissing),
   }));
   const missingSummary = formatMissingFields(liveMissing);
+  const checklistWithKeys = checklistForTipo(form.tipo || property.tipo).map((item) => ({
+    key: item.key,
+    label: item.label,
+    done: isFieldComplete(item.key, liveMissing),
+  }));
+  const pendingItems = checklistWithKeys.filter((c) => !c.done);
+  const doneItems = checklistWithKeys.filter((c) => c.done);
+  const checklistDone = doneItems.length;
   const completenessPct =
     checklist.length > 0
       ? Math.round(
@@ -1708,8 +1733,23 @@ function ContentStep({
         )
       : 0;
   return (
-    <div className="grid grid-cols-1 items-start gap-7 lg:grid-cols-[1fr_300px]">
-      <div className="flex min-w-0 flex-col gap-6">
+    <div className="grid grid-cols-1 items-start gap-7 xl:grid-cols-[minmax(0,1fr)_300px]">
+      <div className="@container flex min-w-0 flex-col gap-6">
+        {/* Resumen compacto cuando el panel lateral baja al final (<1280 px). */}
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl border border-[var(--pa-border)] bg-[var(--pa-surface)] px-4 py-2.5 text-xs xl:hidden">
+          <span className="font-extrabold text-[var(--pa-navy)]">
+            Completitud {completenessPct}%
+          </span>
+          {missingSummary ? (
+            <span className="font-semibold text-[var(--pa-warning-ink)]">
+              Falta: {missingSummary}
+            </span>
+          ) : (
+            <span className="font-semibold text-[var(--pa-success)]">
+              ✓ Información completa
+            </span>
+          )}
+        </div>
         {property.sourceUrl ? (
           <a
             href={property.sourceUrl}
@@ -1747,7 +1787,7 @@ function ContentStep({
                     wasiTitleTone === "error"
                       ? "text-[var(--pa-danger)]"
                       : wasiTitleTone === "warn"
-                        ? "text-[var(--pa-warning)]"
+                        ? "text-[var(--pa-warning-ink)]"
                         : "text-[var(--pa-muted)]"
                   }`}
                 >
@@ -1776,7 +1816,12 @@ function ContentStep({
                 Tip: cada línea con «- » se convierte en viñeta al publicar en WASI.
               </p>
             </div>
-            <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-4">
+            {/* Antes: `sm:grid-cols-4` (por ancho de pantalla) metía Tipo,
+                Intención y los dos precios en columnas de ~130 px dentro de
+                la tarjeta en laptops: chips apilados, «Arriendo» encima del
+                precio y etiquetas en 2 líneas. Ahora la grilla responde al
+                ancho de la columna (container query). */}
+            <div className="grid grid-cols-1 gap-4 @2xl:grid-cols-[minmax(0,1fr)_auto] @2xl:gap-6">
               <div>
                 <div
                   className={`mb-1.5 text-xs font-bold ${fieldMissing("type") ? "text-[var(--pa-danger)]" : "text-[var(--pa-muted)]"}`}
@@ -1797,7 +1842,7 @@ function ContentStep({
               </div>
               <div>
                 <div className={label}>Intención</div>
-                <div className="flex gap-1.5">
+                <div className="flex flex-wrap gap-1.5">
                   {INTENTS.map((it) => (
                     <Chip
                       key={it}
@@ -1814,17 +1859,20 @@ function ContentStep({
                   ))}
                 </div>
               </div>
+            </div>
+            <div className="grid grid-cols-1 gap-3.5 @lg:grid-cols-2">
               <ControlledField
-                label="Precio a Publicar (COP) *"
+                label="Precio de publicación (COP) *"
                 value={form.precio}
                 onChange={(v) => onPatch({ precio: v })}
                 missing={fieldMissing("price")}
                 thousands
               />
               <ControlledField
-                label="Precio mínimo para cliente *"
+                label="Precio mínimo para el cliente (COP) *"
                 value={form.precioMinimoCliente}
                 onChange={(v) => onPatch({ precioMinimoCliente: v })}
+                missing={driveMissing.includes("minNetPrice")}
                 thousands
               />
             </div>
@@ -1832,7 +1880,7 @@ function ContentStep({
         </Card>
 
         <Card title="Ubicación">
-          <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-3.5 @lg:grid-cols-2">
             {wasiConnected ? (
               <>
                 <WasiLocationCombobox
@@ -1916,7 +1964,7 @@ function ContentStep({
         </Card>
 
         <Card title="Detalles">
-          <div className="grid grid-cols-2 gap-3.5 sm:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3.5 @xl:grid-cols-3 @3xl:grid-cols-4">
             <ControlledField
               label="Nombre conjunto"
               value={form.nombreConjunto}
@@ -2017,14 +2065,14 @@ function ContentStep({
         </Card>
 
         <Card title="Google Drive (Entrega)">
-          <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3">
+          <div className="grid grid-cols-1 gap-2.5 @xl:grid-cols-3">
             <ControlledField
               label="Predial *"
               value={form.predial}
               onChange={(v) => onPatch({ predial: v })}
               thousands
             />
-            <div className="sm:col-span-2">
+            <div className="@xl:col-span-2">
               <div className={label}>Afectaciones *</div>
               <select
                 className={input}
@@ -2049,7 +2097,7 @@ function ContentStep({
               />
             ) : null}
             {esResidencial ? (
-              <div className="sm:col-span-2">
+              <div className="@xl:col-span-2">
                 <div className={label}>Parqueadero *</div>
                 <select
                   className={input}
@@ -2073,7 +2121,7 @@ function ContentStep({
               value={form.frenteFondoM}
               onChange={(v) => onPatch({ frenteFondoM: v })}
             />
-            <div className="sm:col-span-3">
+            <div className="@xl:col-span-3">
               <div className={label}>Puntos favorables externos *</div>
               <textarea
                 className={`${input} min-h-[48px] resize-y`}
@@ -2083,7 +2131,7 @@ function ContentStep({
                 }
               />
             </div>
-            <div className="sm:col-span-3">
+            <div className="@xl:col-span-3">
               <div className={label}>Puntos favorables internos</div>
               <textarea
                 className={`${input} min-h-[48px] resize-y`}
@@ -2093,7 +2141,7 @@ function ContentStep({
                 }
               />
             </div>
-            <div className="sm:col-span-3">
+            <div className="@xl:col-span-3">
               <div className={label}>Observaciones inmueble *</div>
               <textarea
                 className={`${input} min-h-[48px] resize-y`}
@@ -2108,7 +2156,7 @@ function ContentStep({
         </Card>
 
         <Card title="Contacto">
-          <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-3.5 @lg:grid-cols-2">
             <ControlledField
               label="Nombre"
               value={form.nombreContacto}
@@ -2138,53 +2186,92 @@ function ContentStep({
         </Card>
       </div>
 
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-4 xl:sticky xl:top-4">
         <Card>
-          <div className="mb-3 text-xs font-bold uppercase tracking-wide text-[var(--pa-muted)]">
-            Completitud
+          <div className="mb-3 flex items-baseline justify-between gap-2">
+            <div className="text-xs font-bold uppercase tracking-wide text-[var(--pa-muted)]">
+              Completitud
+            </div>
+            <div className="text-xs font-semibold text-[var(--pa-muted)]">
+              {checklistDone} de {checklist.length}
+            </div>
           </div>
           <div className="mb-2.5 text-[28px] font-extrabold text-[var(--pa-navy)]">
             {completenessPct}%
           </div>
-          <div className="mb-3.5 h-2 overflow-hidden rounded bg-[var(--pa-bg-alt)]">
+          <div
+            className="mb-4 h-2 overflow-hidden rounded bg-[var(--pa-bg-alt)]"
+            role="progressbar"
+            aria-label="Completitud de la ficha"
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={completenessPct}
+          >
             <div
               className="h-full rounded bg-[var(--pa-accent)]"
               style={{ width: `${completenessPct}%` }}
             />
           </div>
-          <ul className="space-y-1 text-xs text-[var(--pa-muted)]">
-            {checklist.map((c) => (
-              <li key={c.label} className={c.done ? "" : "text-[var(--pa-warning)]"}>
-                {c.done ? "✓" : "Falta"} {c.label}
-              </li>
-            ))}
-          </ul>
-          {missingSummary ? (
-            <p className="mt-3 text-xs font-semibold text-[var(--pa-warning)]">
-              Falta: {missingSummary}
-            </p>
+          {pendingItems.length > 0 ? (
+            <>
+              <div className="mb-1.5 text-xs font-bold text-[var(--pa-ink)]">
+                Pendiente para publicar
+              </div>
+              <ul className="space-y-1 text-xs font-semibold text-[var(--pa-warning-ink)]">
+                {pendingItems.map((c) => (
+                  <li key={c.label} className="flex items-start gap-1.5">
+                    <span aria-hidden className="mt-[5px] h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--pa-warning)]" />
+                    <span>
+                      {c.label}
+                      {c.key === "photos" ? (
+                        <span className="font-normal text-[var(--pa-muted)]">
+                          {" "}— se agregan en «Fotos y Video»
+                        </span>
+                      ) : null}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </>
           ) : (
-            <p className="mt-3 text-xs font-semibold text-[var(--pa-success)]">
+            <p className="text-xs font-semibold text-[var(--pa-success)]">
               ✓ Información completa
             </p>
           )}
-          {fieldMissing("photos") ? (
-            <p className="mt-2 text-xs font-semibold text-[var(--pa-danger)]">
-              Fotos: se gestionan en el siguiente paso. Campo obligatorio.
-            </p>
+          {doneItems.length > 0 ? (
+            <details className="group mt-3">
+              <summary className="cursor-pointer list-none text-xs font-semibold text-[var(--pa-navy)] [&::-webkit-details-marker]:hidden">
+                <span className="group-open:hidden">Ver {doneItems.length} completos</span>
+                <span className="hidden group-open:inline">Ocultar completos</span>
+              </summary>
+              <ul className="mt-2 space-y-1 text-xs text-[var(--pa-muted)]">
+                {doneItems.map((c) => (
+                  <li key={c.label}>✓ {c.label}</li>
+                ))}
+              </ul>
+            </details>
           ) : null}
         </Card>
         <Card>
           <div className="mb-3 text-xs font-bold uppercase tracking-wide text-[var(--pa-muted)]">
-            Google Drive
+            Google Drive (Entrega)
           </div>
           {driveReady ? (
             <p className="text-xs font-semibold text-[var(--pa-success)]">
               ✓ Listo para publicar en Drive
             </p>
+          ) : driveMissing.length > 0 ? (
+            <>
+              <div className="mb-1.5 text-xs font-bold text-[var(--pa-ink)]">
+                Falta para Drive ({driveMissing.length})
+              </div>
+              <p className="text-xs font-semibold leading-relaxed text-[var(--pa-warning-ink)]">
+                {capitalize(driveMissingSummary)}
+              </p>
+            </>
           ) : (
-            <p className="text-xs font-semibold text-[var(--pa-warning)]">
-              Falta: {driveMissingSummary || "completar campos Entrega"}
+            <p className="text-xs font-semibold text-[var(--pa-warning-ink)]">
+              Completa los campos de Entrega.
             </p>
           )}
         </Card>

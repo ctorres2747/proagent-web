@@ -7,6 +7,8 @@
   --pa-navy-pressed: #082f4c;
   --pa-navy-050: #eaf0f5;
   --pa-accent: #1e8e5a;
+  /* Éxito = esmeralda de marca (BRAND.md §02). Se usaba sin estar definido. */
+  --pa-success: #1e8e5a;
   --pa-emerald-bright: #2fc98a;
   --pa-emerald-ink: #06331f;
   --pa-warning: #d9a227;

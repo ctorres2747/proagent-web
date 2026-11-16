@@ -83,21 +83,51 @@ export function monthAbbr(mes: number): string {
   return MESES_ABBR[mes - 1] ?? String(mes);
 }
 
+/** Unidad singular/plural por KPI para la frase de avance. */
+const SUMMARY_UNITS: Record<string, [string, string]> = {
+  captadas: ["propiedad captada", "propiedades captadas"],
+  publicadas: ["propiedad publicada", "propiedades publicadas"],
+  leads: ["lead", "leads"],
+};
+
+function joinEs(items: string[]): string {
+  if (items.length <= 1) return items.join("");
+  return `${items.slice(0, -1).join(", ")} y ${items[items.length - 1]}`;
+}
+
+/**
+ * Frase del bloque "Avance hacia la meta". Antes concatenaba el gap crudo
+ * (`0.9000000000000004 conversións`), pluralizaba agregando "s" y decía
+ * "Superaste la de…".
+ */
 export function buildAdvanceSummary(
   labels: { key: string; label: string; kpi: DesempenoKpi }[],
 ): string {
   const over: string[] = [];
   const under: string[] = [];
-  for (const { label, kpi } of labels) {
+  for (const { key, label, kpi } of labels) {
     const pct = kpiPct(kpi);
     if (pct == null || kpi.meta == null) continue;
     const gap = Number(kpi.meta) - Number(kpi.actual);
-    if (gap <= 0) over.push(label.toLowerCase());
-    else if (gap > 0) under.push(`${gap} ${label.toLowerCase().replace(/s$/, "")}${gap === 1 ? "" : "s"}`);
+    const name = label.toLowerCase();
+    if (gap <= 0) {
+      over.push(key === "leads" ? name : (SUMMARY_UNITS[key]?.[1] ?? name));
+      continue;
+    }
+    if (key === "conversion") {
+      under.push(`${formatConversion(gap)} pts de conversión`);
+      continue;
+    }
+    const n = Math.ceil(gap);
+    const [one, many] = SUMMARY_UNITS[key] ?? [name, name];
+    under.push(`${formatInteger(n)} ${n === 1 ? one : many}`);
   }
   const parts: string[] = [];
-  if (over.length) parts.push(`Superaste la de ${over.join(" y ")}`);
-  if (under.length) parts.push(`te faltan ${under.join(" y ")}`);
+  if (over.length) parts.push(`Superaste la meta de ${joinEs(over)}`);
+  if (under.length) {
+    const lead = over.length ? "te faltan" : "Te faltan";
+    parts.push(`${lead} ${joinEs(under)}`);
+  }
   if (!parts.length) return "Sigue avanzando hacia tus metas del periodo.";
   return parts.join("; ") + ".";
 }

@@ -185,7 +185,7 @@ export default function ClientsPage() {
     "h-9 rounded-[9px] border border-[var(--pa-border)] bg-[var(--pa-bg)] px-3 text-[12.5px]";
 
   return (
-    <div className="flex flex-col gap-[18px] px-[26px] py-[26px] pb-11 md:px-8">
+    <div className="flex flex-col gap-[18px]">
       <header className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
           <h1 className="text-2xl font-extrabold text-[#16212B]">Clientes</h1>

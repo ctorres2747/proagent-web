@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import { useAgentView } from "@/features/agentView/AgentViewProvider";
 import { useAuth } from "@/features/auth/AuthProvider";
 import { propertiesService, fichasService } from "@/services";
@@ -217,7 +217,7 @@ export default function PropertiesPage() {
   const onCreate = () => createMutation.mutate();
 
   return (
-    <div className="px-6 py-8 md:px-10 md:py-8">
+    <div>
       {/* Header */}
       <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
         <div>
@@ -483,7 +483,7 @@ function PropertyCard({
         <div className="mb-3">
           <CompletenessBar value={p.completeness} />
           {p.missingFields.length > 0 ? (
-            <p className="mt-1 line-clamp-2 text-[11px] text-[var(--pa-warning)]">
+            <p className="mt-1 line-clamp-2 text-[11px] text-[var(--pa-warning-ink)]">
               Falta: {formatMissingFields(p.missingFields)}
             </p>
           ) : null}
@@ -515,7 +515,7 @@ function PropertyTable({
   deletingId: string | null;
 }) {
   const cols =
-    "grid-cols-[36px_64px_minmax(0,2fr)_minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,1.2fr)_minmax(0,1.2fr)_minmax(0,1.1fr)_72px]";
+    "grid-cols-[36px_64px_minmax(0,2fr)_minmax(92px,1fr)_minmax(124px,1.1fr)_minmax(0,1fr)_minmax(0,1.1fr)_minmax(0,1.1fr)_44px]";
   return (
     <div className="rounded-2xl border border-[var(--pa-border)] bg-[var(--pa-surface)]">
       <div
@@ -563,10 +563,12 @@ function PropertyTable({
               </div>
             ) : null}
           </button>
-          <button type="button" onClick={() => onOpen(p)} className="truncate text-left text-xs text-[var(--pa-muted)]">
-            {p.tipo} · {p.intent}
+          <button type="button" onClick={() => onOpen(p)} className="min-w-0 text-left text-xs text-[var(--pa-muted)]">
+            <span className="block truncate">{p.tipo}</span>
+            <span className="block truncate text-[11px] text-[var(--pa-faint)]">{p.intent}</span>
           </button>
-          <button type="button" onClick={() => onOpen(p)} className="truncate text-left text-[13px] font-bold text-[var(--pa-navy)]">
+          {/* El precio es el dato clave: nunca truncado (antes «$ 210.000.…» a 1366 px). */}
+          <button type="button" onClick={() => onOpen(p)} className="whitespace-nowrap text-left text-[13px] font-bold tabular-nums text-[var(--pa-navy)]">
             {formatPrice(p.precio, p.esArriendo)}
           </button>
           <button type="button" onClick={() => onOpen(p)} className="truncate text-left text-xs text-[var(--pa-muted)]">
@@ -581,7 +583,7 @@ function PropertyTable({
               {p.completeness}%
             </span>
             {p.missingFields.length > 0 ? (
-              <p className="mt-0.5 line-clamp-2 text-[10px] text-[var(--pa-warning)]">
+              <p className="mt-0.5 line-clamp-2 text-[10px] text-[var(--pa-warning-ink)]">
                 Falta: {formatMissingFields(p.missingFields)}
               </p>
             ) : null}
@@ -590,9 +592,11 @@ function PropertyTable({
             type="button"
             onClick={() => onDelete(p)}
             disabled={deletingId === p.id}
-            className="justify-self-end text-[11px] font-bold text-[var(--pa-danger)] hover:underline disabled:opacity-50"
+            aria-label={`Eliminar ${p.titulo || p.code}`}
+            title="Eliminar propiedad"
+            className="flex h-8 w-8 items-center justify-center justify-self-end rounded-lg text-[var(--pa-muted)] transition-colors hover:bg-[var(--pa-danger-bg)] hover:text-[var(--pa-danger)] disabled:opacity-50"
           >
-            {deletingId === p.id ? "…" : "Eliminar"}
+            {deletingId === p.id ? "…" : <Trash2 size={16} aria-hidden />}
           </button>
         </div>
       ))}

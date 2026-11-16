@@ -89,7 +89,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           onScroll={onMainScroll}
           className="flex-1 overflow-y-auto"
         >
-          <div className="mx-auto w-full max-w-[var(--pa-shell-content-max)] px-4 py-7 pb-[60px] md:px-6 xl:px-8">
+          <div className="mx-auto w-full max-w-[var(--pa-shell-content-max)] px-4 py-7 pb-24 md:px-6 xl:px-8">
             {children}
           </div>
         </main>

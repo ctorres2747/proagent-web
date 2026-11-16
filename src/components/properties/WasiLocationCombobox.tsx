@@ -127,7 +127,7 @@ export function WasiLocationCombobox({
         <p className="mt-1 text-xs text-[var(--pa-muted)]">Buscando…</p>
       ) : null}
       {helperText ? (
-        <p className="mt-1 text-xs font-medium text-[var(--pa-warning)]">{helperText}</p>
+        <p className="mt-1 text-xs font-medium text-[var(--pa-warning-ink)]">{helperText}</p>
       ) : null}
       {open && !disabled && filtered.length > 0 ? (
         <ul
