@@ -18,6 +18,27 @@ interface RequestOptions {
 
 const SLOW_API_MS = 2000;
 
+type UnauthorizedListener = (rejectedToken: string) => void;
+const unauthorizedListeners = new Set<UnauthorizedListener>();
+
+/**
+ * Suscribe un callback que se dispara cuando una petición *autenticada*
+ * (con token) recibe 401 — token vencido o revocado a mitad de sesión.
+ * AuthProvider lo usa para cerrar sesión y volver a /login; antes el 401
+ * solo se manejaba al arrancar y el usuario quedaba viendo errores sueltos.
+ * Un 401 sin token (login con clave errada, handoff inválido) no lo dispara.
+ */
+export function onUnauthorized(listener: UnauthorizedListener): () => void {
+  unauthorizedListeners.add(listener);
+  return () => {
+    unauthorizedListeners.delete(listener);
+  };
+}
+
+function notifyUnauthorized(rejectedToken: string) {
+  for (const listener of unauthorizedListeners) listener(rejectedToken);
+}
+
 function logSlowApiCall(
   path: string,
   method: string,
@@ -69,8 +90,9 @@ function detailToMessage(detail: unknown): string | null {
   return null;
 }
 
-async function parseError(res: Response): Promise<never> {
+async function parseError(res: Response, token?: string): Promise<never> {
   if (res.status === 401) {
+    if (token) notifyUnauthorized(token);
     throw new ApiError(401, "No autorizado");
   }
   let detail = res.statusText;
@@ -120,7 +142,7 @@ export async function apiFetch<T>(
     logSlowApiCall(path, method, totalMs, res.headers.get("x-process-time-ms"), res.status);
   }
 
-  if (!res.ok) await parseError(res);
+  if (!res.ok) await parseError(res, token);
   if (res.status === 204) return undefined as T;
   return (await res.json()) as T;
 }
@@ -140,7 +162,7 @@ export async function apiUploadForm<T>(
     body: form,
   });
 
-  if (!res.ok) await parseError(res);
+  if (!res.ok) await parseError(res, token);
   if (res.status === 204) return undefined as T;
   return (await res.json()) as T;
 }
@@ -160,6 +182,6 @@ export async function apiDownloadBlob(
     if (qs) url += `?${qs}`;
   }
   const res = await fetch(url, { method: "GET", headers, redirect: "follow" });
-  if (!res.ok) await parseError(res);
+  if (!res.ok) await parseError(res, token);
   return res.blob();
 }

@@ -41,3 +41,8 @@ export async function getWorkerStatus(token?: string): Promise<WorkerStatus> {
     conectado: raw.conectado,
   };
 }
+
+export const workerService = {
+  createEnrollCode: createWorkerEnrollCode,
+  getStatus: getWorkerStatus,
+};

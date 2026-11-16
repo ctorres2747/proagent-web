@@ -34,3 +34,8 @@ export async function getMarketplaceLoginStatus(
     token,
   });
 }
+
+export const marketplaceLoginService = {
+  trigger: triggerMarketplaceLogin,
+  getStatus: getMarketplaceLoginStatus,
+};

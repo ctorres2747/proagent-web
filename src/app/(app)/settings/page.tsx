@@ -10,12 +10,12 @@ import { PasswordInput } from "@/components/PasswordInput";
 import { ProfilePhotoCropModal } from "@/components/ProfilePhotoCropModal";
 import { Toast } from "@/components/Toast";
 import { MetasDesempenoSection } from "@/features/inicio/MetasDesempenoSection";
-import { channelsService, profileService } from "@/services";
 import {
-  getFacebookConnectStatus,
-  triggerFacebookConnect,
-} from "@/services/http/facebookConnect";
-import { createWorkerEnrollCode, getWorkerStatus } from "@/services/http/workerEnroll";
+  channelsService,
+  facebookConnectService,
+  profileService,
+  workerService,
+} from "@/services";
 import { API_URL } from "@/config/env";
 import type { AgentProfile } from "@/services/interfaces/profile";
 import type { ChannelConnection } from "@/services/interfaces/channels";
@@ -300,12 +300,12 @@ function WorkerInstallSection({ token }: { token?: string }) {
 
   const statusQuery = useQuery({
     queryKey: ["worker-status"],
-    queryFn: () => getWorkerStatus(token),
+    queryFn: () => workerService.getStatus(token),
     refetchInterval: 15000,
   });
 
   const enrollMutation = useMutation({
-    mutationFn: () => createWorkerEnrollCode(token),
+    mutationFn: () => workerService.createEnrollCode(token),
     onSuccess: (data) => {
       setCode(data.code);
       setExpiraEnMinutos(data.expiraEnMinutos);
@@ -408,7 +408,7 @@ function ChannelRow({
   const [fbConnectPending, setFbConnectPending] = useState(false);
 
   const fbConnectMutation = useMutation({
-    mutationFn: () => triggerFacebookConnect(token),
+    mutationFn: () => facebookConnectService.trigger(token),
     onSuccess: (data) => {
       setFbConnectPending(Boolean(data.pendiente));
       onSaved(data.message);
@@ -422,7 +422,7 @@ function ChannelRow({
     if (id !== "facebook" || !fbConnectPending) return;
     const poll = setInterval(async () => {
       try {
-        const data = await getFacebookConnectStatus(token);
+        const data = await facebookConnectService.getStatus(token);
         if (data.estado === "completado") {
           setFbConnectPending(false);
           void queryClient.invalidateQueries({ queryKey: ["channel-connections"] });

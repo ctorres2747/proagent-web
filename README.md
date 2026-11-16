@@ -31,7 +31,8 @@ npm run dev                  # http://localhost:3000
 
 | `NEXT_PUBLIC_API_URL` | Comportamiento |
 |---|---|
-| vacío (o `NEXT_PUBLIC_USE_MOCKS=true`) | 100% mocks, sin backend. Sesión admin automática (se omite el login). |
+| vacío en `npm run dev` (o `NEXT_PUBLIC_USE_MOCKS=true`) | 100% mocks, sin backend. Sesión admin automática (se omite el login). |
+| vacío en build de producción, sin `NEXT_PUBLIC_USE_MOCKS=true` | Pantalla de error de configuración (nunca sesión mock en prod). |
 | definido (ej. `http://localhost:8000`) | HTTP real contra el backend ProAgent; login JWT en `/login`. |
 
 ## Scripts
@@ -59,7 +60,13 @@ URL pública recomendada: `https://app.proinversores.bond` · API: `https://agen
 - `/` — dashboard del agente
 - `/properties` — listado de propiedades (fichas)
 - `/properties/[id]` — detalle de propiedad
-- `/publications` — placeholder del asistente de publicación (E-WEB-01)
+- `/publications` — listado de publicaciones por canal
+- `/prospects`, `/clients` — cartera (prospectos y clientes)
+- `/settings` — perfil, canales, worker de la PC
+- `/captacion` — captación nativa (solo staff, tras `NEXT_PUBLIC_CAPTACION_NATIVE=true`)
+
+Si el token vence a mitad de sesión (cualquier 401 de una petición
+autenticada), la app cierra sesión y vuelve a `/login?next=<ruta actual>`.
 
 ## Arquitectura
 
