@@ -7,7 +7,16 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/features/auth/AuthProvider";
-import { propertiesService, publicationsService, channelsService, wasiFeaturesService, wasiZonasService, wasiCiudadesService } from "@/services";
+import {
+  channelsService,
+  driveFieldOptionsService,
+  marketplaceLoginService,
+  propertiesService,
+  publicationsService,
+  wasiCiudadesService,
+  wasiFeaturesService,
+  wasiZonasService,
+} from "@/services";
 import type {
   Condition,
   Intent,
@@ -71,7 +80,6 @@ import {
   DRIVE_PARKING_OPTIONS,
   DRIVE_PROPERTY_LIENS_OPTIONS,
 } from "@/lib/driveFieldOptions";
-import { driveFieldOptionsService } from "@/services/http/driveFieldOptions";
 import {
   DEFAULT_TIMEZONE,
   buildScheduleIso,
@@ -84,10 +92,6 @@ import {
   pickCanonicalPublication,
 } from "@/lib/publicationResolve";
 import { ApiError } from "@/services/http/client";
-import {
-  getMarketplaceLoginStatus,
-  triggerMarketplaceLogin,
-} from "@/services/http/marketplaceLogin";
 import { formatChannelDurationLine, formatChannelResultMeta } from "@/lib/channelResults";
 import {
   isChannelPersonalized,
@@ -456,10 +460,30 @@ export default function PublishWizardPage() {
     staleTime: 0,
   });
 
-  // Seed form from property when loaded
+  // Seed form from property when loaded. Con refetchOnWindowFocus (arriba),
+  // si otro asesor editó la ficha el refetch traía datos nuevos y este efecto
+  // pisaba en silencio lo que el agente estaba escribiendo. Ahora: si el
+  // formulario de la MISMA ficha tiene cambios sin guardar, se conservan y se
+  // avisa; solo se re-siembra cuando no hay cambios locales o cambia la ficha.
+  const contentFormRef = useRef(contentForm);
+  contentFormRef.current = contentForm;
+  const savedContentRef = useRef(savedContent);
+  savedContentRef.current = savedContent;
+  const seededPropertyIdRef = useRef<string | null>(null);
+  const [remoteUpdateNotice, setRemoteUpdateNotice] = useState(false);
   useEffect(() => {
     if (!property) return;
     const snapshot = snapshotFromProperty(property);
+    const saved = savedContentRef.current;
+    const sameProperty = seededPropertyIdRef.current === property.id;
+    const hasLocalEdits =
+      saved !== null && !contentFormsEqual(contentFormRef.current, saved);
+    if (sameProperty && hasLocalEdits) {
+      if (!contentFormsEqual(snapshot, saved)) setRemoteUpdateNotice(true);
+      return;
+    }
+    seededPropertyIdRef.current = property.id;
+    setRemoteUpdateNotice(false);
     setContentForm(snapshot);
     setSavedContent(snapshot);
   }, [property]);
@@ -629,6 +653,18 @@ export default function PublishWizardPage() {
     sharedTitle,
   ]);
 
+  // Aviso nativo del navegador al cerrar/recargar con cambios sin guardar.
+  const hasUnsavedChanges = isContentDirty || isChannelsDirty || isCustomizeDirty;
+  useEffect(() => {
+    if (!hasUnsavedChanges) return;
+    const onBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", onBeforeUnload);
+    return () => window.removeEventListener("beforeunload", onBeforeUnload);
+  }, [hasUnsavedChanges]);
+
   const wasiPublishReady = property
     ? isWasiPublishReady(property.missingFields)
     : true;
@@ -734,6 +770,7 @@ export default function PublishWizardPage() {
       setSharedTitle(pub.sharedTitle || contentForm.titulo);
       setSharedBody(pub.sharedBody || contentForm.descripcion);
       setSavedContent(currentContent);
+      setRemoteUpdateNotice(false);
       await queryClient.invalidateQueries({
         queryKey: ["property", params.id],
       });
@@ -1093,6 +1130,15 @@ export default function PublishWizardPage() {
         ))}
       </div>
 
+      {remoteUpdateNotice && (
+        <p
+          role="status"
+          className="mb-4 rounded-lg bg-[var(--pa-warning-bg)] px-3 py-2 text-sm text-[var(--pa-warning-ink)]"
+        >
+          Otra persona actualizó esta ficha mientras editabas. Conservamos tus
+          cambios sin guardar; al guardar, reemplazarán la versión del servidor.
+        </p>
+      )}
       {actionError && (
         <p className="mb-4 text-sm text-[var(--pa-danger)]">{actionError}</p>
       )}
@@ -3584,7 +3630,7 @@ function ResultsStep({
     setMpLoginState("pending");
     setMpLoginMessage(null);
     try {
-      await triggerMarketplaceLogin(property.id, token);
+      await marketplaceLoginService.trigger(property.id, token);
     } catch (err) {
       setMpLoginState("error");
       setMpLoginMessage(
@@ -3597,7 +3643,7 @@ function ResultsStep({
     if (mpLoginPollRef.current) clearInterval(mpLoginPollRef.current);
     mpLoginPollRef.current = setInterval(async () => {
       try {
-        const status = await getMarketplaceLoginStatus(property.id, token);
+        const status = await marketplaceLoginService.getStatus(property.id, token);
         if (status.estado === "pendiente" || status.estado === null) return;
         if (mpLoginPollRef.current) {
           clearInterval(mpLoginPollRef.current);

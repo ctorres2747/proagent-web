@@ -7,7 +7,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useAgentView } from "@/features/agentView/AgentViewProvider";
 import { useAuth } from "@/features/auth/AuthProvider";
 import { canAccessCaptacion } from "@/lib/agentDisplay";
-import { navCountsService } from "@/services/http/navCounts";
+import { navCountsService } from "@/services";
 
 import { AssistantShellFromSession } from "./AssistantShell";
 import { MobileDrawer } from "./MobileDrawer";

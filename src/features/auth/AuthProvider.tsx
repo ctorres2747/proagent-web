@@ -11,7 +11,7 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 import { USE_HTTP_API } from "@/config/env";
 import { authService } from "@/services";
-import { ApiError } from "@/services/http/client";
+import { ApiError, onUnauthorized } from "@/services/http/client";
 import { MOCK_ADMIN } from "@/services/mocks/auth";
 import type { AgentSession, LoginResponse } from "./types";
 
@@ -54,6 +54,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // para logout) — más robusto y escalable que namespacear cada clave.
     queryClient.clear();
   }, [queryClient]);
+
+  // Token vencido/revocado a mitad de sesión → cerrar sesión. RequireAuth
+  // redirige a /login (con `next` para volver a la misma pantalla).
+  useEffect(() => {
+    if (!USE_HTTP_API) return;
+    return onUnauthorized((rejectedToken) => {
+      // Solo si el token rechazado es el vigente: una respuesta tardía con el
+      // token de una sesión anterior no debe sacar al agente actual.
+      if (typeof window === "undefined") return;
+      if (localStorage.getItem(TOKEN_KEY) !== rejectedToken) return;
+      logout();
+    });
+  }, [logout]);
 
   // Bootstrap: in mock mode auto-authenticate as admin (no login gate).
   // In HTTP mode, restore token from localStorage and hydrate via /me.

@@ -8,6 +8,10 @@ const ALLOWED_PATH_PATTERNS: RegExp[] = [
   /^\/properties$/,
   /^\/properties\/\d+$/,
   /^\/publications$/,
+  /^\/prospects$/,
+  /^\/clients$/,
+  /^\/settings$/,
+  /^\/captacion$/,
 ];
 
 /** Returns a safe relative path or null if the value is not allowed. */

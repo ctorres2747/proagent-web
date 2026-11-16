@@ -17,3 +17,8 @@ export async function triggerFacebookConnect(token?: string): Promise<FacebookCo
 export async function getFacebookConnectStatus(token?: string): Promise<FacebookConnectStatus> {
   return apiFetch("/api/web/me/channels/facebook/connect/status", { token });
 }
+
+export const facebookConnectService = {
+  trigger: triggerFacebookConnect,
+  getStatus: getFacebookConnectStatus,
+};

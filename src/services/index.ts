@@ -41,6 +41,18 @@ import { dashboardService as httpDashboard } from "./http/dashboard";
 import { metasService as httpMetas } from "./http/metas";
 import { clientsService as httpClients } from "./http/clients";
 import { prospectsService as httpProspects } from "./http/prospects";
+import { navCountsService as httpNavCounts } from "./http/navCounts";
+import { driveFieldOptionsService as httpDriveFieldOptions } from "./http/driveFieldOptions";
+import { facebookConnectService as httpFacebookConnect } from "./http/facebookConnect";
+import { workerService as httpWorker } from "./http/workerEnroll";
+import { marketplaceLoginService as httpMarketplaceLogin } from "./http/marketplaceLogin";
+import { mockDriveFieldOptionsService as mockDriveFieldOptions } from "./mocks/driveFieldOptions";
+import {
+  facebookConnectService as mockFacebookConnect,
+  marketplaceLoginService as mockMarketplaceLogin,
+  navCountsService as mockNavCounts,
+  workerService as mockWorker,
+} from "./mocks/integrations";
 
 import type { AgentesService } from "./interfaces/agentes";
 import type { AuthService } from "./interfaces/auth";
@@ -55,6 +67,7 @@ import type { DashboardService } from "./interfaces/dashboard";
 import type { MetasService } from "./interfaces/metas";
 import type { ClientsService } from "./interfaces/clients";
 import type { ProspectsService } from "./interfaces/prospects";
+import type { DriveFieldOptionsService } from "./interfaces/driveFieldOptions";
 
 export const agentesService: AgentesService = USE_HTTP_API
   ? httpAgentes
@@ -95,6 +108,20 @@ export const clientsService: ClientsService = USE_HTTP_API ? httpClients : mockC
 export const prospectsService: ProspectsService = USE_HTTP_API
   ? httpProspects
   : mockProspects;
+
+export const navCountsService: Pick<typeof httpNavCounts, "get"> = USE_HTTP_API
+  ? httpNavCounts
+  : mockNavCounts;
+export const driveFieldOptionsService: DriveFieldOptionsService = USE_HTTP_API
+  ? httpDriveFieldOptions
+  : mockDriveFieldOptions;
+export const facebookConnectService: typeof httpFacebookConnect = USE_HTTP_API
+  ? httpFacebookConnect
+  : mockFacebookConnect;
+export const workerService: typeof httpWorker = USE_HTTP_API ? httpWorker : mockWorker;
+export const marketplaceLoginService: typeof httpMarketplaceLogin = USE_HTTP_API
+  ? httpMarketplaceLogin
+  : mockMarketplaceLogin;
 
 export type { AgenteResumen, AgentesService } from "./interfaces/agentes";
 export type { AuthService } from "./interfaces/auth";

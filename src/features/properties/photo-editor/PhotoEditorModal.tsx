@@ -114,6 +114,16 @@ export function PhotoEditorModal({
     [drafts],
   );
 
+  // Cerrar el modal debe cortar el poll del retoque (antes seguía pidiendo
+  // GET cada 1,5 s hasta 60 s con el modal ya desmontado).
+  const unmountedRef = useRef(false);
+  useEffect(() => {
+    unmountedRef.current = false;
+    return () => {
+      unmountedRef.current = true;
+    };
+  }, []);
+
   useEffect(() => {
     const opener = openerRef.current;
     const prev = document.body.style.overflow;
@@ -254,6 +264,7 @@ export function PhotoEditorModal({
           throw new Error("timeout");
         }
         if (polled) await sleep(1500);
+        if (unmountedRef.current) return;
         const poll = await propertiesService.pollPhotoEdit(
           property.id,
           photo.id,
@@ -271,6 +282,7 @@ export function PhotoEditorModal({
       if (status !== "done") {
         throw new Error("timeout");
       }
+      if (unmountedRef.current) return;
       setDrafts((prev) => {
         const cur = prev[photo.id] ?? EMPTY_DRAFT;
         return {
@@ -286,6 +298,7 @@ export function PhotoEditorModal({
       setView("retocada");
       setToast(photoEditMeta(op).ready);
     } catch (err) {
+      if (unmountedRef.current) return;
       setError({
         photoId: photo.id,
         op,

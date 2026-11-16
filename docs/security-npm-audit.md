@@ -9,6 +9,19 @@
 | Repo | `proagent-web` (`main`) |
 | Entorno | build prod en `/opt/proagent-web` + CI local |
 
+## Actualización 2026-11-16
+
+`npm audit --omit=dev` volvió a reportar **1 critical + 2 high**:
+
+| Paquete | Severidad | Arreglo |
+|---------|-----------|---------|
+| `next` `<=15.5.27` | critical | `next` / `eslint-config-next` → `^15.5.29` (patch dentro de 15.x) |
+| `sharp` `<0.35.5` (CVE librsvg) | high | override `sharp` → `^0.35.5` |
+| `source-map-js` `<=1.2.1` (DoS) | high | override `source-map-js` → `^1.2.2` |
+
+Resultado: `npm audit --omit=dev` → **0 vulnerabilities**. Queda `brace-expansion`
+(high) solo en el árbol de **dev** (eslint), sin impacto en el bundle ni en el server.
+
 ## Hallazgo original
 
 `npm audit` reportaba **3 vulnerabilidades high**.  

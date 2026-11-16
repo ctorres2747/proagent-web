@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus } from "lucide-react";
@@ -60,6 +60,7 @@ export default function PropertiesPage() {
   const [shortcutFaltanDatos, setShortcutFaltanDatos] = useState(false);
   const [debajo50Inicio, setDebajo50Inicio] = useState(false);
   const [creatingFromLead, setCreatingFromLead] = useState(false);
+  const leadHandledRef = useRef<string | null>(null);
   const [toast, setToast] = useState<{ message: string; type?: "error" } | null>(
     null,
   );
@@ -77,8 +78,13 @@ export default function PropertiesPage() {
     const params = new URLSearchParams(window.location.search);
     const leadRaw = params.get("crearDesdeLead");
     if (!leadRaw || !token || creatingFromLead) return;
+    // Guardia síncrona: el estado `creatingFromLead` no alcanza a cortar la
+    // segunda ejecución del efecto (StrictMode / re-render antes del commit)
+    // y se podían crear dos fichas desde el mismo lead.
+    if (leadHandledRef.current === leadRaw) return;
     const leadId = Number(leadRaw);
     if (!Number.isFinite(leadId)) return;
+    leadHandledRef.current = leadRaw;
     setCreatingFromLead(true);
     fichasService
       .createFromLead(leadId, token)

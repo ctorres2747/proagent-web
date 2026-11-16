@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/features/auth/AuthProvider";
+import { loginUrlWithNext } from "@/lib/safeNext";
 
 /**
  * Gate for the authenticated app. In mock mode a session always exists, so
@@ -12,10 +13,11 @@ import { useAuth } from "@/features/auth/AuthProvider";
 export function RequireAuth({ children }: { children: React.ReactNode }) {
   const { session, loading } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
 
   useEffect(() => {
-    if (!loading && !session) router.replace("/login");
-  }, [loading, session, router]);
+    if (!loading && !session) router.replace(loginUrlWithNext(pathname));
+  }, [loading, session, router, pathname]);
 
   if (loading) {
     return (
