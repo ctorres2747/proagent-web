@@ -1713,25 +1713,20 @@ function ContentStep({
   const wasiTitleError = validateWasiTitle(form.titulo);
   const wasiTitleTone = wasiTitleCounterTone(wasiTitleLen);
   const titleBlocked = Boolean(wasiTitleError);
-  const checklist = checklistForTipo(form.tipo || property.tipo).map((item) => ({
-    label: item.label,
-    done: isFieldComplete(item.key, liveMissing),
-  }));
   const missingSummary = formatMissingFields(liveMissing);
-  const checklistWithKeys = checklistForTipo(form.tipo || property.tipo).map((item) => ({
+  // Fuente única del panel de Completitud: el porcentaje, el «N de M», la
+  // lista de pendientes y la de completos salen todos de esta misma lista,
+  // así no pueden desincronizarse si alguien cambia qué campos cuentan.
+  const checklist = checklistForTipo(form.tipo || property.tipo).map((item) => ({
     key: item.key,
     label: item.label,
     done: isFieldComplete(item.key, liveMissing),
   }));
-  const pendingItems = checklistWithKeys.filter((c) => !c.done);
-  const doneItems = checklistWithKeys.filter((c) => c.done);
+  const pendingItems = checklist.filter((c) => !c.done);
+  const doneItems = checklist.filter((c) => c.done);
   const checklistDone = doneItems.length;
   const completenessPct =
-    checklist.length > 0
-      ? Math.round(
-          (checklist.filter((c) => c.done).length / checklist.length) * 100,
-        )
-      : 0;
+    checklist.length > 0 ? Math.round((checklistDone / checklist.length) * 100) : 0;
   return (
     <div className="grid grid-cols-1 items-start gap-7 xl:grid-cols-[minmax(0,1fr)_300px]">
       <div className="@container flex min-w-0 flex-col gap-6">
