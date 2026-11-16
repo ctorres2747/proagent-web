@@ -231,7 +231,7 @@ export default function PublicationsPage() {
   const open = (p: Property) => router.push(`/properties/${p.id}`);
 
   return (
-    <div className="px-6 py-8 md:px-10 md:py-8">
+    <div>
       <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="text-[26px] font-extrabold text-[var(--pa-ink)]">

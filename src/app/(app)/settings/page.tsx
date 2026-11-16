@@ -1023,7 +1023,7 @@ export default function SettingsPage() {
   );
 
   return (
-    <div className="mx-auto w-full max-w-[1440px] px-4 py-6 md:px-8">
+    <div className="w-full">
       <header className="mb-6">
         <h1 className="text-[22px] font-extrabold text-[var(--pa-ink)]">
           Configuración

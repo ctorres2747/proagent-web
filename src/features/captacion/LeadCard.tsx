@@ -32,7 +32,7 @@ export function LeadCard({
         {lead.estado === "Pendiente" && lead.enRevision ? (
           <span
             title="En revisión"
-            className="absolute right-1 top-1 inline-flex rounded-md bg-[var(--pa-surface)]/95 p-1 text-[var(--pa-warning)] shadow-sm"
+            className="absolute right-1 top-1 inline-flex rounded-md bg-[var(--pa-surface)]/95 p-1 text-[var(--pa-warning-ink)] shadow-sm"
           >
             <Eye size={14} strokeWidth={2.2} aria-hidden />
             <span className="sr-only">En revisión</span>

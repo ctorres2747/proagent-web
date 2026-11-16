@@ -29,8 +29,10 @@ export const PUBLICATION_STAGE_LABEL: Record<PublicationStage, string> = {
   scheduled: "Programada",
   publishing: "Publicando",
   published: "Publicada",
-  partially_published: "Parcialmente publicado",
-  partial: "Parcial",
+  // Antes «Parcialmente publicado» vs «Parcial»: casi el mismo texto para dos
+  // estados distintos (en parte sin errores / en parte con errores).
+  partially_published: "Publicada en parte",
+  partial: "En parte, con error",
   failed: "Error",
 };
 
@@ -41,7 +43,7 @@ export const PUBLICATION_STAGE_CLASS: Record<PublicationStage, string> = {
   publishing: "bg-[#FEF3E2] text-[#B45309]",
   published: "bg-[#E6F4EE] text-[var(--pa-accent)]",
   partially_published: "bg-[#FEF3E2] text-[#B45309]",
-  partial: "bg-[#FEF3E2] text-[#B45309]",
+  partial: "bg-[var(--pa-danger-bg)] text-[var(--pa-danger)]",
   failed: "bg-[#FCEAEA] text-[var(--pa-danger)]",
 };
 

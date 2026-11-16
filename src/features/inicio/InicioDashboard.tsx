@@ -285,7 +285,7 @@ export function InicioDashboard() {
   }));
 
   return (
-    <div className="flex flex-col gap-[18px] px-[26px] py-[26px] pb-11 md:px-8">
+    <div className="flex flex-col gap-[18px]">
       <header className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
           <h1 className="text-2xl font-extrabold text-[#16212B]">
@@ -383,7 +383,7 @@ export function InicioDashboard() {
               className="flex flex-col gap-2.5 rounded-2xl border border-[#E4E8EC] bg-white px-5 py-[18px]"
             >
               <div className="flex items-start justify-between gap-2">
-                <span className="truncate text-[12.5px] font-bold text-[#5B6B79]">{label}</span>
+                <span className="min-w-0 text-[12.5px] font-bold leading-snug text-[var(--pa-muted)]">{label}</span>
                 <KpiChip
                   periodo={periodo}
                   kpiKey={key}
@@ -602,7 +602,7 @@ function PendientesBlock({
     pendientes.publicacionesConError.total > 0
       ? {
           color: "#C23B2B",
-          title: `${pendientes.publicacionesConError.total} fichas con errores en publicación`,
+          title: plural(pendientes.publicacionesConError.total, "ficha con errores en publicación", "fichas con errores en publicación"),
           sub: "Revisa el canal con error y reintenta",
           href: "/publications?filtro=error",
           action: "Ver publicaciones",
@@ -611,8 +611,10 @@ function PendientesBlock({
     pendientes.leadsSinContactar.total > 0
       ? {
           color: "#C23B2B",
-          title: `${pendientes.leadsSinContactar.total} leads sin contactar`,
-          sub: `${pendientes.leadsSinContactar.masDe48h} llevan más de 48 horas`,
+          title: plural(pendientes.leadsSinContactar.total, "lead sin contactar", "leads sin contactar"),
+          sub: pendientes.leadsSinContactar.masDe48h === 1
+            ? "1 lleva más de 48 horas"
+            : `${pendientes.leadsSinContactar.masDe48h} llevan más de 48 horas`,
           href: "/captacion?estado=Pendiente",
           action: "Ir a Captación",
         }
@@ -620,7 +622,7 @@ function PendientesBlock({
     pendientes.fichasIncompletas.total > 0
       ? {
           color: "#D97B2B",
-          title: `${pendientes.fichasIncompletas.total} fichas por debajo de 50%`,
+          title: plural(pendientes.fichasIncompletas.total, "ficha por debajo de 50%", "fichas por debajo de 50%"),
           sub:
             pendientes.fichasIncompletas.muestras.join(", ") +
             (pendientes.fichasIncompletas.total > 2
@@ -633,7 +635,7 @@ function PendientesBlock({
     pendientes.sinPublicar.total > 0
       ? {
           color: "#1E8E5A",
-          title: `${pendientes.sinPublicar.total} propiedades sin publicar`,
+          title: plural(pendientes.sinPublicar.total, "propiedad sin publicar", "propiedades sin publicar"),
           sub: "Fichas completas, listas para portales",
           href: "/publications",
           action: "Publicar",
@@ -686,7 +688,7 @@ function PendientesBlock({
 
 function InicioSkeleton() {
   return (
-    <div className="flex flex-col gap-[18px] px-[26px] py-[26px] animate-pulse">
+    <div className="flex flex-col gap-[18px] animate-pulse">
       <div className="h-10 w-64 rounded-lg bg-[#EEF0F3]" />
       <div className="h-28 rounded-2xl bg-[#EEF0F3]" />
       <div className="grid grid-cols-4 gap-3">
@@ -700,4 +702,8 @@ function InicioSkeleton() {
       </div>
     </div>
   );
+}
+
+function plural(n: number, one: string, many: string): string {
+  return `${n} ${n === 1 ? one : many}`;
 }

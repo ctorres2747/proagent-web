@@ -162,7 +162,7 @@ export function WasiFeaturesCheckboxes({
 
   if (error) {
     return (
-      <p className="text-sm font-medium text-[var(--pa-warning)]">{error}</p>
+      <p className="text-sm font-medium text-[var(--pa-warning-ink)]">{error}</p>
     );
   }
 

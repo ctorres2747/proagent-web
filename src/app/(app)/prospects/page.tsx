@@ -235,7 +235,7 @@ export default function ProspectsPage() {
   const qualifyValid = missingQualify.length === 0;
 
   return (
-    <div className="px-6 py-8 md:px-10">
+    <div>
       <h1 className="text-[24px] font-extrabold text-[var(--pa-ink)]">Prospectos</h1>
       <p className="mt-1 text-[13px] text-[var(--pa-muted)]">
         Llegan automáticamente desde los portales. Califícalos para pasarlos a Clientes.

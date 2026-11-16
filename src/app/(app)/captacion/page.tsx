@@ -328,7 +328,7 @@ export default function CaptacionPage() {
 
   if (!CAPTACION_NATIVE) {
     return (
-      <div className="px-6 py-10 md:px-10">
+      <div>
         <h1 className="text-[26px] font-extrabold text-[var(--pa-ink)]">
           Captación
         </h1>
@@ -404,7 +404,7 @@ export default function CaptacionPage() {
   const hoyKpi = stats.hoy ?? 0;
 
   return (
-    <div className="flex min-h-[calc(100vh-4rem)] flex-col px-6 py-8 md:px-10 md:py-8">
+    <div className="flex min-h-[calc(100vh-4rem)] flex-col">
       <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-[26px] font-extrabold text-[var(--pa-ink)]">
