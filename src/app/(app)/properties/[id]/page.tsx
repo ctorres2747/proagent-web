@@ -1568,8 +1568,16 @@ function ContentStep({
   // municipio YA GUARDADO de la ficha (no en `form.municipio`, que puede
   // traer ya un valor sin confirmar si el usuario está a mitad de escribir).
   const barrioCityRef = useRef(property.municipio ?? "");
+  // Mismo criterio que barrioCityRef, para la Localidad (sesión 2026-11-17,
+  // review PR #169): el primer intento limpiaba Barrio en CADA commit de
+  // Localidad sin comparar si el valor había cambiado de verdad — un blur
+  // sin tocar nada, o re-elegir la misma localidad (tab entre campos),
+  // borraba el barrio ya escrito. Mismo bug que el de Ciudad, aplicado al
+  // campo nuevo.
+  const barrioLocalidadRef = useRef(property.localidad ?? "");
   useEffect(() => {
     barrioCityRef.current = property.municipio ?? "";
+    barrioLocalidadRef.current = property.localidad ?? "";
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [property.id]);
 
@@ -1966,6 +1974,7 @@ function ContentStep({
                   onCommit={(value) => {
                     if (!matchesWasiOption(value, barrioCityRef.current)) {
                       onPatch({ localidad: "", barrio: "", wasiIdZone: null });
+                      barrioLocalidadRef.current = "";
                       setBarrioValido(false);
                       setLegacyBarrio(null);
                     }
@@ -1986,16 +1995,18 @@ function ContentStep({
                     label="Sector / Localidad"
                     value={form.localidad}
                     onChange={(value) => onPatch({ localidad: value })}
-                    onCommit={() => {
-                      // Cambiar de localidad invalida el barrio elegido de la
-                      // localidad anterior (el catálogo de zonas depende de
-                      // cuál esté seleccionada) — mismo criterio que Ciudad,
-                      // pero acá siempre se limpia porque no hay "misma
-                      // localidad de antes" que preservar sin el combobox de
-                      // Barrio ya mostrando las opciones correctas.
-                      onPatch({ barrio: "", wasiIdZone: null });
-                      setBarrioValido(false);
-                      setLegacyBarrio(null);
+                    onCommit={(value) => {
+                      // Bug real (review PR #169): limpiar sin comparar
+                      // contra el valor anterior borraba Barrio con solo
+                      // hacer blur o re-elegir la MISMA localidad (ej. tab
+                      // entre campos) — mismo criterio que Ciudad, ahora
+                      // comparando contra barrioLocalidadRef.
+                      if (!matchesWasiOption(value, barrioLocalidadRef.current)) {
+                        onPatch({ barrio: "", wasiIdZone: null });
+                        setBarrioValido(false);
+                        setLegacyBarrio(null);
+                      }
+                      barrioLocalidadRef.current = value;
                     }}
                     options={localidadOptions}
                     loading={localidadesLoading}
