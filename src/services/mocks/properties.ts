@@ -46,6 +46,8 @@ function channels(map: Partial<Record<ChannelId, ChannelStatus>>): PropertyChann
 }
 
 const DRIVE_FIELDS_DEFAULT = {
+  localidad: null,
+  wasiIdZone: null,
   numeroApartamento: null,
   completenessDrive: { isComplete: false, missingFields: [] as string[] },
   predial: null,
@@ -68,6 +70,8 @@ const DRIVE_FIELDS_DEFAULT = {
   canalesConFotosDesactualizadas: [] as string[],
 } satisfies Pick<
   Property,
+  | "localidad"
+  | "wasiIdZone"
   | "numeroApartamento"
   | "completenessDrive"
   | "predial"
@@ -355,6 +359,8 @@ export const propertiesService: PropertiesService = {
       intent: "Venta",
       municipio: data.municipio ?? "Medellín",
       barrio: data.barrio ?? null,
+      localidad: data.localidad ?? null,
+      wasiIdZone: data.wasiIdZone ?? null,
       direccion: data.direccion ?? null,
       codigoPostal: data.codigoPostal ?? null,
       precio: data.precio ?? null,

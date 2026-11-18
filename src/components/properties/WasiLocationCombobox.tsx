@@ -12,6 +12,7 @@ export function WasiLocationCombobox({
   value,
   onChange,
   onValidChange,
+  onCommit,
   options,
   loading = false,
   disabled = false,
@@ -23,6 +24,12 @@ export function WasiLocationCombobox({
   value: string;
   onChange: (value: string) => void;
   onValidChange?: (valid: boolean) => void;
+  /** Se dispara al "terminar" de escribir (blur, o elegir una opción) —
+   * nunca en cada tecla. Pensado para lógica que depende de que el valor ya
+   * se haya asentado (ej. limpiar un campo dependiente solo cuando la
+   * ciudad cambió de verdad, no en cada tecla mientras se corrige un typo —
+   * bug real 2026-11-17, ficha F-155). */
+  onCommit?: (value: string) => void;
   options: string[];
   loading?: boolean;
   disabled?: boolean;
@@ -59,6 +66,7 @@ export function WasiLocationCombobox({
   const selectOption = (option: string) => {
     onChange(option);
     onValidChange?.(true);
+    onCommit?.(option);
     setOpen(false);
   };
 
@@ -66,14 +74,17 @@ export function WasiLocationCombobox({
     window.setTimeout(() => {
       if (!value.trim()) {
         onValidChange?.(false);
+        onCommit?.(value);
         return;
       }
       const exact = options.find((opt) => matchesWasiOption(opt, value));
       if (exact) {
         if (exact !== value) onChange(exact);
         onValidChange?.(true);
+        onCommit?.(exact);
       } else {
         onValidChange?.(false);
+        onCommit?.(value);
       }
       setOpen(false);
     }, 120);

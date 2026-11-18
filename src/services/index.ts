@@ -20,6 +20,7 @@ import { scraperService as mockScraper } from "./mocks/scraper";
 import { wasiFeaturesService as mockWasiFeatures } from "./mocks/wasiFeatures";
 import { wasiZonasService as mockWasiZonas } from "./mocks/wasiZonas";
 import { wasiCiudadesService as mockWasiCiudades } from "./mocks/wasiCiudades";
+import { wasiLocalidadesService as mockWasiLocalidades } from "./mocks/wasiLocalidades";
 import { dashboardService as mockDashboard } from "./mocks/dashboard";
 import { metasService as mockMetas } from "./mocks/metas";
 import { clientsService as mockClients } from "./mocks/clients";
@@ -37,6 +38,7 @@ import { scraperService as httpScraper } from "./http/scraper";
 import { wasiFeaturesService as httpWasiFeatures } from "./http/wasiFeatures";
 import { wasiZonasService as httpWasiZonas } from "./http/wasiZonas";
 import { wasiCiudadesService as httpWasiCiudades } from "./http/wasiCiudades";
+import { wasiLocalidadesService as httpWasiLocalidades } from "./http/wasiLocalidades";
 import { dashboardService as httpDashboard } from "./http/dashboard";
 import { metasService as httpMetas } from "./http/metas";
 import { clientsService as httpClients } from "./http/clients";
@@ -100,6 +102,9 @@ export const wasiFeaturesService = USE_HTTP_API
   : mockWasiFeatures;
 export const wasiZonasService = USE_HTTP_API ? httpWasiZonas : mockWasiZonas;
 export const wasiCiudadesService = USE_HTTP_API ? httpWasiCiudades : mockWasiCiudades;
+export const wasiLocalidadesService = USE_HTTP_API
+  ? httpWasiLocalidades
+  : mockWasiLocalidades;
 export const dashboardService: DashboardService = USE_HTTP_API
   ? httpDashboard
   : mockDashboard;

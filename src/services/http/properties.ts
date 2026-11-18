@@ -45,6 +45,8 @@ interface RawProperty {
   intencion?: string | null;
   municipio?: string | null;
   barrio?: string | null;
+  localidad?: string | null;
+  wasi_id_zone?: number | string | null;
   direccion?: string | null;
   codigo_postal?: string | null;
   precio?: number | string | null;
@@ -156,6 +158,8 @@ function mapProperty(raw: RawProperty): Property {
     intent,
     municipio: raw.municipio ?? "",
     barrio: raw.barrio ?? null,
+    localidad: raw.localidad ?? null,
+    wasiIdZone: num(raw.wasi_id_zone),
     direccion: raw.direccion ?? null,
     codigoPostal: raw.codigo_postal ?? null,
     precio: num(raw.precio),
@@ -251,6 +255,8 @@ function toWriteBody(
   if (data.tipo !== undefined) body.tipo = data.tipo;
   if (data.municipio !== undefined) body.municipio = data.municipio;
   if (data.barrio !== undefined) body.barrio = data.barrio;
+  if (data.localidad !== undefined) body.localidad = data.localidad;
+  if (data.wasiIdZone !== undefined) body.wasi_id_zone = data.wasiIdZone;
   if (data.direccion !== undefined) body.direccion = data.direccion;
   if (data.codigoPostal !== undefined) body.codigo_postal = data.codigoPostal;
   if (data.precio !== undefined) body.precio = data.precio;

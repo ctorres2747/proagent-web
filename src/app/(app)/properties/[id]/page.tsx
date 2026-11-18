@@ -15,6 +15,7 @@ import {
   publicationsService,
   wasiCiudadesService,
   wasiFeaturesService,
+  wasiLocalidadesService,
   wasiZonasService,
 } from "@/services";
 import type {
@@ -154,6 +155,12 @@ type ContentFormSnapshot = {
   numeroApartamento: string;
   municipio: string;
   barrio: string;
+  /** Sector/Localidad de WASI (ej. "Engativá" dentro de "Bogotá D.C.") —
+   * "" para ciudades sin localidades. */
+  localidad: string;
+  /** id_zone del catálogo oficial de WASI cuando `barrio` se eligió de ahí
+   * — ver ContentStep, combobox "Barrio / zona / conjunto". */
+  wasiIdZone: number | null;
   tipo: string;
   intent: Intent;
   condicion: Condition | null;
@@ -192,6 +199,8 @@ function emptyContentForm(): ContentFormSnapshot {
     numeroApartamento: "",
     municipio: "",
     barrio: "",
+    localidad: "",
+    wasiIdZone: null,
     tipo: "",
     intent: "Venta",
     condicion: null,
@@ -231,6 +240,8 @@ function snapshotFromProperty(property: Property): ContentFormSnapshot {
     numeroApartamento: property.numeroApartamento ?? "",
     municipio: property.municipio ?? "",
     barrio: property.barrio ?? "",
+    localidad: property.localidad ?? "",
+    wasiIdZone: property.wasiIdZone ?? null,
     tipo: property.tipo ?? "",
     intent: property.intent,
     condicion: property.condicion,
@@ -300,6 +311,8 @@ function contentFormsEqual(a: ContentFormSnapshot, b: ContentFormSnapshot): bool
     a.numeroApartamento === b.numeroApartamento &&
     a.municipio === b.municipio &&
     a.barrio === b.barrio &&
+    a.localidad === b.localidad &&
+    a.wasiIdZone === b.wasiIdZone &&
     a.tipo === b.tipo &&
     a.intent === b.intent &&
     a.condicion === b.condicion &&
@@ -733,6 +746,8 @@ export default function PublishWizardPage() {
           numeroApartamento: contentForm.numeroApartamento || null,
           municipio: contentForm.municipio,
           barrio: contentForm.barrio || null,
+          localidad: contentForm.localidad || null,
+          wasiIdZone: contentForm.wasiIdZone,
           tipo: contentForm.tipo || undefined,
           condicion: contentForm.condicion ?? undefined,
           precio: parsePrecioInput(contentForm.precio),
@@ -1011,6 +1026,7 @@ export default function PublishWizardPage() {
     numeroApartamento: contentForm.numeroApartamento || property.numeroApartamento,
     municipio: contentForm.municipio || property.municipio,
     barrio: contentForm.barrio || property.barrio,
+    localidad: contentForm.localidad || property.localidad,
     tipo: contentForm.tipo || property.tipo,
     intent: contentForm.intent,
     condicion: contentForm.condicion ?? property.condicion,
@@ -1547,6 +1563,24 @@ function ContentStep({
   const [legacyCiudad, setLegacyCiudad] = useState<string | null>(null);
   const [legacyBarrio, setLegacyBarrio] = useState<string | null>(null);
 
+  // Qué ciudad "es dueña" de los valores actuales de Localidad/Barrio — para
+  // decidir si de verdad hay que limpiarlos al tocar Ciudad. Arranca en el
+  // municipio YA GUARDADO de la ficha (no en `form.municipio`, que puede
+  // traer ya un valor sin confirmar si el usuario está a mitad de escribir).
+  const barrioCityRef = useRef(property.municipio ?? "");
+  // Mismo criterio que barrioCityRef, para la Localidad (sesión 2026-11-17,
+  // review PR #169): el primer intento limpiaba Barrio en CADA commit de
+  // Localidad sin comparar si el valor había cambiado de verdad — un blur
+  // sin tocar nada, o re-elegir la misma localidad (tab entre campos),
+  // borraba el barrio ya escrito. Mismo bug que el de Ciudad, aplicado al
+  // campo nuevo.
+  const barrioLocalidadRef = useRef(property.localidad ?? "");
+  useEffect(() => {
+    barrioCityRef.current = property.municipio ?? "";
+    barrioLocalidadRef.current = property.localidad ?? "";
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [property.id]);
+
   useEffect(() => {
     setCiudadQuery(form.municipio);
   }, [form.municipio]);
@@ -1616,14 +1650,40 @@ function ContentStep({
     [ciudadesData],
   );
 
-  const { data: wasiZonas, isFetching: zonasLoading } = useQuery({
-    queryKey: ["wasi-zonas", form.municipio],
-    queryFn: () => wasiZonasService.list(form.municipio, token),
+  // Sector / Localidad (sesión 2026-11-17, ficha F-155): solo aplica a
+  // ciudades que WASI modela con localidades (hoy: Bogotá D.C., 20
+  // localidades reales) — para el resto (Sabaneta, Envigado...) la lista
+  // viene vacía y el combobox no se muestra. `tieneLocalidadGuardada` evita
+  // esconderlo de golpe si la ficha YA tiene una localidad guardada pero el
+  // catálogo todavía no respondió (o WASI no está conectado).
+  const { data: localidadesData, isFetching: localidadesLoading } = useQuery({
+    queryKey: ["wasi-localidades", form.municipio],
+    queryFn: () => wasiLocalidadesService.list(form.municipio, token),
     enabled: wasiConnected && ciudadValida && Boolean(form.municipio.trim()),
+    retry: false,
+  });
+  const localidadOptions = localidadesData?.localidades ?? [];
+  const tieneLocalidadGuardada = Boolean((form.localidad || "").trim());
+  const mostrarLocalidad =
+    wasiConnected && (localidadOptions.length > 0 || tieneLocalidadGuardada);
+
+  const { data: wasiZonas, isFetching: zonasLoading } = useQuery({
+    queryKey: ["wasi-zonas", form.municipio, form.localidad],
+    queryFn: () => wasiZonasService.list(form.municipio, form.localidad || undefined, token),
+    // Si la ciudad tiene localidades, esperar a que se elija una antes de
+    // pedir zonas — zones-from-city siempre da 0 para esas ciudades
+    // (verificado en vivo: Bogotá D.C./794), el catálogo real vive por
+    // localidad (zones-from-location).
+    enabled:
+      wasiConnected &&
+      ciudadValida &&
+      Boolean(form.municipio.trim()) &&
+      (!mostrarLocalidad || tieneLocalidadGuardada),
     retry: false,
   });
 
   const barrioOptions = wasiZonas?.zonas ?? [];
+  const zonasDetalle = wasiZonas?.zonasDetalle ?? [];
 
   useEffect(() => {
     if (!wasiConnected) {
@@ -1647,6 +1707,22 @@ function ContentStep({
       setLegacyBarrio(savedBarrio);
     }
   }, [wasiConnected, ciudadValida, form.barrio, barrioOptions]);
+
+  // id_zone exacto de WASI cuando el texto de Barrio coincide con una opción
+  // del catálogo (standar/allied/own) — se manda a publicar en vez de texto
+  // libre, evitando que WASI cree una zona duplicada en cada guardado (ver
+  // backend wasi_client._payload_propiedad). Si el texto no matchea nada
+  // (escrito a mano, o todavía cargando), queda en null — comportamiento de
+  // siempre (zone como texto libre).
+  useEffect(() => {
+    const savedBarrio = (form.barrio || "").trim();
+    const match = savedBarrio
+      ? zonasDetalle.find((z) => matchesWasiOption(z.name, savedBarrio))
+      : undefined;
+    const nextId = match?.idZone ?? null;
+    if (nextId !== form.wasiIdZone) onPatch({ wasiIdZone: nextId });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form.barrio, zonasDetalle]);
 
   // Bug real 2026-10-01 (ficha F-114, Nataly): WASI nunca valida el barrio
   // contra un catalogo fijo — "zone" viaja como texto libre y WASI crea la
@@ -1882,16 +1958,28 @@ function ContentStep({
                   label="Ciudad"
                   value={form.municipio}
                   onChange={(value) => {
+                    // Bug real 2026-11-17 (ficha F-155, Jesvel): esto antes
+                    // comparaba contra form.municipio EN CADA TECLA — al
+                    // corregir un typo de la ciudad, cualquier tecla que
+                    // todavía no reconstruyera el texto final borraba
+                    // Barrio/Localidad, aunque ya estuvieran bien escritos.
+                    // Ahora el texto se actualiza libre en cada tecla; la
+                    // limpieza de los campos dependientes se decide solo en
+                    // onCommit (abajo), cuando la ciudad "se asienta" de
+                    // verdad (blur o selección de la lista).
                     setCiudadQuery(value);
-                    if (!matchesWasiOption(value, form.municipio)) {
-                      onPatch({ municipio: value, barrio: "" });
-                      setBarrioValido(false);
-                      setLegacyBarrio(null);
-                    } else {
-                      onPatch({ municipio: value });
-                    }
+                    onPatch({ municipio: value });
                   }}
                   onValidChange={setCiudadValida}
+                  onCommit={(value) => {
+                    if (!matchesWasiOption(value, barrioCityRef.current)) {
+                      onPatch({ localidad: "", barrio: "", wasiIdZone: null });
+                      barrioLocalidadRef.current = "";
+                      setBarrioValido(false);
+                      setLegacyBarrio(null);
+                    }
+                    barrioCityRef.current = value;
+                  }}
                   options={ciudadOptions}
                   loading={ciudadesLoading}
                   missing={fieldMissing("city") || !ciudadValida}
@@ -1902,6 +1990,34 @@ function ContentStep({
                   }
                   placeholder="Escribe para buscar ciudad…"
                 />
+                {mostrarLocalidad ? (
+                  <WasiLocationCombobox
+                    label="Sector / Localidad"
+                    value={form.localidad}
+                    onChange={(value) => onPatch({ localidad: value })}
+                    onCommit={(value) => {
+                      // Bug real (review PR #169): limpiar sin comparar
+                      // contra el valor anterior borraba Barrio con solo
+                      // hacer blur o re-elegir la MISMA localidad (ej. tab
+                      // entre campos) — mismo criterio que Ciudad, ahora
+                      // comparando contra barrioLocalidadRef.
+                      if (!matchesWasiOption(value, barrioLocalidadRef.current)) {
+                        onPatch({ barrio: "", wasiIdZone: null });
+                        setBarrioValido(false);
+                        setLegacyBarrio(null);
+                      }
+                      barrioLocalidadRef.current = value;
+                    }}
+                    options={localidadOptions}
+                    loading={localidadesLoading}
+                    disabled={!ciudadValida}
+                    placeholder={
+                      ciudadValida
+                        ? "Escribe para buscar localidad…"
+                        : "Elige ciudad primero"
+                    }
+                  />
+                ) : null}
                 <WasiLocationCombobox
                   label="Barrio / zona / conjunto *"
                   value={form.barrio}
@@ -1909,17 +2025,23 @@ function ContentStep({
                   onValidChange={setBarrioValido}
                   options={barrioOptions}
                   loading={zonasLoading}
-                  disabled={!ciudadValida}
+                  disabled={!ciudadValida || (mostrarLocalidad && !form.localidad.trim())}
                   missing={fieldMissing("neighborhood") || !barrioValido}
                   helperText={
                     legacyBarrio
                       ? "No reconocido por WASI — selecciona de la lista"
                       : !ciudadValida
                         ? "Selecciona primero una ciudad válida"
-                        : null
+                        : mostrarLocalidad && !form.localidad.trim()
+                          ? "Selecciona primero un sector / localidad"
+                          : null
                   }
                   placeholder={
-                    ciudadValida ? "Escribe para buscar barrio…" : "Elige ciudad primero"
+                    !ciudadValida
+                      ? "Elige ciudad primero"
+                      : mostrarLocalidad && !form.localidad.trim()
+                        ? "Elige sector / localidad primero"
+                        : "Escribe para buscar barrio…"
                   }
                 />
               </>

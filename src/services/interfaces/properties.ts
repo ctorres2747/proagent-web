@@ -76,6 +76,12 @@ export interface Property {
   intent: Intent;
   municipio: string;
   barrio: string | null;
+  /** Sector/Localidad de WASI (ej. "Engativá" dentro de "Bogotá D.C.") —
+   * solo aplica a ciudades que tienen localidades ahí; `null` en el resto. */
+  localidad: string | null;
+  /** id_zone del catálogo oficial de WASI cuando `barrio` se eligió de ahí
+   * (en vez de texto libre) — ver WasiLocationCombobox en el wizard. */
+  wasiIdZone: number | null;
   direccion: string | null;
   codigoPostal: string | null;
   /** Numeric price (COP). For arriendo, monthly. */
@@ -166,6 +172,8 @@ export interface PropertiesService {
         | "tipo"
         | "municipio"
         | "barrio"
+        | "localidad"
+        | "wasiIdZone"
         | "direccion"
         | "codigoPostal"
         | "precio"
@@ -209,6 +217,8 @@ export interface PropertiesService {
         | "tipo"
         | "municipio"
         | "barrio"
+        | "localidad"
+        | "wasiIdZone"
         | "direccion"
         | "codigoPostal"
         | "precio"
