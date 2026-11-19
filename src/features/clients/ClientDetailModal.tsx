@@ -300,13 +300,13 @@ export function ClientDetailModal({
       patch.fechaPrimerContacto = fechaPrimerContacto || null;
     }
     if (fechaCierre !== (client.fechaCierre ?? "")) {
-      patch.fechaCierre = fechaCierre || null;
+      const omitirFechaCierreVacia =
+        client.estado === "cerrado" && !fechaCierre.trim();
+      if (!omitirFechaCierreVacia) {
+        patch.fechaCierre = fechaCierre || null;
+      }
     }
     if (Object.keys(patch).length === 0) return;
-
-    if (client.estado === "cerrado" && !fechaCierre.trim() && patch.fechaCierre === null) {
-      return;
-    }
 
     const effectiveMin = patch.presupuestoMin !== undefined ? patch.presupuestoMin : client.presupuestoMin;
     const effectiveMax = patch.presupuestoMax !== undefined ? patch.presupuestoMax : client.presupuestoMax;
