@@ -2,7 +2,7 @@
 
 | Campo | Valor |
 |-------|--------|
-| **Estado** | **`ready_for_dev`** — Owner 2026-11-19 |
+| **Estado** | **`ready_for_dev`** — Owner 2026-11-19 (implementado en PR #171) |
 | **Prioridad** | Por encima de 068 (Owner) |
 | **Épica** | Cartera / demanda (compradores) |
 | **Repos** | `proagent-web` → `main` · `agente-inmobiliario` → `develop` |
