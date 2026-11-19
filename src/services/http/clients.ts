@@ -2,12 +2,15 @@ import type {
   Client,
   ClientChannelCount,
   ClientActividadItem,
+  ClientDocument,
+  ClientDocumentWrite,
   ClientEvent,
   ClientListFilters,
   ClientsService,
   ClientWrite,
 } from "@/services/interfaces/clients";
-import { apiFetch } from "./client";
+import { API_URL } from "@/config/env";
+import { apiDownloadBlob, apiFetch, apiUploadForm } from "./client";
 
 const LIST_PATH = "/api/web/clients";
 const detailPath = (id: string) => `/api/web/clients/${id}`;
@@ -50,6 +53,7 @@ interface RawClient {
   notas?: string | null;
   proxima_cita?: string | null;
   fecha_primer_contacto?: string | null;
+  fecha_cierre?: string | null;
   linked_properties?: RawLinkedProperty[] | null;
   eventos?: RawEvent[] | null;
   actividad?: RawActividad[] | null;
@@ -60,6 +64,35 @@ interface RawClient {
 interface RawChannelCount {
   canal: string;
   total: number;
+}
+
+interface RawClientDocument {
+  id: string;
+  etiqueta: string;
+  nombre_original: string;
+  mime_type: string;
+  tamano_bytes: number;
+  subido_por_agente_id: string;
+  fecha_subida: string;
+}
+
+function resolveMediaUrl(url: string | null | undefined): string | null {
+  if (!url) return null;
+  if (url.startsWith("http://") || url.startsWith("https://")) return url;
+  const base = API_URL.replace(/\/$/, "");
+  return url.startsWith("/") ? `${base}${url}` : `${base}/${url}`;
+}
+
+function mapClientDocument(raw: RawClientDocument): ClientDocument {
+  return {
+    id: String(raw.id),
+    etiqueta: raw.etiqueta,
+    nombreOriginal: raw.nombre_original,
+    mimeType: raw.mime_type,
+    tamanoBytes: raw.tamano_bytes,
+    subidoPorAgenteId: String(raw.subido_por_agente_id),
+    fechaSubida: raw.fecha_subida,
+  };
 }
 
 function mapClient(raw: RawClient): Client {
@@ -82,11 +115,12 @@ function mapClient(raw: RawClient): Client {
     notas: raw.notas ?? null,
     proximaCita: raw.proxima_cita ?? null,
     fechaPrimerContacto: raw.fecha_primer_contacto ?? null,
+    fechaCierre: raw.fecha_cierre ?? null,
     linkedProperties: (raw.linked_properties ?? []).map((p) => ({
       id: String(p.id),
       titulo: p.titulo,
       precio: p.precio ?? null,
-      portadaUrl: p.portada_url ?? null,
+      portadaUrl: resolveMediaUrl(p.portada_url),
     })),
     events: (raw.eventos ?? []).map(
       (e): ClientEvent => ({
@@ -124,6 +158,7 @@ function toWriteBody(data: ClientWrite): Record<string, unknown> {
   if (data.notas !== undefined) body.notas = data.notas;
   if (data.proximaCita !== undefined) body.proxima_cita = data.proximaCita;
   if (data.fechaPrimerContacto !== undefined) body.fecha_primer_contacto = data.fechaPrimerContacto;
+  if (data.fechaCierre !== undefined) body.fecha_cierre = data.fechaCierre;
   return body;
 }
 
@@ -179,5 +214,26 @@ export const clientsService: ClientsService = {
       token,
     });
     return mapClient(raw);
+  },
+  async listDocuments(id: string, token?: string): Promise<ClientDocument[]> {
+    const raw = await apiFetch<RawClientDocument[]>(`${detailPath(id)}/documents`, { token });
+    return Array.isArray(raw) ? raw.map(mapClientDocument) : [];
+  },
+  async uploadDocument(
+    id: string,
+    data: ClientDocumentWrite,
+    token?: string,
+  ): Promise<ClientDocument> {
+    const form = new FormData();
+    form.append("etiqueta", data.etiqueta);
+    form.append("file", data.file);
+    const raw = await apiUploadForm<RawClientDocument>(`${detailPath(id)}/documents`, form, token);
+    return mapClientDocument(raw);
+  },
+  async downloadDocument(id: string, docId: string, token?: string): Promise<Blob> {
+    return apiDownloadBlob(`${detailPath(id)}/documents/${docId}/download`, token);
+  },
+  async deleteDocument(id: string, docId: string, token?: string): Promise<void> {
+    await apiFetch(`${detailPath(id)}/documents/${docId}`, { method: "DELETE", token });
   },
 };

@@ -27,6 +27,16 @@ export type ClientDiscardReason =
   | "ya_no_busca"
   | "otro";
 
+export interface ClientDocument {
+  id: string;
+  etiqueta: string;
+  nombreOriginal: string;
+  mimeType: string;
+  tamanoBytes: number;
+  subidoPorAgenteId: string;
+  fechaSubida: string;
+}
+
 export interface ClientLinkedProperty {
   id: string;
   titulo: string;
@@ -73,6 +83,7 @@ export interface Client {
    * seguimiento cuando el cliente viene de una carga masiva o de un
    * contacto que ocurrió antes de registrarlo en el sistema. */
   fechaPrimerContacto: string | null;
+  fechaCierre: string | null;
   linkedProperties: ClientLinkedProperty[];
   events: ClientEvent[];
   actividad: ClientActividadItem[];
@@ -101,6 +112,12 @@ export interface ClientWrite {
   notas?: string | null;
   proximaCita?: string | null;
   fechaPrimerContacto?: string | null;
+  fechaCierre?: string | null;
+}
+
+export interface ClientDocumentWrite {
+  etiqueta: string;
+  file: File;
 }
 
 export interface ClientListFilters {
@@ -118,4 +135,8 @@ export interface ClientsService {
   update(id: string, data: ClientWrite, token?: string): Promise<Client>;
   linkProperty(id: string, propertyId: string, token?: string): Promise<Client>;
   unlinkProperty(id: string, propertyId: string, token?: string): Promise<Client>;
+  listDocuments(id: string, token?: string): Promise<ClientDocument[]>;
+  uploadDocument(id: string, data: ClientDocumentWrite, token?: string): Promise<ClientDocument>;
+  downloadDocument(id: string, docId: string, token?: string): Promise<Blob>;
+  deleteDocument(id: string, docId: string, token?: string): Promise<void>;
 }
