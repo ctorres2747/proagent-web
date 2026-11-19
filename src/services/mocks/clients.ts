@@ -1,6 +1,8 @@
 import type {
   Client,
   ClientChannelCount,
+  ClientDocument,
+  ClientDocumentWrite,
   ClientListFilters,
   ClientsService,
   ClientWrite,
@@ -30,6 +32,7 @@ const MOCK_CLIENTS: Client[] = [
     notas: "",
     proximaCita: null,
     fechaPrimerContacto: "2026-01-15",
+    fechaCierre: null,
     linkedProperties: [],
     events: [{ estadoAnterior: null, estadoNuevo: "calificando", fecha: now }],
     actividad: [],
@@ -55,6 +58,7 @@ const MOCK_CLIENTS: Client[] = [
     notas: "",
     proximaCita: null,
     fechaPrimerContacto: null,
+    fechaCierre: null,
     linkedProperties: [{ id: "71", titulo: "Casa en Envigado", precio: 1_100_000_000, portadaUrl: null }],
     events: [{ estadoAnterior: null, estadoNuevo: "calificando", fecha: now }],
     actividad: [],
@@ -80,6 +84,7 @@ const MOCK_CLIENTS: Client[] = [
     notas: "",
     proximaCita: null,
     fechaPrimerContacto: null,
+    fechaCierre: null,
     linkedProperties: [],
     events: [
       { estadoAnterior: "calificando", estadoNuevo: "visitas", fecha: now },
@@ -151,6 +156,7 @@ export const clientsService: ClientsService = {
       notas: data.notas ?? null,
       proximaCita: data.proximaCita ?? null,
       fechaPrimerContacto: data.fechaPrimerContacto ?? null,
+      fechaCierre: data.fechaCierre ?? null,
       linkedProperties: [],
       events: [{ estadoAnterior: null, estadoNuevo: data.estado ?? "nuevo", fecha: new Date().toISOString() }],
       actividad: [],
@@ -214,5 +220,28 @@ export const clientsService: ClientsService = {
       linkedProperties: MOCK_CLIENTS[idx].linkedProperties.filter((p) => p.id !== propertyId),
     };
     return MOCK_CLIENTS[idx];
+  },
+  async listDocuments(): Promise<ClientDocument[]> {
+    await delay(80);
+    return [];
+  },
+  async uploadDocument(id: string, data: ClientDocumentWrite): Promise<ClientDocument> {
+    await delay(120);
+    return {
+      id: "mock-doc",
+      etiqueta: data.etiqueta,
+      nombreOriginal: data.file.name,
+      mimeType: data.file.type || "application/octet-stream",
+      tamanoBytes: data.file.size,
+      subidoPorAgenteId: "mock-admin",
+      fechaSubida: new Date().toISOString(),
+    };
+  },
+  async downloadDocument(): Promise<Blob> {
+    await delay(80);
+    return new Blob(["mock"], { type: "application/pdf" });
+  },
+  async deleteDocument(): Promise<void> {
+    await delay(80);
   },
 };

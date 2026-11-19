@@ -1,8 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Phone, X } from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Download, Phone, Trash2, Upload, X } from "lucide-react";
+import { useAuth } from "@/features/auth/AuthProvider";
 import { formatActivityDate, formatAppointment } from "@/lib/formatRelativeTime";
+import { clientsService } from "@/services";
 import type {
   Client,
   ClientActividadItem,
@@ -14,6 +17,7 @@ import type {
 } from "@/services/interfaces/clients";
 import type { Property } from "@/services/interfaces/properties";
 import { ChannelBadge } from "./ChannelBadge";
+import { formatBudget } from "./ClientCard";
 import { TEMP_META, TempIcon } from "./TemperatureChip";
 
 // "Nuevo contacto" ya no tiene columna ni botón (pedido de Cristhian,
@@ -65,6 +69,10 @@ function chipClass(activeNow: boolean) {
 
 function onlyDigits(s: string): string {
   return s.replace(/\D/g, "");
+}
+
+function formatCount(n: number): string {
+  return new Intl.NumberFormat("es-CO").format(n);
 }
 
 function eventText(e: ClientEvent, discardReasonLabel?: string | null): string {
@@ -146,7 +154,13 @@ export function ClientDetailModal({
    * 2026-10-07. */
   error?: string | null;
 }) {
+  const { token, session } = useAuth();
+  const queryClient = useQueryClient();
+  const canManageDocuments = session?.id === client.ownerAgenteId;
+
   const [discardOpen, setDiscardOpen] = useState(false);
+  const [cerradoOpen, setCerradoOpen] = useState(false);
+  const [pendingFechaCierre, setPendingFechaCierre] = useState("");
   const [nombre, setNombre] = useState(client.nombre);
   const [telefono, setTelefono] = useState(client.telefono);
   const [presupuestoMin, setPresupuestoMin] = useState(
@@ -160,6 +174,9 @@ export function ClientDetailModal({
   const [fechaPrimerContacto, setFechaPrimerContacto] = useState(
     client.fechaPrimerContacto ?? "",
   );
+  const [fechaCierre, setFechaCierre] = useState(client.fechaCierre ?? "");
+  const [docEtiqueta, setDocEtiqueta] = useState("");
+  const docFileRef = useRef<HTMLInputElement>(null);
   const [zonaInput, setZonaInput] = useState("");
   const [propertySearch, setPropertySearch] = useState("");
   const [entered, setEntered] = useState(false);
@@ -178,8 +195,37 @@ export function ClientDetailModal({
     setNotas(client.notas ?? "");
     setProximaCita(client.proximaCita ?? "");
     setFechaPrimerContacto(client.fechaPrimerContacto ?? "");
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [client.id]);
+    setFechaCierre(client.fechaCierre ?? "");
+    setCerradoOpen(false);
+  }, [client.id, client.nombre, client.telefono, client.presupuestoMin, client.presupuestoMax, client.notas, client.proximaCita, client.fechaPrimerContacto, client.fechaCierre]);
+
+  const { data: documents = [], isLoading: docsLoading } = useQuery({
+    queryKey: ["client-documents", client.id],
+    queryFn: () => clientsService.listDocuments(client.id, token ?? undefined),
+    enabled: !!token,
+  });
+
+  const uploadDocMutation = useMutation({
+    mutationFn: (file: File) =>
+      clientsService.uploadDocument(
+        client.id,
+        { etiqueta: docEtiqueta.trim(), file },
+        token ?? undefined,
+      ),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["client-documents", client.id] });
+      setDocEtiqueta("");
+      if (docFileRef.current) docFileRef.current.value = "";
+    },
+  });
+
+  const deleteDocMutation = useMutation({
+    mutationFn: (docId: string) =>
+      clientsService.deleteDocument(client.id, docId, token ?? undefined),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["client-documents", client.id] });
+    },
+  });
 
   // Entrada: opacidad + escala en 160ms (handoff §2). prefers-reduced-motion
   // se respeta dejando `entered` directo en true sin transición perceptible
@@ -253,6 +299,13 @@ export function ClientDetailModal({
     if (fechaPrimerContacto !== (client.fechaPrimerContacto ?? "")) {
       patch.fechaPrimerContacto = fechaPrimerContacto || null;
     }
+    if (fechaCierre !== (client.fechaCierre ?? "")) {
+      const omitirFechaCierreVacia =
+        client.estado === "cerrado" && !fechaCierre.trim();
+      if (!omitirFechaCierreVacia) {
+        patch.fechaCierre = fechaCierre || null;
+      }
+    }
     if (Object.keys(patch).length === 0) return;
 
     const effectiveMin = patch.presupuestoMin !== undefined ? patch.presupuestoMin : client.presupuestoMin;
@@ -262,7 +315,9 @@ export function ClientDetailModal({
     const t = setTimeout(() => onPatch(patch), 500);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [nombre, telefono, presupuestoMin, presupuestoMax, notas, proximaCita, fechaPrimerContacto]);
+  }, [nombre, telefono, presupuestoMin, presupuestoMax, notas, proximaCita, fechaPrimerContacto, fechaCierre]);
+
+  const presupuestoLectura = formatBudget(client.presupuestoMin, client.presupuestoMax);
 
   const presupuestoError =
     presupuestoMin.trim() && presupuestoMax.trim() && Number(presupuestoMin) > Number(presupuestoMax);
@@ -300,7 +355,41 @@ export function ClientDetailModal({
       setDiscardOpen(true);
       return;
     }
+    if (stage === "cerrado") {
+      const fc = (fechaCierre || client.fechaCierre || "").slice(0, 10);
+      if (!fc) {
+        setPendingFechaCierre(fechaCierre.slice(0, 10));
+        setCerradoOpen(true);
+        return;
+      }
+      onPatch({ estado: "cerrado", fechaCierre: fc, motivoDescarte: null });
+      return;
+    }
     onPatch({ estado: stage, motivoDescarte: null });
+  }
+
+  function confirmCerrado() {
+    const fc = pendingFechaCierre.trim();
+    if (!fc) return;
+    setFechaCierre(fc);
+    onPatch({ estado: "cerrado", fechaCierre: fc, motivoDescarte: null });
+    setCerradoOpen(false);
+  }
+
+  async function downloadDocumento(docId: string, nombre: string) {
+    if (!token) return;
+    const blob = await clientsService.downloadDocument(client.id, docId, token);
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = nombre;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function onPickDocumento(file: File | undefined) {
+    if (!file || !docEtiqueta.trim()) return;
+    uploadDocMutation.mutate(file);
   }
 
   function confirmDiscard(reason: ClientDiscardReason) {
@@ -505,6 +594,38 @@ export function ClientDetailModal({
                     Cancelar
                   </button>
                 </div>
+              ) : cerradoOpen ? (
+                <div className="mt-3 rounded-[10px] bg-[var(--pa-bg)] p-3">
+                  <div className="text-[12.5px] font-bold text-[var(--pa-ink)]">
+                    Fecha de cierre de la operación
+                  </div>
+                  <div className="mt-1 text-[11px] font-semibold text-[var(--pa-danger)]">
+                    Obligatoria para pasar a Cerrado.
+                  </div>
+                  <input
+                    type="date"
+                    className={`${input} mt-2`}
+                    value={pendingFechaCierre}
+                    onChange={(e) => setPendingFechaCierre(e.target.value)}
+                  />
+                  <div className="mt-2 flex gap-2">
+                    <button
+                      type="button"
+                      onClick={confirmCerrado}
+                      disabled={!pendingFechaCierre.trim()}
+                      className="rounded-[8px] bg-[var(--pa-navy)] px-3 py-1.5 text-[11.5px] font-bold text-white disabled:opacity-50"
+                    >
+                      Confirmar cierre
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setCerradoOpen(false)}
+                      className="text-[11.5px] font-semibold text-[var(--pa-muted)] hover:underline"
+                    >
+                      Cancelar
+                    </button>
+                  </div>
+                </div>
               ) : client.estado === "descartado" && client.motivoDescarte ? (
                 <div className="mt-3 rounded-[10px] bg-[var(--pa-bg)] p-3">
                   <div className="text-[11px] font-bold text-[var(--pa-text-secondary)]">
@@ -554,13 +675,26 @@ export function ClientDetailModal({
                 onChange={(e) => setFechaPrimerContacto(e.target.value)}
                 aria-label="Fecha del primer contacto"
               />
+              <div className={`${label} mt-3`}>Fecha de cierre</div>
+              <input
+                type="date"
+                className={input}
+                value={fechaCierre ? fechaCierre.slice(0, 10) : ""}
+                onChange={(e) => setFechaCierre(e.target.value)}
+                aria-label="Fecha de cierre"
+              />
+              {client.estado === "cerrado" ? (
+                <p className="mt-1 text-[11px] font-semibold text-[var(--pa-muted)]">
+                  Obligatoria mientras el cliente está en Cerrado.
+                </p>
+              ) : null}
             </div>
 
             <div className={section}>
               <div className="flex items-center justify-between">
                 <div className={sectionTitle}>Inmuebles de interés</div>
                 <span className="text-[11px] font-bold text-[var(--pa-faint)]">
-                  {client.linkedProperties.length}
+                  {formatCount(client.linkedProperties.length)}
                 </span>
               </div>
               <input
@@ -653,6 +787,87 @@ export function ClientDetailModal({
             </div>
 
             <div className={section}>
+              <div className={sectionTitle}>Documentos</div>
+              <p className="mt-1 text-[11px] text-[var(--pa-muted)]">
+                Compraventa, certificados y otros (PDF, imágenes, Office — máx. 10 MB).
+              </p>
+              <input
+                className={`${input} mt-2.5`}
+                placeholder="Etiqueta (ej. Certificado de libertad)"
+                value={docEtiqueta}
+                onChange={(e) => setDocEtiqueta(e.target.value)}
+              />
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                <input
+                  ref={docFileRef}
+                  type="file"
+                  accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx"
+                  className="hidden"
+                  onChange={(e) => onPickDocumento(e.target.files?.[0])}
+                />
+                <button
+                  type="button"
+                  disabled={!docEtiqueta.trim() || uploadDocMutation.isPending}
+                  onClick={() => docFileRef.current?.click()}
+                  className="inline-flex items-center gap-1.5 rounded-[9px] border border-[var(--pa-border)] bg-white px-3 py-2 text-[12px] font-bold text-[var(--pa-navy)] disabled:opacity-50"
+                >
+                  <Upload size={14} /> Subir archivo
+                </button>
+                {uploadDocMutation.isError ? (
+                  <span className="text-[11px] font-semibold text-[var(--pa-danger)]">
+                    {uploadDocMutation.error instanceof Error
+                      ? uploadDocMutation.error.message
+                      : "No se pudo subir el archivo"}
+                  </span>
+                ) : null}
+              </div>
+              <div className="mt-2">
+                {docsLoading ? (
+                  <p className="text-[11.5px] text-[var(--pa-faint)]">Cargando…</p>
+                ) : documents.length === 0 ? (
+                  <p className="text-[11.5px] text-[var(--pa-faint)]">Sin documentos adjuntos.</p>
+                ) : (
+                  <ul className="space-y-1.5">
+                    {documents.map((doc) => (
+                      <li
+                        key={doc.id}
+                        className="flex items-center gap-2 rounded-[9px] border border-[var(--pa-border)] px-2 py-1.5"
+                      >
+                        <div className="min-w-0 flex-1">
+                          <div className="truncate text-[12px] font-bold text-[var(--pa-ink)]">
+                            {doc.etiqueta}
+                          </div>
+                          <div className="truncate text-[11px] text-[var(--pa-muted)]">
+                            {doc.nombreOriginal} · {formatCount(doc.tamanoBytes)} bytes
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => downloadDocumento(doc.id, doc.nombreOriginal)}
+                          className="shrink-0 rounded-[7px] p-1.5 text-[var(--pa-navy)] hover:bg-[var(--pa-bg-alt)]"
+                          aria-label="Descargar"
+                        >
+                          <Download size={16} />
+                        </button>
+                        {canManageDocuments ? (
+                          <button
+                            type="button"
+                            onClick={() => deleteDocMutation.mutate(doc.id)}
+                            disabled={deleteDocMutation.isPending}
+                            className="shrink-0 rounded-[7px] p-1.5 text-[var(--pa-danger)] hover:bg-[var(--pa-danger-bg)]"
+                            aria-label="Eliminar"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        ) : null}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </div>
+
+            <div className={section}>
               <div className={sectionTitle}>Notas</div>
               <textarea
                 className={`${input} mt-2.5 min-h-[96px] resize-y`}
@@ -690,6 +905,11 @@ export function ClientDetailModal({
                 {presupuestoError ? (
                   <p className="mt-1 text-[11px] font-semibold text-[var(--pa-danger)]">
                     El mínimo no puede ser mayor que el máximo.
+                  </p>
+                ) : null}
+                {presupuestoLectura ? (
+                  <p className="mt-1.5 text-[12.5px] font-extrabold text-[var(--pa-navy)]">
+                    {presupuestoLectura}
                   </p>
                 ) : null}
               </div>

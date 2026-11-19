@@ -2,23 +2,22 @@
 
 | Campo | Valor |
 |-------|--------|
-| **ID activo (dev)** | **`068`** — Retoque fiel + Seedream (código en stub) |
-| **Estado** | **`ready_for_dev`** — activado Owner 2026-11-15 |
-| **Spec** | [`sprints/068-retoque-fotos-fidelidad-seedream.md`](sprints/068-retoque-fotos-fidelidad-seedream.md) |
+| **ID activo (dev)** | **`069`** — Cartera ficha (formato, cierre, documentos) |
+| **Estado** | **`ready_for_dev`** — Owner 2026-11-19 |
+| **Spec** | [`sprints/069-cartera-ficha-formato-cierre-documentos.md`](sprints/069-cartera-ficha-formato-cierre-documentos.md) |
 | **Base** | 067 mergeado (API #503/#504, web #162) |
 | **Handoff** | [`design_handoff_editor_fotos_ia/`](design_handoff_editor_fotos_ia/) — actualizar o captura en PR T2 (§5 spec 068) |
 | **PR spec** | [#164](https://github.com/ctorres2747/proagent-web/pull/164) |
-| **Actualizado** | 2026-11-15 |
+| **Actualizado** | 2026-11-19 |
 
 ## Qué hacer ahora (Dev)
 
-Implementar **solo** el sprint 068. Orden obligatorio:
+Sprint **069** en curso (Cartera). **068** Seedream queda en cola hasta merge 069.
 
-1. **T1 — `agente-inmobiliario` → `develop`:** prompt, `fidelity.py`, quitar `sky_replace`, `custom`, cliente Seedream (default **stub**), tests — PR companion.
-2. **T2 — `proagent-web` → `main`:** panel 3 botones + pedido libre; typecheck + build — **después** de T1 mergeable o en stack API-first.
-3. **T3 — smoke Owner** con stub (checklist spec); **no** encender Seedream en VPS (eso es §6 Owner).
+1. **T1 — `agente-inmobiliario` → `develop`:** fecha cierre, documentos, portada vinculada — PR companion.
+2. **T2 — `proagent-web` → `main`:** ficha clientes (tras T1 mergeable o stack).
 
-Mobile **fuera de alcance**. No reabrir invariantes 067 (tabla en spec 068).
+Mobile **fuera de alcance** 069.
 
 ## Owner (paralelo, no bloquea Dev)
 
