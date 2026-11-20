@@ -71,6 +71,11 @@ function onlyDigits(s: string): string {
   return s.replace(/\D/g, "");
 }
 
+function defaultEtiquetaFromFilename(filename: string): string {
+  const base = filename.replace(/\.[^.]+$/, "").trim();
+  return base.replace(/[_-]+/g, " ").replace(/\s+/g, " ").trim();
+}
+
 function formatCount(n: number): string {
   return new Intl.NumberFormat("es-CO").format(n);
 }
@@ -176,6 +181,8 @@ export function ClientDetailModal({
   );
   const [fechaCierre, setFechaCierre] = useState(client.fechaCierre ?? "");
   const [docEtiqueta, setDocEtiqueta] = useState("");
+  const [pendingDocFile, setPendingDocFile] = useState<File | null>(null);
+  const [docUploadOk, setDocUploadOk] = useState<string | null>(null);
   const docFileRef = useRef<HTMLInputElement>(null);
   const [zonaInput, setZonaInput] = useState("");
   const [propertySearch, setPropertySearch] = useState("");
@@ -197,6 +204,10 @@ export function ClientDetailModal({
     setFechaPrimerContacto(client.fechaPrimerContacto ?? "");
     setFechaCierre(client.fechaCierre ?? "");
     setCerradoOpen(false);
+    setPendingDocFile(null);
+    setDocEtiqueta("");
+    setDocUploadOk(null);
+    if (docFileRef.current) docFileRef.current.value = "";
   }, [client.id, client.nombre, client.telefono, client.presupuestoMin, client.presupuestoMax, client.notas, client.proximaCita, client.fechaPrimerContacto, client.fechaCierre]);
 
   const { data: documents = [], isLoading: docsLoading } = useQuery({
@@ -206,15 +217,20 @@ export function ClientDetailModal({
   });
 
   const uploadDocMutation = useMutation({
-    mutationFn: (file: File) =>
+    mutationFn: ({ file, etiqueta }: { file: File; etiqueta: string }) =>
       clientsService.uploadDocument(
         client.id,
-        { etiqueta: docEtiqueta.trim(), file },
+        { etiqueta, file },
         token ?? undefined,
       ),
-    onSuccess: () => {
+    onSuccess: (_data, { file }) => {
       queryClient.invalidateQueries({ queryKey: ["client-documents", client.id] });
+      setDocUploadOk(file.name);
+      setPendingDocFile(null);
       setDocEtiqueta("");
+      if (docFileRef.current) docFileRef.current.value = "";
+    },
+    onSettled: () => {
       if (docFileRef.current) docFileRef.current.value = "";
     },
   });
@@ -388,8 +404,24 @@ export function ClientDetailModal({
   }
 
   function onPickDocumento(file: File | undefined) {
-    if (!file || !docEtiqueta.trim()) return;
-    uploadDocMutation.mutate(file);
+    if (!file) return;
+    setDocUploadOk(null);
+    uploadDocMutation.reset();
+    setPendingDocFile(file);
+    setDocEtiqueta((prev) => prev.trim() || defaultEtiquetaFromFilename(file.name));
+  }
+
+  function cancelPendingDocumento() {
+    setPendingDocFile(null);
+    setDocEtiqueta("");
+    uploadDocMutation.reset();
+    if (docFileRef.current) docFileRef.current.value = "";
+  }
+
+  function confirmUploadDocumento() {
+    const etiqueta = docEtiqueta.trim();
+    if (!pendingDocFile || !etiqueta) return;
+    uploadDocMutation.mutate({ file: pendingDocFile, etiqueta });
   }
 
   function confirmDiscard(reason: ClientDiscardReason) {
@@ -789,38 +821,80 @@ export function ClientDetailModal({
             <div className={section}>
               <div className={sectionTitle}>Documentos</div>
               <p className="mt-1 text-[11px] text-[var(--pa-muted)]">
-                Compraventa, certificados y otros (PDF, imágenes, Office — máx. 10 MB).
+                Elige el archivo y ponle un nombre corto para encontrarlo después (PDF, imágenes,
+                Office — máx. 10 MB).
               </p>
               <input
-                className={`${input} mt-2.5`}
-                placeholder="Etiqueta (ej. Certificado de libertad)"
-                value={docEtiqueta}
-                onChange={(e) => setDocEtiqueta(e.target.value)}
+                ref={docFileRef}
+                type="file"
+                accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx"
+                className="hidden"
+                onChange={(e) => onPickDocumento(e.target.files?.[0])}
               />
-              <div className="mt-2 flex flex-wrap items-center gap-2">
-                <input
-                  ref={docFileRef}
-                  type="file"
-                  accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx"
-                  className="hidden"
-                  onChange={(e) => onPickDocumento(e.target.files?.[0])}
-                />
-                <button
-                  type="button"
-                  disabled={!docEtiqueta.trim() || uploadDocMutation.isPending}
-                  onClick={() => docFileRef.current?.click()}
-                  className="inline-flex items-center gap-1.5 rounded-[9px] border border-[var(--pa-border)] bg-white px-3 py-2 text-[12px] font-bold text-[var(--pa-navy)] disabled:opacity-50"
-                >
-                  <Upload size={14} /> Subir archivo
-                </button>
-                {uploadDocMutation.isError ? (
-                  <span className="text-[11px] font-semibold text-[var(--pa-danger)]">
-                    {uploadDocMutation.error instanceof Error
-                      ? uploadDocMutation.error.message
-                      : "No se pudo subir el archivo"}
-                  </span>
-                ) : null}
-              </div>
+              {!pendingDocFile ? (
+                <div className="mt-2.5">
+                  <button
+                    type="button"
+                    disabled={uploadDocMutation.isPending}
+                    onClick={() => docFileRef.current?.click()}
+                    className="inline-flex items-center gap-1.5 rounded-[9px] border border-[var(--pa-border)] bg-white px-3 py-2 text-[12px] font-bold text-[var(--pa-navy)] disabled:opacity-50"
+                  >
+                    <Upload size={14} />
+                    {uploadDocMutation.isPending ? "Subiendo…" : "Adjuntar documento"}
+                  </button>
+                  {docUploadOk ? (
+                    <p className="mt-1.5 text-[11px] font-semibold text-[var(--pa-success)]">
+                      {docUploadOk} adjuntado correctamente.
+                    </p>
+                  ) : null}
+                </div>
+              ) : (
+                <div className="mt-2.5 rounded-[10px] border border-[var(--pa-border)] bg-[var(--pa-bg-alt)] p-3">
+                  <p className="text-[11px] font-semibold text-[var(--pa-muted)]">Archivo seleccionado</p>
+                  <p className="mt-0.5 truncate text-[12px] font-bold text-[var(--pa-ink)]">
+                    {pendingDocFile.name}
+                    <span className="font-semibold text-[var(--pa-faint)]">
+                      {" "}
+                      · {formatCount(pendingDocFile.size)} bytes
+                    </span>
+                  </p>
+                  <label className="mt-2.5 block text-[11px] font-bold text-[var(--pa-text-secondary)]">
+                    Tipo o nombre del documento
+                  </label>
+                  <input
+                    className={`${input} mt-1`}
+                    placeholder="Ej. Compraventa, Certificado de libertad"
+                    value={docEtiqueta}
+                    onChange={(e) => setDocEtiqueta(e.target.value)}
+                    disabled={uploadDocMutation.isPending}
+                  />
+                  <div className="mt-2.5 flex flex-wrap items-center gap-2">
+                    <button
+                      type="button"
+                      disabled={!docEtiqueta.trim() || uploadDocMutation.isPending}
+                      onClick={confirmUploadDocumento}
+                      className="inline-flex items-center gap-1.5 rounded-[9px] bg-[var(--pa-navy)] px-3 py-2 text-[12px] font-bold text-white disabled:opacity-50"
+                    >
+                      {uploadDocMutation.isPending ? "Subiendo…" : "Subir"}
+                    </button>
+                    <button
+                      type="button"
+                      disabled={uploadDocMutation.isPending}
+                      onClick={cancelPendingDocumento}
+                      className="rounded-[9px] border border-[var(--pa-border)] bg-white px-3 py-2 text-[12px] font-bold text-[var(--pa-text-secondary)] disabled:opacity-50"
+                    >
+                      Cancelar
+                    </button>
+                    {uploadDocMutation.isError ? (
+                      <span className="text-[11px] font-semibold text-[var(--pa-danger)]">
+                        {uploadDocMutation.error instanceof Error
+                          ? uploadDocMutation.error.message
+                          : "No se pudo subir el archivo"}
+                      </span>
+                    ) : null}
+                  </div>
+                </div>
+              )}
               <div className="mt-2">
                 {docsLoading ? (
                   <p className="text-[11.5px] text-[var(--pa-faint)]">Cargando…</p>
