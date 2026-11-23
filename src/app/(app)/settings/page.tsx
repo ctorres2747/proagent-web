@@ -14,8 +14,13 @@ import {
   channelsService,
   facebookConnectService,
   profileService,
+  soporteService,
   workerService,
 } from "@/services";
+import {
+  CONSENTIMIENTO_QUERY_KEY,
+  ConsentimientoSoporteBox,
+} from "@/features/soporte/ConsentimientoSoporte";
 import { API_URL } from "@/config/env";
 import type { AgentProfile } from "@/services/interfaces/profile";
 import type { ChannelConnection } from "@/services/interfaces/channels";
@@ -312,6 +317,16 @@ function WorkerInstallSection({ token }: { token?: string }) {
     },
   });
 
+  // D9: con el requisito encendido hay que aceptar el soporte remoto antes de
+  // generar el código (el backend responde 403 si no).
+  const consentimientoQuery = useQuery({
+    queryKey: CONSENTIMIENTO_QUERY_KEY,
+    queryFn: () => soporteService.getConsentimiento(token),
+  });
+  const consentimiento = consentimientoQuery.data;
+  const puedeInstalar =
+    consentimiento?.estado === "aceptado" || consentimiento?.estado === "no_requerido";
+
   const status = statusQuery.data;
   const installerUrl = `${API_URL}/downloads/instalador-worker-marketplace-v9.exe`;
 
@@ -339,6 +354,13 @@ function WorkerInstallSection({ token }: { token?: string }) {
         instalador y pégalo cuando te lo pida — el resto queda listo solo.
       </p>
 
+      {consentimiento && !puedeInstalar ? (
+        <p className="text-[11px] text-[var(--pa-warning-ink)]">
+          Para instalar, primero acepta la autorización de soporte remoto (arriba, en
+          esta misma pestaña).
+        </p>
+      ) : null}
+
       {code ? (
         <div className="space-y-2 rounded-lg border border-dashed border-[var(--pa-border)] bg-[var(--pa-bg)] p-3">
           <p className="text-[11px] text-[var(--pa-muted)]">
@@ -357,7 +379,8 @@ function WorkerInstallSection({ token }: { token?: string }) {
       ) : (
         <button
           type="button"
-          disabled={enrollMutation.isPending}
+          disabled={enrollMutation.isPending || !puedeInstalar}
+          title={puedeInstalar ? undefined : "Primero acepta la autorización de soporte remoto"}
           onClick={() => enrollMutation.mutate()}
           className="rounded-lg bg-[var(--pa-navy)] px-4 py-2 text-[12px] font-bold text-white disabled:opacity-60"
         >
@@ -968,6 +991,10 @@ function ChannelsTab({
     queryFn: () => profileService.get(token),
   });
   const instagramHandle = profile?.instagramHandle ?? "";
+  const { data: consentimiento } = useQuery({
+    queryKey: CONSENTIMIENTO_QUERY_KEY,
+    queryFn: () => soporteService.getConsentimiento(token),
+  });
 
   if (isLoading) {
     return <p className="text-[13px] text-[var(--pa-muted)]">Cargando canales…</p>;
@@ -996,6 +1023,9 @@ function ChannelsTab({
           <strong>WASI</strong> con tus propias credenciales.
         </div>
       ) : null}
+      {consentimiento ? (
+        <ConsentimientoSoporteBox consentimiento={consentimiento} token={token} />
+      ) : null}
       {CHANNEL_ORDER.map((id: ChannelId) => {
         const conn = byId.get(id);
         if (!conn) return null;
@@ -1018,6 +1048,10 @@ function ChannelsTab({
 export default function SettingsPage() {
   const { token } = useAuth();
   const [tab, setTab] = useState<Tab>("perfil");
+  // El aviso del soporte remoto enlaza a /settings#soporte (pestaña Canales).
+  useEffect(() => {
+    if (window.location.hash === "#soporte") setTab("canales");
+  }, []);
   const [toast, setToast] = useState<{ message: string; type?: "error" } | null>(
     null,
   );
