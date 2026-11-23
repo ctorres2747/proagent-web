@@ -6,6 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 
 import { useAgentView } from "@/features/agentView/AgentViewProvider";
 import { useAuth } from "@/features/auth/AuthProvider";
+import { ConsentimientoSoporteBanner } from "@/features/soporte/ConsentimientoSoporteBanner";
 import { canAccessCaptacion } from "@/lib/agentDisplay";
 import { navCountsService } from "@/services";
 
@@ -90,6 +91,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           className="flex-1 overflow-y-auto"
         >
           <div className="mx-auto w-full max-w-[var(--pa-shell-content-max)] px-4 py-7 pb-24 md:px-6 xl:px-8">
+            {sessionReady ? <ConsentimientoSoporteBanner /> : null}
             {children}
           </div>
         </main>

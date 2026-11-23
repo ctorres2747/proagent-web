@@ -51,3 +51,38 @@ export const marketplaceLoginService = {
     return { estado: null, mensaje: null };
   },
 };
+
+/** Modo demo: el requisito de consentimiento de soporte está apagado. */
+export const soporteService = {
+  async getConsentimiento() {
+    return {
+      estado: "no_requerido" as const,
+      version: "demo",
+      titulo: "Soporte remoto de tu computador",
+      texto: "Modo demo.",
+      requiereAceptacion: false,
+      venceAt: null,
+      diasRestantes: null,
+      aceptadoAt: null,
+      accionesRemotas: true,
+      tienePcInstalada: false,
+      esOwnerSoporte: false,
+    };
+  },
+  async aceptar() {
+    return soporteService.getConsentimiento();
+  },
+  async setAccionesRemotas() {
+    return soporteService.getConsentimiento();
+  },
+  async getFlota() {
+    return [];
+  },
+  async listTokens() {
+    return [];
+  },
+  async createToken(nombre: string) {
+    return { id: 0, nombre, creadoAt: "", venceAt: "", revocadoAt: null, token: "sop_demo" };
+  },
+  async revokeToken() {},
+};

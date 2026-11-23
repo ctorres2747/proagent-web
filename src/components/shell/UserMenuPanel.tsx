@@ -1,6 +1,11 @@
 "use client";
 
+import { useQuery } from "@tanstack/react-query";
+
+import { useAuth } from "@/features/auth/AuthProvider";
 import type { AgentSession } from "@/features/auth/types";
+import { CONSENTIMIENTO_QUERY_KEY } from "@/features/soporte/ConsentimientoSoporte";
+import { soporteService } from "@/services";
 
 import { USER_MENU_ITEMS } from "./use-user-menu";
 
@@ -20,6 +25,19 @@ export function UserMenuPanel({
   onNavigate: (path: string) => void;
   onLogout: () => void;
 }) {
+  // "Soporte" solo para la cuenta Owner de soporte (misma consulta que el
+  // aviso del consentimiento: React Query la comparte, no hay fetch extra).
+  const { token } = useAuth();
+  const { data: consentimiento } = useQuery({
+    queryKey: CONSENTIMIENTO_QUERY_KEY,
+    queryFn: () => soporteService.getConsentimiento(token ?? undefined),
+    enabled: Boolean(token),
+    staleTime: 5 * 60_000,
+  });
+  const items = consentimiento?.esOwnerSoporte
+    ? [...USER_MENU_ITEMS, { label: "Soporte · Flota", path: "/soporte" }]
+    : USER_MENU_ITEMS;
+
   return (
     <div
       role="menu"
@@ -33,7 +51,7 @@ export function UserMenuPanel({
           </div>
         </div>
       ) : null}
-      {USER_MENU_ITEMS.map((item) => (
+      {items.map((item) => (
         <button
           key={item.path}
           type="button"

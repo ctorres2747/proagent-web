@@ -48,11 +48,13 @@ import { driveFieldOptionsService as httpDriveFieldOptions } from "./http/driveF
 import { facebookConnectService as httpFacebookConnect } from "./http/facebookConnect";
 import { workerService as httpWorker } from "./http/workerEnroll";
 import { marketplaceLoginService as httpMarketplaceLogin } from "./http/marketplaceLogin";
+import { soporteService as httpSoporte } from "./http/soporte";
 import { mockDriveFieldOptionsService as mockDriveFieldOptions } from "./mocks/driveFieldOptions";
 import {
   facebookConnectService as mockFacebookConnect,
   marketplaceLoginService as mockMarketplaceLogin,
   navCountsService as mockNavCounts,
+  soporteService as mockSoporte,
   workerService as mockWorker,
 } from "./mocks/integrations";
 
@@ -127,6 +129,7 @@ export const workerService: typeof httpWorker = USE_HTTP_API ? httpWorker : mock
 export const marketplaceLoginService: typeof httpMarketplaceLogin = USE_HTTP_API
   ? httpMarketplaceLogin
   : mockMarketplaceLogin;
+export const soporteService: typeof httpSoporte = USE_HTTP_API ? httpSoporte : mockSoporte;
 
 export type { AgenteResumen, AgentesService } from "./interfaces/agentes";
 export type { AuthService } from "./interfaces/auth";
