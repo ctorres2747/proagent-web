@@ -20,6 +20,7 @@ export function MobileDrawer({
   captacionBadge,
   inventoryBadge,
   prospectsBadge,
+  publicationBadge,
 }: {
   open: boolean;
   onClose: () => void;
@@ -29,6 +30,7 @@ export function MobileDrawer({
   captacionBadge?: number | null;
   inventoryBadge?: number;
   prospectsBadge?: number | null;
+  publicationBadge?: number | null;
 }) {
   const panelRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLElement | null>(null);
@@ -132,6 +134,7 @@ export function MobileDrawer({
                       captacionBadge={captacionBadge}
                       inventoryBadge={inventoryBadge}
                       prospectsBadge={prospectsBadge}
+                      publicationBadge={publicationBadge}
                       onNavigate={onClose}
                     />
                   ))}

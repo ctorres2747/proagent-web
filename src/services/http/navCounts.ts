@@ -4,6 +4,7 @@ export interface NavCounts {
   inventoryCount: number;
   captacionPending: number | null;
   prospectsNew: number | null;
+  publicationErrors: number | null;
 }
 
 export const navCountsService = {
@@ -15,11 +16,13 @@ export const navCountsService = {
       inventory_count: number;
       captacion_pending: number | null;
       prospects_new?: number | null;
+      publication_errors?: number | null;
     }>(`/api/web/nav-counts${qs}`, { token });
     return {
       inventoryCount: raw.inventory_count,
       captacionPending: raw.captacion_pending,
       prospectsNew: raw.prospects_new ?? null,
+      publicationErrors: raw.publication_errors ?? null,
     };
   },
 };

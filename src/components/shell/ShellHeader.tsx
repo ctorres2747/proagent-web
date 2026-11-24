@@ -13,6 +13,8 @@ export function ShellHeader({
   onExitViewAs,
   mainScrolled,
   staff,
+  adminChip,
+  hideSearch,
 }: {
   pathname: string;
   onOpenDrawer: () => void;
@@ -20,6 +22,8 @@ export function ShellHeader({
   onExitViewAs?: () => void;
   mainScrolled?: boolean;
   staff?: boolean;
+  adminChip?: boolean;
+  hideSearch?: boolean;
 }) {
   const { group, page } = breadcrumbForPath(pathname);
 
@@ -62,15 +66,20 @@ export function ShellHeader({
             /
           </span>
           <span className="truncate font-bold text-[#16212B]">{page}</span>
+          {adminChip ? (
+            <span className="ml-2 rounded-full bg-[#E6EEF5] px-[9px] py-[3px] text-[11px] font-extrabold text-[#0A3D62]">
+              Administrador
+            </span>
+          ) : null}
         </nav>
 
         <div className="hidden min-w-0 flex-1 justify-center md:flex">
-          <SearchTrigger staff={staff} />
+          {hideSearch ? null : <SearchTrigger staff={staff} />}
         </div>
 
         <div className="flex flex-1 items-center justify-end gap-2 md:flex-none">
           <div className="md:hidden">
-            <SearchTrigger staff={staff} />
+            {hideSearch ? null : <SearchTrigger staff={staff} />}
           </div>
           <button
             type="button"
