@@ -155,6 +155,64 @@ const mapToken = (t: RawToken): TokenSoporte => ({
   revocadoAt: t.revocado_at,
 });
 
+export type EstadoInvocacion =
+  | "pendiente"
+  | "pendiente_aprobacion"
+  | "aprobada"
+  | "en_proceso"
+  | "ok"
+  | "error"
+  | "rechazada"
+  | "expirada";
+
+export interface InvocacionSoporte {
+  id: number;
+  workerId: string;
+  tool: string;
+  categoria: "lectura" | "accion";
+  args: Record<string, unknown>;
+  estado: EstadoInvocacion;
+  motivo: string | null;
+  solicitadoPor: string;
+  creadoAt: string;
+  aprobadoAt: string | null;
+  terminadoAt: string | null;
+  salida: string | null;
+  error: string | null;
+}
+
+interface RawInvocacion {
+  id: number;
+  worker_id: string;
+  tool: string;
+  categoria: "lectura" | "accion";
+  args: Record<string, unknown>;
+  estado: EstadoInvocacion;
+  motivo: string | null;
+  solicitado_por: string;
+  creado_at: string;
+  aprobado_at: string | null;
+  terminado_at: string | null;
+  salida: string | null;
+  error: string | null;
+}
+
+const mapInvocacion = (r: RawInvocacion): InvocacionSoporte => ({
+  id: r.id,
+  workerId: r.worker_id,
+  tool: r.tool,
+  categoria: r.categoria,
+  args: r.args,
+  estado: r.estado,
+  motivo: r.motivo,
+  solicitadoPor: r.solicitado_por,
+  creadoAt: r.creado_at,
+  aprobadoAt: r.aprobado_at,
+  terminadoAt: r.terminado_at,
+  salida: r.salida,
+  error: r.error,
+});
+
 export const soporteService = {
   async getConsentimiento(token?: string): Promise<ConsentimientoSoporte> {
     return mapConsentimiento(
@@ -197,5 +255,37 @@ export const soporteService = {
   },
   async revokeToken(id: number, token?: string): Promise<void> {
     await apiFetch(`/api/web/soporte/tokens/${id}`, { method: "DELETE", token });
+  },
+  async listInvocaciones(
+    filtro: { estado?: EstadoInvocacion; workerId?: string; limit?: number },
+    token?: string,
+  ): Promise<InvocacionSoporte[]> {
+    const raw = await apiFetch<{ invocaciones: RawInvocacion[] }>("/api/web/soporte/invocaciones", {
+      token,
+      query: { estado: filtro.estado, worker_id: filtro.workerId, limit: filtro.limit },
+    });
+    return raw.invocaciones.map(mapInvocacion);
+  },
+  async proponer(
+    datos: { workerId: string; tool: string; args: Record<string, unknown>; motivo?: string },
+    token?: string,
+  ): Promise<InvocacionSoporte> {
+    return mapInvocacion(
+      await apiFetch<RawInvocacion>("/api/web/soporte/invocaciones", {
+        method: "POST",
+        token,
+        body: { worker_id: datos.workerId, tool: datos.tool, args: datos.args, motivo: datos.motivo },
+      }),
+    );
+  },
+  async aprobar(id: number, token?: string): Promise<InvocacionSoporte> {
+    return mapInvocacion(
+      await apiFetch<RawInvocacion>(`/api/web/soporte/invocaciones/${id}/aprobar`, { method: "POST", token }),
+    );
+  },
+  async rechazar(id: number, token?: string): Promise<InvocacionSoporte> {
+    return mapInvocacion(
+      await apiFetch<RawInvocacion>(`/api/web/soporte/invocaciones/${id}/rechazar`, { method: "POST", token }),
+    );
   },
 };

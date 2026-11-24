@@ -5,6 +5,11 @@ import { useState } from "react";
 
 import { useAuth } from "@/features/auth/AuthProvider";
 import { CONSENTIMIENTO_QUERY_KEY } from "@/features/soporte/ConsentimientoSoporte";
+import {
+  AprobacionesSoporte,
+  HistorialInvocaciones,
+  PedirInvocacion,
+} from "@/features/soporte/InvocacionesSoporte";
 import { soporteService } from "@/services";
 import type { ConexionPc, MaquinaFlota } from "@/services/http/soporte";
 
@@ -209,7 +214,14 @@ export default function SoportePage() {
           </table>
         </div>
       )}
-      {esOwner ? <TokensSoporte token={tk} /> : null}
+      {esOwner ? (
+        <>
+          <AprobacionesSoporte token={tk} maquinas={maquinas} />
+          <PedirInvocacion token={tk} maquinas={maquinas} />
+          <HistorialInvocaciones token={tk} maquinas={maquinas} />
+          <TokensSoporte token={tk} />
+        </>
+      ) : null}
     </div>
   );
 }
