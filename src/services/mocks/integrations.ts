@@ -85,4 +85,16 @@ export const soporteService = {
     return { id: 0, nombre, creadoAt: "", venceAt: "", revocadoAt: null, token: "sop_demo" };
   },
   async revokeToken() {},
+  async listInvocaciones() {
+    return [];
+  },
+  async proponer(): Promise<never> {
+    throw new Error("Modo demo: sin PCs reales.");
+  },
+  async aprobar(): Promise<never> {
+    throw new Error("Modo demo: sin PCs reales.");
+  },
+  async rechazar(): Promise<never> {
+    throw new Error("Modo demo: sin PCs reales.");
+  },
 };
