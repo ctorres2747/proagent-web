@@ -61,6 +61,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         captacionBadge={navCounts?.captacionPending}
         inventoryBadge={navCounts?.inventoryCount}
         prospectsBadge={navCounts?.prospectsNew}
+        publicationBadge={admin ? navCounts?.publicationErrors : null}
       />
 
       <MobileDrawer
@@ -72,6 +73,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         captacionBadge={navCounts?.captacionPending}
         inventoryBadge={navCounts?.inventoryCount}
         prospectsBadge={navCounts?.prospectsNew}
+        publicationBadge={admin ? navCounts?.publicationErrors : null}
       />
 
       <div className="flex min-w-0 flex-1 flex-col">
@@ -82,6 +84,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           onExitViewAs={() => setViewAgenteId(null)}
           mainScrolled={mainScrolled}
           staff={staff}
+          adminChip={admin && pathname === "/"}
+          hideSearch={admin && pathname === "/"}
         />
 
         <main

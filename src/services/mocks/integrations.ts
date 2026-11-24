@@ -16,7 +16,12 @@ import { propertiesService } from "./properties";
 export const navCountsService = {
   async get(): Promise<NavCounts> {
     const all = await propertiesService.list();
-    return { inventoryCount: all.length, captacionPending: 0, prospectsNew: 0 };
+    return {
+      inventoryCount: all.length,
+      captacionPending: 0,
+      prospectsNew: 0,
+      publicationErrors: 2,
+    };
   },
 };
 

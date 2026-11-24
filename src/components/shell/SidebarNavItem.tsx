@@ -12,6 +12,7 @@ export function SidebarNavItem({
   captacionBadge,
   inventoryBadge,
   prospectsBadge,
+  publicationBadge,
   onNavigate,
 }: {
   item: NavItemConfig;
@@ -20,6 +21,7 @@ export function SidebarNavItem({
   captacionBadge?: number | null;
   inventoryBadge?: number;
   prospectsBadge?: number | null;
+  publicationBadge?: number | null;
   onNavigate?: () => void;
 }) {
   const tooltip = useDelayedTooltip(400);
@@ -30,7 +32,9 @@ export function SidebarNavItem({
         ? inventoryBadge
         : item.badge === "prospects"
           ? prospectsBadge
-          : undefined;
+          : item.badge === "publication"
+            ? publicationBadge
+            : undefined;
 
   if (item.disabled) {
     return (
@@ -78,8 +82,16 @@ export function SidebarNavItem({
         {collapsed &&
         badgeCount != null &&
         badgeCount > 0 &&
-        (item.badge === "captacion" || item.badge === "prospects") ? (
-          <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-[var(--pa-emerald-bright)] px-1 text-[9.5px] font-extrabold text-[var(--pa-emerald-ink)]">
+        (item.badge === "captacion" ||
+          item.badge === "prospects" ||
+          item.badge === "publication") ? (
+          <span
+            className={`absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[9.5px] font-extrabold ${
+              item.badge === "publication"
+                ? "bg-[#F2B8AF] text-[#5E1409]"
+                : "bg-[var(--pa-emerald-bright)] text-[var(--pa-emerald-ink)]"
+            }`}
+          >
             {badgeCount > 99 ? "99+" : badgeCount}
           </span>
         ) : null}
@@ -98,6 +110,10 @@ export function SidebarNavItem({
           {badgeCount != null && badgeCount > 0 ? (
             item.badge === "captacion" || item.badge === "prospects" ? (
               <span className="rounded-full bg-[var(--pa-emerald-bright)] px-2 py-0.5 text-[10px] font-extrabold text-[var(--pa-emerald-ink)]">
+                {badgeCount > 99 ? "99+" : badgeCount}
+              </span>
+            ) : item.badge === "publication" ? (
+              <span className="flex h-4 min-w-4 items-center justify-center rounded-lg bg-[#F2B8AF] px-1.5 text-[9.5px] font-extrabold text-[#5E1409]">
                 {badgeCount > 99 ? "99+" : badgeCount}
               </span>
             ) : (

@@ -1,7 +1,7 @@
 import { CAPTACION_NATIVE, CAPTACION_URL } from "@/config/env";
 
 export type NavGroupId = "operacion" | "cartera";
-export type NavBadgeKind = "captacion" | "inventory" | "prospects";
+export type NavBadgeKind = "captacion" | "inventory" | "prospects" | "publication";
 export type NavVisibility = "all" | "staff" | "admin";
 
 export interface NavItemConfig {
@@ -56,6 +56,7 @@ export const NAV_ITEMS: NavItemConfig[] = [
     href: "/publications",
     group: "operacion",
     visibility: "all",
+    badge: "publication",
   },
   {
     id: "prospectos",

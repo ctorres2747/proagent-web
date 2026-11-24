@@ -22,6 +22,7 @@ import { wasiZonasService as mockWasiZonas } from "./mocks/wasiZonas";
 import { wasiCiudadesService as mockWasiCiudades } from "./mocks/wasiCiudades";
 import { wasiLocalidadesService as mockWasiLocalidades } from "./mocks/wasiLocalidades";
 import { dashboardService as mockDashboard } from "./mocks/dashboard";
+import { adminDashboardService as mockAdminDashboard } from "./mocks/adminDashboard";
 import { metasService as mockMetas } from "./mocks/metas";
 import { clientsService as mockClients } from "./mocks/clients";
 import { prospectsService as mockProspects } from "./mocks/prospects";
@@ -40,6 +41,7 @@ import { wasiZonasService as httpWasiZonas } from "./http/wasiZonas";
 import { wasiCiudadesService as httpWasiCiudades } from "./http/wasiCiudades";
 import { wasiLocalidadesService as httpWasiLocalidades } from "./http/wasiLocalidades";
 import { dashboardService as httpDashboard } from "./http/dashboard";
+import { adminDashboardService as httpAdminDashboard } from "./http/adminDashboard";
 import { metasService as httpMetas } from "./http/metas";
 import { clientsService as httpClients } from "./http/clients";
 import { prospectsService as httpProspects } from "./http/prospects";
@@ -68,6 +70,7 @@ import type { PropertiesService } from "./interfaces/properties";
 import type { PublicationsService } from "./interfaces/publications";
 import type { ScraperService } from "./interfaces/scraper";
 import type { DashboardService } from "./interfaces/dashboard";
+import type { AdminDashboardService } from "./interfaces/adminDashboard";
 import type { MetasService } from "./interfaces/metas";
 import type { ClientsService } from "./interfaces/clients";
 import type { ProspectsService } from "./interfaces/prospects";
@@ -110,6 +113,9 @@ export const wasiLocalidadesService = USE_HTTP_API
 export const dashboardService: DashboardService = USE_HTTP_API
   ? httpDashboard
   : mockDashboard;
+export const adminDashboardService: AdminDashboardService = USE_HTTP_API
+  ? httpAdminDashboard
+  : mockAdminDashboard;
 export const metasService: MetasService = USE_HTTP_API ? httpMetas : mockMetas;
 export const clientsService: ClientsService = USE_HTTP_API ? httpClients : mockClients;
 export const prospectsService: ProspectsService = USE_HTTP_API
@@ -170,6 +176,10 @@ export type {
   DesempenoDashboard,
   DashboardService,
 } from "./interfaces/dashboard";
+export type {
+  AdminDashboard,
+  AdminDashboardService,
+} from "./interfaces/adminDashboard";
 export type { MetasAnio, MetasService, MetaMes } from "./interfaces/metas";
 export type {
   Client,
