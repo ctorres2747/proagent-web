@@ -213,6 +213,13 @@ const mapInvocacion = (r: RawInvocacion): InvocacionSoporte => ({
   error: r.error,
 });
 
+export interface ErrorRuntime {
+  id: number;
+  fecha: string;
+  componente: string;
+  mensaje: string;
+}
+
 export const soporteService = {
   async getConsentimiento(token?: string): Promise<ConsentimientoSoporte> {
     return mapConsentimiento(
@@ -255,6 +262,14 @@ export const soporteService = {
   },
   async revokeToken(id: number, token?: string): Promise<void> {
     await apiFetch(`/api/web/soporte/tokens/${id}`, { method: "DELETE", token });
+  },
+  /** Últimos errores de runtime de una PC, con el mensaje completo (ya redactado). */
+  async getErrores(workerId: string, token?: string): Promise<ErrorRuntime[]> {
+    const raw = await apiFetch<{ errores: ErrorRuntime[] }>("/api/web/soporte/errores", {
+      token,
+      query: { worker_id: workerId, limit: 10 },
+    });
+    return raw.errores.map((e) => ({ id: e.id, fecha: e.fecha, componente: e.componente, mensaje: e.mensaje }));
   },
   async listInvocaciones(
     filtro: { estado?: EstadoInvocacion; workerId?: string; limit?: number },

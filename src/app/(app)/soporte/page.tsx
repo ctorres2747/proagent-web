@@ -46,9 +46,38 @@ function consentimientoTexto(m: MaquinaFlota): string {
   }
 }
 
-function FilaMaquina({ m }: { m: MaquinaFlota }) {
-  const conexion = CONEXION[m.conexion];
+function ErroresCompletos({ workerId, token }: { workerId: string; token?: string }) {
+  const { data, isLoading, isError } = useQuery({
+    queryKey: ["soporte-errores", workerId],
+    queryFn: () => soporteService.getErrores(workerId, token),
+  });
+  if (isLoading) return <p className="text-[12px] text-[var(--pa-muted)]">Cargando errores…</p>;
+  if (isError) return <p className="text-[12px] text-[var(--pa-danger)]">No se pudieron cargar los errores.</p>;
+  if (!data?.length) return <p className="text-[12px] text-[var(--pa-muted)]">Sin errores registrados.</p>;
   return (
+    <div className="space-y-3">
+      <p className="text-[11px] text-[var(--pa-muted)]">
+        Últimos {data.length} errores de esta PC (teléfonos, claves y usuario de Windows ocultos).
+      </p>
+      {data.map((e) => (
+        <div key={e.id}>
+          <p className="text-[11px] font-semibold text-[var(--pa-ink)]">
+            {fecha(e.fecha)} · {e.componente}
+          </p>
+          <pre className="mt-1 max-h-96 overflow-auto whitespace-pre-wrap break-words rounded-md bg-[var(--pa-bg)] p-2 font-mono text-[11px] text-[var(--pa-ink)]">
+            {e.mensaje}
+          </pre>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function FilaMaquina({ m, token }: { m: MaquinaFlota; token?: string }) {
+  const conexion = CONEXION[m.conexion];
+  const [verErrores, setVerErrores] = useState(false);
+  return (
+    <>
     <tr className="border-t border-[var(--pa-border)] align-top">
       <td className="px-3 py-2">
         <p className="font-mono text-[12px] text-[var(--pa-ink)]">{m.workerId}</p>
@@ -70,12 +99,20 @@ function FilaMaquina({ m }: { m: MaquinaFlota }) {
       </td>
       <td className="max-w-[260px] px-3 py-2 text-[11px] text-[var(--pa-muted)]">
         {m.ultimoError ? (
-          <>
+          <button
+            type="button"
+            onClick={() => setVerErrores((v) => !v)}
+            className="block w-full text-left"
+            aria-expanded={verErrores}
+          >
             <p>
               {fecha(m.ultimoError.fecha)} · {m.ultimoError.componente}
             </p>
             <p className="line-clamp-3 break-words text-[var(--pa-ink)]">{m.ultimoError.mensaje}</p>
-          </>
+            <p className="mt-1 font-semibold text-[var(--pa-navy)]">
+              {verErrores ? "Ocultar" : "Ver completo"}
+            </p>
+          </button>
         ) : (
           "—"
         )}
@@ -89,6 +126,14 @@ function FilaMaquina({ m }: { m: MaquinaFlota }) {
       </td>
       <td className="px-3 py-2 text-[11px] text-[var(--pa-ink)]">{consentimientoTexto(m)}</td>
     </tr>
+    {verErrores ? (
+      <tr className="bg-[var(--pa-bg-alt)]">
+        <td colSpan={6} className="px-3 py-3">
+          <ErroresCompletos workerId={m.workerId} token={token} />
+        </td>
+      </tr>
+    ) : null}
+    </>
   );
 }
 
@@ -201,7 +246,7 @@ export default function SoportePage() {
             </thead>
             <tbody>
               {(maquinas ?? []).map((m) => (
-                <FilaMaquina key={m.workerId} m={m} />
+                <FilaMaquina key={m.workerId} m={m} token={tk} />
               ))}
               {maquinas && maquinas.length === 0 ? (
                 <tr>

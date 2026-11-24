@@ -88,6 +88,9 @@ export const soporteService = {
   async listInvocaciones() {
     return [];
   },
+  async getErrores() {
+    return [];
+  },
   async proponer(): Promise<never> {
     throw new Error("Modo demo: sin PCs reales.");
   },
