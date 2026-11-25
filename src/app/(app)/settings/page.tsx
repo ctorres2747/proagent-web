@@ -447,6 +447,7 @@ function ChannelRow({
   const drivePropia = id === "entrega" && Boolean(connection.credentials?.driveCuentaPropia);
   const driveReconectar = drivePropia && Boolean(connection.credentials?.driveReconectar);
   const driveDisponible = id === "entrega" && Boolean(connection.credentials?.driveConexionDisponible);
+  const driveInactiva = id === "entrega" && Boolean(connection.credentials?.driveCuentaInactiva);
 
   const driveConectarMutation = useMutation({
     mutationFn: () => googleDriveService.conectar(token),
@@ -680,6 +681,12 @@ function ChannelRow({
                 de tu Google Drive.
               </p>
             ) : null}
+            {driveInactiva ? (
+              <p className="mt-1 text-[12px] text-[var(--pa-muted)]">
+                Tu Google Drive propio quedó guardado pero no se usa: ahora eres parte de un
+                equipo y tus fichas se entregan con la cuenta del equipo. Puedes desconectarlo.
+              </p>
+            ) : null}
             {connection.issue ? (
               <p className="mt-1 text-[12px] text-[var(--pa-warning-ink)]">
                 {connection.issue}
@@ -725,9 +732,9 @@ function ChannelRow({
               ) : null}
             </>
           ) : null}
-          {driveDisponible || drivePropia ? (
+          {driveDisponible || drivePropia || driveInactiva ? (
             <>
-              {!drivePropia || driveReconectar ? (
+              {(!drivePropia && !driveInactiva) || driveReconectar ? (
                 <button
                   type="button"
                   disabled={driveConectarMutation.isPending}
@@ -737,7 +744,7 @@ function ChannelRow({
                   {driveReconectar ? "Reconectar mi Google Drive" : "Conectar mi Google Drive"}
                 </button>
               ) : null}
-              {drivePropia ? (
+              {drivePropia || driveInactiva ? (
                 <button
                   type="button"
                   disabled={driveDesconectarMutation.isPending}

@@ -27,6 +27,7 @@ interface RawConnection {
     drive_google_email?: string | null;
     drive_reconectar?: boolean | null;
     drive_conexion_disponible?: boolean | null;
+    drive_cuenta_inactiva?: boolean | null;
   } | null;
   marketplace_per_agent_enabled?: boolean | null;
 }
@@ -54,6 +55,7 @@ function mapConnection(raw: RawConnection): ChannelConnection {
           driveGoogleEmail: raw.credentials.drive_google_email ?? null,
           driveReconectar: raw.credentials.drive_reconectar ?? null,
           driveConexionDisponible: raw.credentials.drive_conexion_disponible ?? null,
+          driveCuentaInactiva: raw.credentials.drive_cuenta_inactiva ?? null,
         }
       : null,
     marketplacePerAgentEnabled: raw.marketplace_per_agent_enabled ?? null,

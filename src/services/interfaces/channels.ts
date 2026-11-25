@@ -25,6 +25,9 @@ export interface ChannelConnectionCredentials {
   driveReconectar?: boolean | null;
   /** El servidor permite conectar una cuenta propia a este asesor. */
   driveConexionDisponible?: boolean | null;
+  /** Conectó su Drive siendo independiente y después entró a un equipo:
+   * guardada pero sin usar (sus fichas van al equipo). Puede desconectarla. */
+  driveCuentaInactiva?: boolean | null;
 }
 
 export interface ChannelConnection {
