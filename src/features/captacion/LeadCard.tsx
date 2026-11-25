@@ -58,14 +58,18 @@ export function LeadCard({
           </span>
         ) : null}
       </div>
-      <div className="line-clamp-2 text-[12px] font-bold leading-snug text-[var(--pa-ink)]">
-        {lead.tipoInmueble ?? "Inmueble"}
-        {lead.municipio ? ` · ${lead.municipio}` : ""}
+      <div className="mt-1 flex min-w-0 items-start gap-1.5">
+        <div className="min-w-0 flex-1 line-clamp-2 text-[12px] font-bold leading-snug text-[var(--pa-ink)]">
+          {lead.tipoInmueble ?? "Inmueble"}
+          {lead.municipio ? ` · ${lead.municipio}` : ""}
+        </div>
+        <PortalLogo
+          portal={lead.portal}
+          size={16}
+          className="mt-px shrink-0"
+        />
       </div>
-      <div className="mt-0.5">
-        <PortalLogo portal={lead.portal} size={16} />
-      </div>
-      <div className="mt-1.5 text-[13px] font-extrabold text-[var(--pa-navy)]">
+      <div className="mt-1 text-[13px] font-extrabold text-[var(--pa-navy)]">
         {formatLeadPrice(lead)}
       </div>
       {capturedAtLabel(lead.fechaCaptura) ? (
