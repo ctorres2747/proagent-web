@@ -45,15 +45,21 @@ function DiffChip({
   prevMes,
   good,
   withVs = true,
+  equalSize = false,
 }: {
   diff: number;
   prevMes: number;
   good: boolean | null;
   withVs?: boolean;
+  equalSize?: boolean;
 }) {
   const tone = chipTone(diff, good);
   return (
-    <span className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${chipClass(tone)}`}>
+    <span
+      className={`inline-flex h-[22px] shrink-0 items-center justify-center whitespace-nowrap rounded-full px-2 text-[11px] font-bold tabular-nums ${
+        equalSize ? "min-w-[6.25rem]" : ""
+      } ${chipClass(tone)}`}
+    >
       {chipText(diff, prevMes, withVs)}
     </span>
   );
@@ -178,7 +184,7 @@ export function AdminInicioDashboard() {
       p.set("anio", String(next.anio ?? anioQuery ?? today.anio));
       p.set("mes", String(next.mes ?? mesQuery ?? today.mes));
       p.set("metrica", next.metrica ?? metrica);
-      router.replace(`/?${p.toString()}`);
+      router.replace(`/?${p.toString()}`, { scroll: false });
     },
     [anioQuery, mesQuery, metrica, router, searchParams, today.anio, today.mes],
   );
@@ -432,21 +438,21 @@ function KpiRow({ data, prevMes }: { data: AdminDashboard; prevMes: number }) {
   ];
 
   return (
-    <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 xl:grid-cols-4">
+    <div className="grid grid-cols-1 items-stretch gap-3.5 sm:grid-cols-2 xl:grid-cols-4">
       {cards.map((c) => (
         <article
           key={c.label}
-          className="flex flex-col gap-2 rounded-2xl border border-[#E4E8EC] bg-white px-5 py-[18px]"
+          className="flex h-full min-h-[168px] flex-col gap-2 rounded-2xl border border-[#E4E8EC] bg-white px-5 py-[18px]"
         >
-          <div className="flex items-start justify-between gap-2">
-            <span className="truncate text-[12.5px] font-bold text-[#5B6B79]">{c.label}</span>
-            <DiffChip diff={c.diff} prevMes={prevMes} good={c.good} />
+          <div className="flex min-h-[40px] items-start justify-between gap-2">
+            <span className="text-[12.5px] font-bold leading-snug text-[#5B6B79]">{c.label}</span>
+            <DiffChip diff={c.diff} prevMes={prevMes} good={c.good} equalSize />
           </div>
-          <p className="text-[32px] font-extrabold tracking-[-0.02em] text-[#16212B]">
+          <p className="text-[32px] font-extrabold tabular-nums tracking-[-0.02em] text-[#16212B]">
             {formatInteger(c.value)}
           </p>
           <ShareBar values={c.shares} />
-          <p className="text-[11.5px] font-semibold text-[#5B6B79]">{c.sub}</p>
+          <p className="mt-auto text-[11.5px] font-semibold leading-snug text-[#5B6B79]">{c.sub}</p>
         </article>
       ))}
     </div>
@@ -498,18 +504,21 @@ function CaptacionTable({
           </span>
         </div>
       </div>
-      <div className="overflow-x-auto">
+      <div>
         <div
-          className="grid min-w-[920px] items-center gap-4 border-b border-[#EEF0F3] py-2 text-[11px] font-bold uppercase tracking-[.04em] text-[#5B6B79]"
-          style={{ gridTemplateColumns: "200px 190px minmax(0,1fr) 84px 84px 84px 84px" }}
+          className="grid items-center gap-3 border-b border-[#EEF0F3] py-2 text-left text-[11px] font-bold uppercase tracking-[.04em] text-[#5B6B79]"
+          style={{
+            gridTemplateColumns:
+              "minmax(132px,1.15fr) minmax(120px,1fr) minmax(0,1.35fr) repeat(4, minmax(0,0.7fr))",
+          }}
         >
           <span>Asesor</span>
           <span>Scraper</span>
           <span>Leads por corrida</span>
-          <span className="text-right">Recibidos</span>
-          <span className="text-right">En contacto</span>
-          <span className="text-right">Captadas</span>
-          <span className="text-right">Descartadas</span>
+          <span>Recibidos</span>
+          <span>En contacto</span>
+          <span>Captadas</span>
+          <span>Descartadas</span>
         </div>
         {data.asesores.map((a, i) => {
           const conv = conversionPct(a.leads.captadas, a.leads.recibidos);
@@ -525,8 +534,11 @@ function CaptacionTable({
             <Link
               key={a.id}
               href={`/captacion?agente_id=${a.id}`}
-              className="grid min-w-[920px] items-center gap-4 border-b border-[#EEF0F3] py-4 hover:bg-[#FAFBFC]"
-              style={{ gridTemplateColumns: "200px 190px minmax(0,1fr) 84px 84px 84px 84px" }}
+              className="grid items-center gap-3 border-b border-[#EEF0F3] py-4 hover:bg-[#FAFBFC]"
+              style={{
+                gridTemplateColumns:
+                  "minmax(132px,1.15fr) minmax(120px,1fr) minmax(0,1.35fr) repeat(4, minmax(0,0.7fr))",
+              }}
             >
               <span className="flex items-center gap-2.5">
                 <Avatar iniciales={a.iniciales} colorIndex={i} />
@@ -610,8 +622,11 @@ function CaptacionTable({
           );
         })}
         <div
-          className="grid min-w-[920px] items-center gap-4 py-4"
-          style={{ gridTemplateColumns: "200px 190px minmax(0,1fr) 84px 84px 84px 84px" }}
+          className="grid items-center gap-3 py-4"
+          style={{
+            gridTemplateColumns:
+              "minmax(132px,1.15fr) minmax(120px,1fr) minmax(0,1.35fr) repeat(4, minmax(0,0.7fr))",
+          }}
         >
           <span className="text-[13.5px] font-extrabold">Total equipo</span>
           <span className="text-[12.5px] font-semibold text-[#5B6B79]">
@@ -642,8 +657,10 @@ function NumDiff({
   good: boolean | null;
 }) {
   return (
-    <span className="text-right">
-      <span className="block text-[20px] font-extrabold text-[#16212B]">{formatInteger(actual)}</span>
+    <span className="text-left">
+      <span className="block text-[20px] font-extrabold tabular-nums text-[#16212B]">
+        {formatInteger(actual)}
+      </span>
       <span className="mt-0.5 inline-block">
         <DiffChip diff={actual - prev} prevMes={prevMes} good={good} withVs={false} />
       </span>
