@@ -444,13 +444,15 @@ function KpiRow({ data, prevMes }: { data: AdminDashboard; prevMes: number }) {
           key={c.label}
           className="flex h-full min-h-[168px] flex-col gap-2 rounded-2xl border border-[#E4E8EC] bg-white px-5 py-[18px]"
         >
-          <div className="flex min-h-[40px] items-start justify-between gap-2">
-            <span className="text-[12.5px] font-bold leading-snug text-[#5B6B79]">{c.label}</span>
+          <span className="min-h-[36px] text-[12.5px] font-bold leading-snug text-[#5B6B79]">
+            {c.label}
+          </span>
+          <div className="flex items-end justify-between gap-2">
+            <p className="text-[32px] font-extrabold tabular-nums leading-none tracking-[-0.02em] text-[#16212B]">
+              {formatInteger(c.value)}
+            </p>
             <DiffChip diff={c.diff} prevMes={prevMes} good={c.good} equalSize />
           </div>
-          <p className="text-[32px] font-extrabold tabular-nums tracking-[-0.02em] text-[#16212B]">
-            {formatInteger(c.value)}
-          </p>
           <ShareBar values={c.shares} />
           <p className="mt-auto text-[11.5px] font-semibold leading-snug text-[#5B6B79]">{c.sub}</p>
         </article>
