@@ -1,9 +1,15 @@
 "use client";
 
+import { useEffect } from "react";
 import { PortalLogo } from "@/components/PortalLogo";
+import { LeadActivitiesSection } from "@/features/captacion/LeadActivitiesSection";
 import { formatLeadPrice } from "@/lib/format";
 import { capturedAtLabel } from "@/lib/formatCapturedAt";
-import type { Lead, LeadEstado } from "@/services/interfaces/leads";
+import type {
+  Lead,
+  LeadEstado,
+  ProximaActividad,
+} from "@/services/interfaces/leads";
 
 const ESTADO_OPTIONS: LeadEstado[] = [
   "Pendiente",
@@ -37,6 +43,10 @@ export function CaptacionDetailDrawer({
   saveError,
   publishError,
   canPublish,
+  token,
+  now,
+  highlightActivityId,
+  onProximaChange,
 }: {
   lead: Lead;
   draft: CaptacionDraft;
@@ -53,7 +63,18 @@ export function CaptacionDetailDrawer({
   saveError: string | null;
   publishError: string | null;
   canPublish: boolean;
+  token?: string;
+  now: Date;
+  highlightActivityId?: number | null;
+  onProximaChange: (proxima: ProximaActividad | null) => void;
 }) {
+  useEffect(() => {
+    if (highlightActivityId == null) return;
+    document
+      .getElementById("lead-actividades")
+      ?.scrollIntoView({ block: "nearest" });
+  }, [highlightActivityId, lead.id]);
+
   return (
     <>
       <button
@@ -219,19 +240,13 @@ export function CaptacionDetailDrawer({
               />
             </label>
 
-            <label className="block">
-              <span className="mb-1 block text-[12px] font-semibold text-[var(--pa-muted)]">
-                Fecha recontacto
-              </span>
-              <input
-                type="date"
-                value={draft.fechaRecontacto}
-                onChange={(e) =>
-                  onDraftChange({ fechaRecontacto: e.target.value })
-                }
-                className="w-full rounded-[10px] border border-[var(--pa-border)] bg-[var(--pa-bg)] px-3 py-2 text-[13px]"
-              />
-            </label>
+            <LeadActivitiesSection
+              leadId={lead.id}
+              token={token}
+              now={now}
+              highlightActivityId={highlightActivityId}
+              onProximaChange={onProximaChange}
+            />
 
             <label className="block">
               <span className="mb-1 block text-[12px] font-semibold text-[var(--pa-muted)]">

@@ -14,6 +14,8 @@ export const tokens = {
     emeraldInk: "#06331F",
     warning: "#D9A227",
     warningInk: "#B5651D",
+    attention: "#E0A800",
+    attentionBg: "#FFF6D6",
     danger: "#C23B2B",
     ink: "#16212B",
     textSecondary: "#45525E",

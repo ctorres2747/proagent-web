@@ -3,25 +3,44 @@
 import { Eye } from "lucide-react";
 import { LeadCoverImage } from "@/components/LeadCoverImage";
 import { PortalLogo } from "@/components/PortalLogo";
+import {
+  LeadFollowUpIndicator,
+  shouldShowFollowUp,
+} from "@/features/captacion/LeadFollowUpIndicator";
 import { formatLeadPrice } from "@/lib/format";
 import { capturedAtLabel } from "@/lib/formatCapturedAt";
-import type { Lead } from "@/services/interfaces/leads";
+import type { Lead, LeadActivityCreate } from "@/services/interfaces/leads";
 
 /** Lead card compacta — cabe en 4 columnas dentro del max-w compartido del shell. */
 export function LeadCard({
   lead,
   active,
+  now,
   onClick,
+  onOpenActivities,
+  onSchedule,
+  schedulePending,
 }: {
   lead: Lead;
   active: boolean;
+  now: Date;
   onClick: () => void;
+  onOpenActivities: (activityId?: number) => void;
+  onSchedule: (data: LeadActivityCreate) => Promise<void> | void;
+  schedulePending?: boolean;
 }) {
   return (
-    <button
-      type="button"
+    <article
+      role="button"
+      tabIndex={0}
       onClick={onClick}
-      className={`flex w-full min-w-0 flex-col rounded-xl border bg-[var(--pa-surface)] p-2.5 text-left transition-shadow hover:shadow-sm ${
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onClick();
+        }
+      }}
+      className={`flex w-full min-w-0 cursor-pointer flex-col rounded-xl border bg-[var(--pa-surface)] p-2.5 text-left transition-shadow hover:shadow-sm ${
         active
           ? "border-[var(--pa-navy)] ring-1 ring-[var(--pa-navy)]"
           : "border-[var(--pa-border)]"
@@ -39,14 +58,18 @@ export function LeadCard({
           </span>
         ) : null}
       </div>
-      <div className="line-clamp-2 text-[12px] font-bold leading-snug text-[var(--pa-ink)]">
-        {lead.tipoInmueble ?? "Inmueble"}
-        {lead.municipio ? ` · ${lead.municipio}` : ""}
+      <div className="mt-1 flex min-w-0 items-start gap-1.5">
+        <div className="min-w-0 flex-1 line-clamp-2 text-[12px] font-bold leading-snug text-[var(--pa-ink)]">
+          {lead.tipoInmueble ?? "Inmueble"}
+          {lead.municipio ? ` · ${lead.municipio}` : ""}
+        </div>
+        <PortalLogo
+          portal={lead.portal}
+          size={16}
+          className="mt-px shrink-0"
+        />
       </div>
-      <div className="mt-0.5">
-        <PortalLogo portal={lead.portal} size={16} />
-      </div>
-      <div className="mt-1.5 text-[13px] font-extrabold text-[var(--pa-navy)]">
+      <div className="mt-1 text-[13px] font-extrabold text-[var(--pa-navy)]">
         {formatLeadPrice(lead)}
       </div>
       {capturedAtLabel(lead.fechaCaptura) ? (
@@ -54,6 +77,15 @@ export function LeadCard({
           {capturedAtLabel(lead.fechaCaptura)}
         </div>
       ) : null}
-    </button>
+      {shouldShowFollowUp(lead.estado) ? (
+        <LeadFollowUpIndicator
+          proxima={lead.proximaActividad}
+          now={now}
+          onOpenActivities={onOpenActivities}
+          onSchedule={onSchedule}
+          pending={schedulePending}
+        />
+      ) : null}
+    </article>
   );
 }
