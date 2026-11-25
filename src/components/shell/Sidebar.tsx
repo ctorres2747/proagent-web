@@ -35,9 +35,9 @@ export function Sidebar({
 
   return (
     <aside
-      className={`sticky top-0 hidden h-[100dvh] shrink-0 flex-col bg-[var(--pa-navy)] text-white transition-[width] duration-[180ms] ease-[cubic-bezier(.4,0,.2,1)] motion-reduce:transition-none md:flex ${
-        collapsed ? "w-[var(--pa-shell-rail-w)]" : "w-[var(--pa-shell-sidebar-w)]"
-      }`}
+        className={`sticky top-0 hidden h-[100dvh] shrink-0 flex-col bg-[var(--pa-navy)] text-white transition-[width] duration-[180ms] ease-[cubic-bezier(.4,0,.2,1)] motion-reduce:transition-none md:flex ${
+          collapsed ? "w-[var(--pa-shell-rail-w)]" : "w-[var(--pa-shell-sidebar-w)]"
+        }`}
     >
       <div
         className={`flex h-[var(--pa-shell-header-h)] shrink-0 items-center border-b border-[rgba(255,255,255,.12)] ${
@@ -63,7 +63,11 @@ export function Sidebar({
         ) : null}
       </div>
 
-      <nav className="flex flex-1 flex-col gap-5 overflow-y-auto px-3 py-4">
+      <nav
+        className={`flex flex-1 flex-col gap-5 overflow-x-hidden overflow-y-auto py-4 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden ${
+          collapsed ? "px-2" : "px-3"
+        }`}
+      >
         {!sessionReady
           ? NAV_GROUPS.map((group) => (
               <div key={group.id} className="space-y-1">

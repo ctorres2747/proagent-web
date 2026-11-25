@@ -1,7 +1,7 @@
 import type { AgenteResumen, AgentesService } from "@/services/interfaces/agentes";
 import { apiFetch } from "./client";
 
-const PATH = "/api/agentes";
+const PATH = "/api/web/admin/asesores";
 
 interface RawAgente {
   id: number;
