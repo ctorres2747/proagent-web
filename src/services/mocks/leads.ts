@@ -1,9 +1,12 @@
 import type {
   FichasService,
   Lead,
+  LeadActivity,
+  LeadActivityCreate,
   LeadCreate,
   LeadEstado,
   LeadsService,
+  ProximaActividad,
 } from "@/services/interfaces/leads";
 
 const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -38,6 +41,7 @@ const mockLeads: Lead[] = [
     fechaActualizacion: "2026-08-14T10:00:00",
     ownerAgenteId: 1,
     enRevision: true,
+    proximaActividad: null,
   },
   {
     id: 102,
@@ -61,6 +65,13 @@ const mockLeads: Lead[] = [
     fechaActualizacion: "2026-08-14T09:00:00",
     ownerAgenteId: 1,
     enRevision: false,
+    proximaActividad: {
+      id: 1,
+      tipo: "visita",
+      titulo: "Visita",
+      fechaHora: "2026-11-26T09:00:00-05:00",
+      todoElDia: false,
+    },
   },
   {
     id: 103,
@@ -84,6 +95,13 @@ const mockLeads: Lead[] = [
     fechaActualizacion: "2026-08-14T11:00:00",
     ownerAgenteId: 1,
     enRevision: false,
+    proximaActividad: {
+      id: 2,
+      tipo: "llamada",
+      titulo: "Llamada",
+      fechaHora: "2026-11-20T10:00:00-05:00",
+      todoElDia: false,
+    },
   },
   {
     id: 104,
@@ -107,8 +125,64 @@ const mockLeads: Lead[] = [
     fechaActualizacion: "2026-08-11T16:00:00",
     ownerAgenteId: 1,
     enRevision: false,
+    proximaActividad: null,
   },
 ];
+
+let nextActivityId = 3;
+const mockActivities: Record<number, LeadActivity[]> = {
+  102: [
+    {
+      id: 1,
+      tipo: "visita",
+      titulo: "Visita",
+      fechaHora: "2026-11-26T09:00:00-05:00",
+      todoElDia: false,
+      estado: "pendiente",
+      nota: null,
+      agenteId: 1,
+      completadaAt: null,
+      createdAt: "2026-11-24T10:00:00-05:00",
+    },
+  ],
+  103: [
+    {
+      id: 2,
+      tipo: "llamada",
+      titulo: "Llamada",
+      fechaHora: "2026-11-20T10:00:00-05:00",
+      todoElDia: false,
+      estado: "pendiente",
+      nota: null,
+      agenteId: 1,
+      completadaAt: null,
+      createdAt: "2026-11-18T10:00:00-05:00",
+    },
+  ],
+};
+
+function toProxima(act: LeadActivity | undefined): ProximaActividad | null {
+  if (!act) return null;
+  return {
+    id: act.id,
+    tipo: act.tipo,
+    titulo: act.titulo,
+    fechaHora: act.fechaHora,
+    todoElDia: act.todoElDia,
+  };
+}
+
+function syncProxima(leadId: number): ProximaActividad | null {
+  const pending = (mockActivities[leadId] ?? [])
+    .filter((a) => a.estado === "pendiente")
+    .sort((a, b) => a.fechaHora.localeCompare(b.fechaHora) || a.id - b.id);
+  const proxima = toProxima(pending[0]);
+  const idx = mockLeads.findIndex((l) => l.id === leadId);
+  if (idx >= 0) {
+    mockLeads[idx] = { ...mockLeads[idx], proximaActividad: proxima };
+  }
+  return proxima;
+}
 
 function touch(lead: Lead): Lead {
   return {
@@ -182,9 +256,54 @@ export const leadsService: LeadsService = {
       fechaActualizacion: new Date().toISOString(),
       ownerAgenteId: 1,
       enRevision: false,
+      proximaActividad: null,
     };
     mockLeads.unshift(lead);
     return lead;
+  },
+
+  async listActivities(leadId) {
+    await delay(150);
+    return [...(mockActivities[leadId] ?? [])];
+  },
+
+  async createActivity(leadId, data: LeadActivityCreate) {
+    await delay(200);
+    const lead = mockLeads.find((l) => l.id === leadId);
+    if (!lead) throw new Error("Lead no encontrado");
+    const activity: LeadActivity = {
+      id: nextActivityId++,
+      tipo: data.tipo,
+      titulo: data.titulo ?? null,
+      fechaHora: data.fechaHora,
+      todoElDia: Boolean(data.todoElDia),
+      estado: "pendiente",
+      nota: data.nota ?? null,
+      agenteId: 1,
+      completadaAt: null,
+      createdAt: new Date().toISOString(),
+    };
+    mockActivities[leadId] = [...(mockActivities[leadId] ?? []), activity];
+    return syncProxima(leadId);
+  },
+
+  async patchActivity(leadId, activityId, data) {
+    await delay(200);
+    const list = mockActivities[leadId] ?? [];
+    const idx = list.findIndex((a) => a.id === activityId);
+    if (idx < 0) throw new Error("Actividad no encontrada");
+    const current = list[idx];
+    list[idx] = {
+      ...current,
+      ...data,
+      estado: data.estado ?? current.estado,
+      completadaAt:
+        data.estado === "completada"
+          ? new Date().toISOString()
+          : current.completadaAt,
+    };
+    mockActivities[leadId] = list;
+    return syncProxima(leadId);
   },
 };
 

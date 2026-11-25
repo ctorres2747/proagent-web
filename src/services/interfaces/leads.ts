@@ -5,6 +5,41 @@ export type LeadEstado =
   | "Descartado"
   | "Archivado";
 
+export type LeadActivityType = "llamada" | "whatsapp" | "visita" | "otro";
+export type LeadActivityStatus = "pendiente" | "completada" | "cancelada";
+
+export interface ProximaActividad {
+  id: number;
+  tipo: LeadActivityType;
+  titulo: string | null;
+  fechaHora: string;
+  todoElDia: boolean;
+}
+
+export interface LeadActivity extends ProximaActividad {
+  estado: LeadActivityStatus;
+  nota: string | null;
+  agenteId: number | null;
+  completadaAt: string | null;
+  createdAt: string | null;
+}
+
+export interface LeadActivityCreate {
+  tipo: LeadActivityType;
+  titulo?: string | null;
+  fechaHora: string;
+  todoElDia?: boolean;
+  nota?: string | null;
+}
+
+export interface LeadActivityPatch {
+  estado?: LeadActivityStatus;
+  fechaHora?: string;
+  titulo?: string | null;
+  nota?: string | null;
+  todoElDia?: boolean;
+}
+
 export interface Lead {
   id: number;
   portal: string;
@@ -27,6 +62,7 @@ export interface Lead {
   fechaActualizacion: string;
   ownerAgenteId: number | null;
   enRevision: boolean;
+  proximaActividad: ProximaActividad | null;
 }
 
 export interface LeadUpdate {
@@ -59,6 +95,18 @@ export interface LeadsService {
   get(id: number, token?: string): Promise<Lead>;
   update(id: number, data: LeadUpdate, token?: string): Promise<Lead>;
   create(data: LeadCreate, token?: string): Promise<Lead>;
+  listActivities(leadId: number, token?: string): Promise<LeadActivity[]>;
+  createActivity(
+    leadId: number,
+    data: LeadActivityCreate,
+    token?: string,
+  ): Promise<ProximaActividad | null>;
+  patchActivity(
+    leadId: number,
+    activityId: number,
+    data: LeadActivityPatch,
+    token?: string,
+  ): Promise<ProximaActividad | null>;
 }
 
 export interface FichasService {

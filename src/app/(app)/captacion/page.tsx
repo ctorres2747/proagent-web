@@ -32,7 +32,12 @@ import {
 } from "@/components/PriceRangeFilter";
 import { Toast } from "@/components/Toast";
 import { fichasService, leadsService, scraperService } from "@/services";
-import type { Lead, LeadEstado } from "@/services/interfaces/leads";
+import type {
+  Lead,
+  LeadActivityCreate,
+  LeadEstado,
+  ProximaActividad,
+} from "@/services/interfaces/leads";
 
 const COLUMNS: LeadEstado[] = [
   "Pendiente",
@@ -62,6 +67,11 @@ export default function CaptacionPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [highlightActivityId, setHighlightActivityId] = useState<number | null>(
+    null,
+  );
+  const [nowMs, setNowMs] = useState(() => Date.now());
+  const [schedulingLeadId, setSchedulingLeadId] = useState<number | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [publishError, setPublishError] = useState<string | null>(null);
   const [estadoBlocked, setEstadoBlocked] = useState(false);
@@ -89,6 +99,11 @@ export default function CaptacionPage() {
       router.replace("/");
     }
   }, [staff, router]);
+
+  useEffect(() => {
+    const id = window.setInterval(() => setNowMs(Date.now()), 60_000);
+    return () => window.clearInterval(id);
+  }, []);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -321,6 +336,49 @@ export default function CaptacionPage() {
   });
 
   const dismissToast = useCallback(() => setToast(null), []);
+
+  const applyProxima = useCallback(
+    (leadId: number, proxima: ProximaActividad | null) => {
+      queryClient.setQueryData<Lead[]>(["leads"], (prev) =>
+        prev?.map((l) =>
+          l.id === leadId ? { ...l, proximaActividad: proxima } : l,
+        ),
+      );
+    },
+    [queryClient],
+  );
+
+  const openLeadActivities = useCallback((leadId: number, activityId?: number) => {
+    setSelectedId(leadId);
+    setHighlightActivityId(activityId ?? null);
+  }, []);
+
+  const scheduleOnCard = useCallback(
+    async (leadId: number, data: LeadActivityCreate) => {
+      setSchedulingLeadId(leadId);
+      try {
+        const proxima = await leadsService.createActivity(
+          leadId,
+          data,
+          token ?? undefined,
+        );
+        applyProxima(leadId, proxima);
+        void queryClient.invalidateQueries({
+          queryKey: ["lead-activities", leadId],
+        });
+        setToast({ message: "Seguimiento agendado" });
+      } catch (err) {
+        setToast({
+          message:
+            err instanceof Error ? err.message : "No se pudo agendar.",
+          type: "error",
+        });
+      } finally {
+        setSchedulingLeadId(null);
+      }
+    },
+    [applyProxima, queryClient, token],
+  );
 
   if (!staff) {
     return null;
@@ -640,7 +698,16 @@ export default function CaptacionPage() {
                         key={lead.id}
                         lead={lead}
                         active={lead.id === selectedId}
-                        onClick={() => setSelectedId(lead.id)}
+                        now={new Date(nowMs)}
+                        onClick={() => {
+                          setHighlightActivityId(null);
+                          setSelectedId(lead.id);
+                        }}
+                        onOpenActivities={(activityId) =>
+                          openLeadActivities(lead.id, activityId)
+                        }
+                        onSchedule={(data) => scheduleOnCard(lead.id, data)}
+                        schedulePending={schedulingLeadId === lead.id}
                       />
                     ))}
                   {columnCount(filteredLeads, estado) === 0 && (
@@ -686,7 +753,10 @@ export default function CaptacionPage() {
               ? "Para captar el lead completa el nombre y el teléfono del propietario."
               : null
           }
-          onClose={() => setSelectedId(null)}
+          onClose={() => {
+            setSelectedId(null);
+            setHighlightActivityId(null);
+          }}
           onSave={handleSave}
           onPublish={() => publishMutation.mutate()}
           savePending={updateMutation.isPending}
@@ -694,6 +764,10 @@ export default function CaptacionPage() {
           saveError={saveError}
           publishError={publishError}
           canPublish={canPublish}
+          token={token ?? undefined}
+          now={new Date(nowMs)}
+          highlightActivityId={highlightActivityId}
+          onProximaChange={(proxima) => applyProxima(selected.id, proxima)}
         />
       ) : null}
 
