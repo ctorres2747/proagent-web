@@ -18,6 +18,13 @@ export interface ChannelConnectionCredentials {
   catalogTokenLast4?: string | null;
   driveParentFolderId?: string | null;
   driveParentFolderUrl?: string | null;
+  /** Entrega Drive con la cuenta de Google propia del asesor (independiente). */
+  driveCuentaPropia?: boolean | null;
+  driveGoogleEmail?: string | null;
+  /** Google rechazó la conexión (revocada/vencida): hay que reconectar. */
+  driveReconectar?: boolean | null;
+  /** El servidor permite conectar una cuenta propia a este asesor. */
+  driveConexionDisponible?: boolean | null;
 }
 
 export interface ChannelConnection {
