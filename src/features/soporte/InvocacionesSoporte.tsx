@@ -17,6 +17,8 @@ const INVOCACIONES_KEY = ["soporte-invocaciones"] as const;
 export const HERRAMIENTAS: { tool: string; label: string; accion: boolean }[] = [
   { tool: "pc_health_snapshot", label: "Salud de la PC", accion: false },
   { tool: "pc_log_tail", label: "Últimas líneas de un log", accion: false },
+  { tool: "pc_log_bundle", label: "Todos los logs (100 líneas de cada uno)", accion: false },
+  { tool: "pc_marketplace_session", label: "Sesión de Facebook (Marketplace)", accion: false },
   { tool: "pc_process_worker", label: "Procesos del programa", accion: false },
   { tool: "pc_network_probe", label: "Prueba de red", accion: false },
   { tool: "pc_telemetry_flush", label: "Resultados de Marketplace sin subir", accion: false },
