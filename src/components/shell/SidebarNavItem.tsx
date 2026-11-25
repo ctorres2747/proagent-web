@@ -41,7 +41,7 @@ export function SidebarNavItem({
       <div
         aria-disabled="true"
         className={`flex items-center gap-3 rounded-[10px] px-3 py-2.5 ${
-          collapsed ? "mx-auto h-14 w-[60px] flex-col justify-center gap-1 px-0" : ""
+          collapsed ? "mx-auto h-11 w-full max-w-[52px] flex-col justify-center gap-0.5 px-0" : ""
         }`}
       >
         <NavIcon
@@ -145,7 +145,7 @@ export function SidebarNavItem({
 
   const className = `relative flex items-center transition-colors duration-[120ms] ease-out ${
     collapsed
-      ? `mx-auto h-14 w-[60px] flex-col justify-center gap-1 rounded-xl px-0 ${
+      ? `mx-auto h-11 w-full max-w-[52px] flex-col justify-center gap-0.5 rounded-xl px-0 ${
           active
             ? "bg-white"
             : "hover:bg-[rgba(255,255,255,.08)]"

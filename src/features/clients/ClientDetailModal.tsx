@@ -17,8 +17,19 @@ import type {
 } from "@/services/interfaces/clients";
 import type { Property } from "@/services/interfaces/properties";
 import { ChannelBadge } from "./ChannelBadge";
-import { formatBudget } from "./ClientCard";
+import { formatThousandsInput } from "@/lib/format";
 import { TEMP_META, TempIcon } from "./TemperatureChip";
+
+function presupuestoNumero(raw: string): number | null {
+  const digits = raw.replace(/\D/g, "");
+  if (!digits) return null;
+  const n = Number(digits);
+  return Number.isFinite(n) ? n : null;
+}
+
+function presupuestoTexto(value: number | null): string {
+  return value != null ? formatThousandsInput(String(value)) : "";
+}
 
 // "Nuevo contacto" ya no tiene columna ni botón (pedido de Cristhian,
 // 2026-10-07), pero el valor histórico sigue siendo válido en datos viejos
@@ -168,12 +179,8 @@ export function ClientDetailModal({
   const [pendingFechaCierre, setPendingFechaCierre] = useState("");
   const [nombre, setNombre] = useState(client.nombre);
   const [telefono, setTelefono] = useState(client.telefono);
-  const [presupuestoMin, setPresupuestoMin] = useState(
-    client.presupuestoMin != null ? String(client.presupuestoMin) : "",
-  );
-  const [presupuestoMax, setPresupuestoMax] = useState(
-    client.presupuestoMax != null ? String(client.presupuestoMax) : "",
-  );
+  const [presupuestoMin, setPresupuestoMin] = useState(presupuestoTexto(client.presupuestoMin));
+  const [presupuestoMax, setPresupuestoMax] = useState(presupuestoTexto(client.presupuestoMax));
   const [notas, setNotas] = useState(client.notas ?? "");
   const [proximaCita, setProximaCita] = useState(client.proximaCita ?? "");
   const [fechaPrimerContacto, setFechaPrimerContacto] = useState(
@@ -197,8 +204,8 @@ export function ClientDetailModal({
     setDiscardOpen(false);
     setNombre(client.nombre);
     setTelefono(client.telefono);
-    setPresupuestoMin(client.presupuestoMin != null ? String(client.presupuestoMin) : "");
-    setPresupuestoMax(client.presupuestoMax != null ? String(client.presupuestoMax) : "");
+    setPresupuestoMin(presupuestoTexto(client.presupuestoMin));
+    setPresupuestoMax(presupuestoTexto(client.presupuestoMax));
     setNotas(client.notas ?? "");
     setProximaCita(client.proximaCita ?? "");
     setFechaPrimerContacto(client.fechaPrimerContacto ?? "");
@@ -306,9 +313,9 @@ export function ClientDetailModal({
     const patch: ClientWrite = {};
     if (nombre !== client.nombre && nombre.trim()) patch.nombre = nombre.trim();
     if (telefono !== client.telefono && telefono.trim()) patch.telefono = telefono.trim();
-    const min = presupuestoMin.trim() ? Number(presupuestoMin) : null;
+    const min = presupuestoNumero(presupuestoMin);
     if (min !== client.presupuestoMin) patch.presupuestoMin = min;
-    const max = presupuestoMax.trim() ? Number(presupuestoMax) : null;
+    const max = presupuestoNumero(presupuestoMax);
     if (max !== client.presupuestoMax) patch.presupuestoMax = max;
     if (notas !== (client.notas ?? "")) patch.notas = notas;
     if (proximaCita !== (client.proximaCita ?? "")) patch.proximaCita = proximaCita || null;
@@ -333,10 +340,10 @@ export function ClientDetailModal({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [nombre, telefono, presupuestoMin, presupuestoMax, notas, proximaCita, fechaPrimerContacto, fechaCierre]);
 
-  const presupuestoLectura = formatBudget(client.presupuestoMin, client.presupuestoMax);
-
+  const presupuestoMinN = presupuestoNumero(presupuestoMin);
+  const presupuestoMaxN = presupuestoNumero(presupuestoMax);
   const presupuestoError =
-    presupuestoMin.trim() && presupuestoMax.trim() && Number(presupuestoMin) > Number(presupuestoMax);
+    presupuestoMinN != null && presupuestoMaxN != null && presupuestoMinN > presupuestoMaxN;
 
   const filteredZoneSuggestions = useMemo(() => {
     const q = zonaInput.trim().toLowerCase();
@@ -964,26 +971,21 @@ export function ClientDetailModal({
                     className={input}
                     placeholder="Mín"
                     inputMode="numeric"
-                    value={presupuestoMin}
-                    onChange={(e) => setPresupuestoMin(e.target.value.replace(/[^\d]/g, ""))}
+                    value={formatThousandsInput(presupuestoMin)}
+                    onChange={(e) => setPresupuestoMin(formatThousandsInput(e.target.value))}
                   />
                   <span className="text-[var(--pa-faint)]">—</span>
                   <input
                     className={input}
                     placeholder="Máx"
                     inputMode="numeric"
-                    value={presupuestoMax}
-                    onChange={(e) => setPresupuestoMax(e.target.value.replace(/[^\d]/g, ""))}
+                    value={formatThousandsInput(presupuestoMax)}
+                    onChange={(e) => setPresupuestoMax(formatThousandsInput(e.target.value))}
                   />
                 </div>
                 {presupuestoError ? (
                   <p className="mt-1 text-[11px] font-semibold text-[var(--pa-danger)]">
                     El mínimo no puede ser mayor que el máximo.
-                  </p>
-                ) : null}
-                {presupuestoLectura ? (
-                  <p className="mt-1.5 text-[12.5px] font-extrabold text-[var(--pa-navy)]">
-                    {presupuestoLectura}
                   </p>
                 ) : null}
               </div>

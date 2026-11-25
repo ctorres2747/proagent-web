@@ -47,14 +47,14 @@ function ViewingAsDropdown({
   if (!open) return null;
 
   const panelClass = collapsed
-    ? "fixed z-[70] w-56 max-h-48 overflow-y-auto rounded-[10px] border border-[var(--pa-border)] bg-white py-1 shadow-[var(--pa-shadow-overlay)]"
-    : "absolute bottom-full left-0 right-0 z-20 mb-1 max-h-48 overflow-y-auto rounded-[10px] border border-[var(--pa-border)] bg-white py-1 shadow-[var(--pa-shadow-overlay)]";
+    ? "fixed z-[70] w-56 max-h-48 overflow-y-auto rounded-[10px] border border-[var(--pa-border)] bg-white py-1 text-[var(--pa-ink)] shadow-[var(--pa-shadow-overlay)]"
+    : "absolute bottom-full left-0 right-0 z-20 mb-1 max-h-48 overflow-y-auto rounded-[10px] border border-[var(--pa-border)] bg-white py-1 text-[var(--pa-ink)] shadow-[var(--pa-shadow-overlay)]";
 
   return (
     <div ref={panelRef} className={panelClass} role="listbox" aria-label="Viendo como">
       <button
         type="button"
-        className="block w-full px-3 py-2 text-left text-[12.5px] hover:bg-[var(--pa-bg)]"
+        className="block w-full px-3 py-2 text-left text-[12.5px] font-semibold text-[var(--pa-ink)] hover:bg-[var(--pa-bg)]"
         onClick={() => {
           setViewAgenteId(null);
           onClose();
@@ -66,7 +66,7 @@ function ViewingAsDropdown({
         <button
           key={a.id}
           type="button"
-          className="block w-full px-3 py-2 text-left text-[12.5px] hover:bg-[var(--pa-bg)]"
+          className="block w-full px-3 py-2 text-left text-[12.5px] font-semibold text-[var(--pa-ink)] hover:bg-[var(--pa-bg)]"
           onClick={() => {
             setViewAgenteId(String(a.id));
             onClose();
