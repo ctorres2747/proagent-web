@@ -13,6 +13,7 @@ import { MetasDesempenoSection } from "@/features/inicio/MetasDesempenoSection";
 import {
   channelsService,
   facebookConnectService,
+  googleDriveService,
   profileService,
   soporteService,
   workerService,
@@ -441,6 +442,36 @@ function ChannelRow({
     },
   });
 
+  // Entrega Drive con la cuenta de Google propia (solo asesores
+  // independientes; el backend decide con `driveConexionDisponible`).
+  const drivePropia = id === "entrega" && Boolean(connection.credentials?.driveCuentaPropia);
+  const driveReconectar = drivePropia && Boolean(connection.credentials?.driveReconectar);
+  const driveDisponible = id === "entrega" && Boolean(connection.credentials?.driveConexionDisponible);
+  const driveInactiva = id === "entrega" && Boolean(connection.credentials?.driveCuentaInactiva);
+
+  const driveConectarMutation = useMutation({
+    mutationFn: () => googleDriveService.conectar(token),
+    onSuccess: (data) => {
+      // Google pide la cuenta y el permiso; al terminar vuelve a
+      // /settings?drive=ok|error|cancelado (lo lee SettingsPage).
+      window.location.href = data.url;
+    },
+    onError: (err) => {
+      onError(err instanceof Error ? err.message : "No se pudo iniciar la conexión con Google Drive");
+    },
+  });
+
+  const driveDesconectarMutation = useMutation({
+    mutationFn: () => googleDriveService.desconectar(token),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["channel-connections"] });
+      onSaved("Google Drive desconectado. Tus carpetas siguen en tu Drive.");
+    },
+    onError: (err) => {
+      onError(err instanceof Error ? err.message : "No se pudo desconectar Google Drive");
+    },
+  });
+
   useEffect(() => {
     if (id !== "facebook" || !fbConnectPending) return;
     const poll = setInterval(async () => {
@@ -636,6 +667,26 @@ function ChannelRow({
                 Token: <span className="font-mono">····{tokenLast4}</span>
               </p>
             ) : null}
+            {drivePropia && !driveReconectar && connection.credentials?.driveParentFolderUrl ? (
+              <p className="mt-0.5 text-[11px] text-[var(--pa-muted)]">
+                Tus fichas se guardan en{" "}
+                <a
+                  href={connection.credentials.driveParentFolderUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="font-semibold text-[var(--pa-navy)] underline"
+                >
+                  Proinversores - Entregas
+                </a>{" "}
+                de tu Google Drive.
+              </p>
+            ) : null}
+            {driveInactiva ? (
+              <p className="mt-1 text-[12px] text-[var(--pa-muted)]">
+                Tu Google Drive propio quedó guardado pero no se usa: ahora eres parte de un
+                equipo y tus fichas se entregan con la cuenta del equipo. Puedes desconectarlo.
+              </p>
+            ) : null}
             {connection.issue ? (
               <p className="mt-1 text-[12px] text-[var(--pa-warning-ink)]">
                 {connection.issue}
@@ -681,7 +732,39 @@ function ChannelRow({
               ) : null}
             </>
           ) : null}
-          {id !== "facebook" &&
+          {driveDisponible || drivePropia || driveInactiva ? (
+            <>
+              {(!drivePropia && !driveInactiva) || driveReconectar ? (
+                <button
+                  type="button"
+                  disabled={driveConectarMutation.isPending}
+                  onClick={() => driveConectarMutation.mutate()}
+                  className="rounded-lg bg-[var(--pa-navy)] px-3 py-1.5 text-[12px] font-bold text-white disabled:opacity-60"
+                >
+                  {driveReconectar ? "Reconectar mi Google Drive" : "Conectar mi Google Drive"}
+                </button>
+              ) : null}
+              {drivePropia || driveInactiva ? (
+                <button
+                  type="button"
+                  disabled={driveDesconectarMutation.isPending}
+                  onClick={() => {
+                    if (
+                      window.confirm(
+                        "¿Desconectar tu Google Drive? Tus fichas dejarán de publicarse ahí. Las carpetas ya creadas se quedan en tu Drive.",
+                      )
+                    ) {
+                      driveDesconectarMutation.mutate();
+                    }
+                  }}
+                  className="rounded-lg border border-[var(--pa-border)] px-3 py-1.5 text-[12px] font-semibold text-[var(--pa-muted)] disabled:opacity-60"
+                >
+                  Desconectar mi Google Drive
+                </button>
+              ) : null}
+            </>
+          ) : null}
+          {id !== "facebook" && !drivePropia &&
             (connection.status !== "connected" ? (
               <>
                 <button
@@ -1055,6 +1138,26 @@ export default function SettingsPage() {
   const [toast, setToast] = useState<{ message: string; type?: "error" } | null>(
     null,
   );
+  // Vuelta de Google al conectar Google Drive (Entrega con cuenta propia):
+  // /settings?drive=ok|error|cancelado[&detalle=...]. Se muestra el aviso y se
+  // limpia la URL para que recargar no lo repita.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const drive = params.get("drive");
+    if (!drive) return;
+    setTab("canales");
+    if (drive === "ok") {
+      setToast({ message: "Google Drive conectado. Tus fichas se publicarán en tu Drive." });
+    } else if (drive === "cancelado") {
+      setToast({ message: "Cancelaste la conexión con Google Drive.", type: "error" });
+    } else {
+      setToast({
+        message: params.get("detalle") || "No se pudo conectar Google Drive.",
+        type: "error",
+      });
+    }
+    window.history.replaceState(null, "", window.location.pathname + window.location.hash);
+  }, []);
 
   return (
     <div className="w-full">

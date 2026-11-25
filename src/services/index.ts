@@ -48,12 +48,14 @@ import { prospectsService as httpProspects } from "./http/prospects";
 import { navCountsService as httpNavCounts } from "./http/navCounts";
 import { driveFieldOptionsService as httpDriveFieldOptions } from "./http/driveFieldOptions";
 import { facebookConnectService as httpFacebookConnect } from "./http/facebookConnect";
+import { googleDriveService as httpGoogleDrive } from "./http/googleDrive";
 import { workerService as httpWorker } from "./http/workerEnroll";
 import { marketplaceLoginService as httpMarketplaceLogin } from "./http/marketplaceLogin";
 import { soporteService as httpSoporte } from "./http/soporte";
 import { mockDriveFieldOptionsService as mockDriveFieldOptions } from "./mocks/driveFieldOptions";
 import {
   facebookConnectService as mockFacebookConnect,
+  googleDriveService as mockGoogleDrive,
   marketplaceLoginService as mockMarketplaceLogin,
   navCountsService as mockNavCounts,
   soporteService as mockSoporte,
@@ -131,6 +133,9 @@ export const driveFieldOptionsService: DriveFieldOptionsService = USE_HTTP_API
 export const facebookConnectService: typeof httpFacebookConnect = USE_HTTP_API
   ? httpFacebookConnect
   : mockFacebookConnect;
+export const googleDriveService: typeof httpGoogleDrive = USE_HTTP_API
+  ? httpGoogleDrive
+  : mockGoogleDrive;
 export const workerService: typeof httpWorker = USE_HTTP_API ? httpWorker : mockWorker;
 export const marketplaceLoginService: typeof httpMarketplaceLogin = USE_HTTP_API
   ? httpMarketplaceLogin

@@ -8,6 +8,7 @@ import type {
   FacebookConnectResult,
   FacebookConnectStatus,
 } from "@/services/http/facebookConnect";
+import type { GoogleDriveEstado } from "@/services/http/googleDrive";
 import type { MarketplaceLoginStatus } from "@/services/http/marketplaceLogin";
 import type { NavCounts } from "@/services/http/navCounts";
 import type { WorkerEnrollCode, WorkerStatus } from "@/services/http/workerEnroll";
@@ -45,6 +46,15 @@ export const facebookConnectService = {
   },
   async getStatus(): Promise<FacebookConnectStatus> {
     return { estado: null, mensaje: null };
+  },
+};
+
+export const googleDriveService = {
+  async conectar(): Promise<{ url: string }> {
+    throw new Error("Modo demo: sin conexión real a Google Drive.");
+  },
+  async desconectar(): Promise<GoogleDriveEstado> {
+    return { oauth_propio: false };
   },
 };
 
