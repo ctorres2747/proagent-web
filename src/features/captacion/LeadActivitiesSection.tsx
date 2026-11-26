@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState, type Ref } from "react";
+import { useEffect, useRef, type Ref } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { AgendarPopover } from "@/features/captacion/LeadFollowUpIndicator";
+import { AgendarForm } from "@/features/captacion/AgendarForm";
 import {
   followUpRelativeLabel,
   followUpTone,
@@ -29,9 +29,7 @@ export function LeadActivitiesSection({
   onProximaChange: (proxima: ProximaActividad | null) => void;
 }) {
   const queryClient = useQueryClient();
-  const [agendarOpen, setAgendarOpen] = useState(false);
   const highlightRef = useRef<HTMLLIElement>(null);
-  const headerRef = useRef<HTMLDivElement>(null);
 
   const { data: activities, isLoading } = useQuery({
     queryKey: ["lead-activities", leadId],
@@ -51,7 +49,6 @@ export function LeadActivitiesSection({
       void queryClient.invalidateQueries({
         queryKey: ["lead-activities", leadId],
       });
-      setAgendarOpen(false);
     },
   });
 
@@ -75,35 +72,23 @@ export function LeadActivitiesSection({
   const historial = (activities ?? []).filter((a) => a.estado !== "pendiente");
 
   return (
-    <section id="lead-actividades" className="relative space-y-2">
-      <div ref={headerRef} className="flex items-center justify-between">
-        <h4 className="text-[12px] font-semibold text-[var(--pa-muted)]">
-          Actividades
-        </h4>
-        <button
-          type="button"
-          onClick={() => setAgendarOpen(true)}
-          className="text-[12px] font-semibold text-[var(--pa-navy)] hover:underline"
-        >
-          + Agendar
-        </button>
-      </div>
-      {agendarOpen ? (
-        <AgendarPopover
-          anchorRef={headerRef}
-          onClose={() => setAgendarOpen(false)}
-          onSave={async (data) => {
-            await createMutation.mutateAsync(data);
-          }}
-          pending={createMutation.isPending}
-        />
-      ) : null}
+    <section id="lead-actividades" className="space-y-3">
+      <h4 className="text-[11px] font-bold uppercase tracking-wide text-[var(--pa-text-secondary)]">
+        Agendar seguimiento
+      </h4>
+      <AgendarForm
+        onSave={async (data) => {
+          await createMutation.mutateAsync(data);
+        }}
+        pending={createMutation.isPending}
+        submitLabel="Agendar"
+      />
       {isLoading ? (
         <p className="text-[12px] text-[var(--pa-muted)]">Cargando…</p>
       ) : null}
       {!isLoading && pendientes.length === 0 && historial.length === 0 ? (
         <p className="text-[12px] text-[var(--pa-faint)]">
-          Sin actividades. Agenda un seguimiento desde aquí o desde la tarjeta.
+          Sin actividades. Completa el formulario o agenda desde la tarjeta.
         </p>
       ) : null}
       {pendientes.length > 0 ? (

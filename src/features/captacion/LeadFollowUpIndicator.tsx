@@ -10,14 +10,12 @@ import {
   type RefObject,
 } from "react";
 import { createPortal } from "react-dom";
+import { AgendarForm } from "@/features/captacion/AgendarForm";
 import {
   calendarDayParts,
-  composeFechaHoraIso,
-  defaultAgendarParts,
   followUpAriaLabel,
   followUpRelativeLabel,
   followUpTone,
-  TIPO_ACTIVIDAD_LABEL,
 } from "@/lib/leadFollowUp";
 import type {
   LeadActivityCreate,
@@ -165,12 +163,6 @@ function AgendarPopover({
   const titleId = useId();
   const ref = useRef<HTMLDivElement>(null);
   const [coords, setCoords] = useState<CSSProperties>({});
-  const defaults = defaultAgendarParts();
-  const [tipo, setTipo] = useState<LeadActivityType>(defaultTipo);
-  const [fecha, setFecha] = useState(defaults.fecha);
-  const [hora, setHora] = useState(defaults.hora);
-  const [todoElDia, setTodoElDia] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   useLayoutEffect(() => {
     const place = () => {
@@ -202,7 +194,7 @@ function AgendarPopover({
     place();
     const id = window.requestAnimationFrame(place);
     return () => window.cancelAnimationFrame(id);
-  }, [anchorRef, todoElDia]);
+  }, [anchorRef]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -230,91 +222,14 @@ function AgendarPopover({
       <p id={titleId} className="mb-2 text-[12px] font-bold text-[var(--pa-ink)]">
         Agendar seguimiento
       </p>
-      <label className="mb-1.5 block">
-        <span className="mb-0.5 block text-[10px] font-semibold text-[var(--pa-muted)]">
-          Tipo
-        </span>
-        <select
-          value={tipo}
-          onChange={(e) => setTipo(e.target.value as LeadActivityType)}
-          className="w-full rounded-lg border border-[var(--pa-border)] bg-[var(--pa-bg)] px-2 py-1.5 text-[12px]"
-        >
-          {(Object.keys(TIPO_ACTIVIDAD_LABEL) as LeadActivityType[]).map(
-            (key) => (
-              <option key={key} value={key}>
-                {TIPO_ACTIVIDAD_LABEL[key]}
-              </option>
-            ),
-          )}
-        </select>
-      </label>
-      <label className="mb-1.5 block">
-        <span className="mb-0.5 block text-[10px] font-semibold text-[var(--pa-muted)]">
-          Fecha
-        </span>
-        <input
-          type="date"
-          value={fecha}
-          onChange={(e) => setFecha(e.target.value)}
-          className="w-full rounded-lg border border-[var(--pa-border)] bg-[var(--pa-bg)] px-2 py-1.5 text-[12px]"
-        />
-      </label>
-      <label className="mb-1.5 flex items-center gap-2 text-[11px] text-[var(--pa-ink)]">
-        <input
-          type="checkbox"
-          checked={todoElDia}
-          onChange={(e) => setTodoElDia(e.target.checked)}
-          className="accent-[var(--pa-navy)]"
-        />
-        Todo el día
-      </label>
-      {!todoElDia ? (
-        <label className="mb-1.5 block">
-          <span className="mb-0.5 block text-[10px] font-semibold text-[var(--pa-muted)]">
-            Hora
-          </span>
-          <input
-            type="time"
-            value={hora}
-            onChange={(e) => setHora(e.target.value)}
-            className="w-full rounded-lg border border-[var(--pa-border)] bg-[var(--pa-bg)] px-2 py-1.5 text-[12px]"
-          />
-        </label>
-      ) : null}
-      {error ? (
-        <p className="mb-1.5 text-[11px] text-[var(--pa-danger)]">{error}</p>
-      ) : null}
-      <div className="flex justify-end gap-1.5">
-        <button
-          type="button"
-          onClick={onClose}
-          className="rounded-lg px-2 py-1 text-[11px] font-semibold text-[var(--pa-muted)] hover:bg-[var(--pa-bg)]"
-        >
-          Cancelar
-        </button>
-        <button
-          type="button"
-          disabled={pending}
-          onClick={() => {
-            if (!fecha || (!todoElDia && !hora)) {
-              setError("Elige fecha y hora.");
-              return;
-            }
-            setError(null);
-            void onSave({
-              tipo,
-              fechaHora: composeFechaHoraIso(
-                fecha,
-                todoElDia ? "00:00" : hora,
-              ),
-              todoElDia,
-            });
-          }}
-          className="rounded-lg bg-[var(--pa-navy)] px-2.5 py-1 text-[11px] font-bold text-white disabled:opacity-60"
-        >
-          {pending ? "…" : "Guardar"}
-        </button>
-      </div>
+      <AgendarForm
+        compact
+        defaultTipo={defaultTipo}
+        pending={pending}
+        onCancel={onClose}
+        onSave={onSave}
+        submitLabel="Guardar"
+      />
     </div>
   );
   if (typeof document === "undefined") return dialog;

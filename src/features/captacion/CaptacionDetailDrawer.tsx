@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { X } from "lucide-react";
 import { PortalLogo } from "@/components/PortalLogo";
 import { LeadActivitiesSection } from "@/features/captacion/LeadActivitiesSection";
 import { formatLeadPrice } from "@/lib/format";
@@ -17,6 +18,10 @@ const ESTADO_OPTIONS: LeadEstado[] = [
   "Captado",
   "Descartado",
 ];
+
+const field =
+  "w-full rounded-[9px] border border-[var(--pa-border)] bg-white px-2.5 py-2 text-[13px]";
+const label = "mb-1.5 block text-[11px] font-bold text-[var(--pa-text-secondary)]";
 
 export interface CaptacionDraft {
   estado: LeadEstado;
@@ -75,47 +80,83 @@ export function CaptacionDetailDrawer({
       ?.scrollIntoView({ block: "nearest" });
   }, [highlightActivityId, lead.id]);
 
+  const phoneDigits = draft.telefono.replace(/\D/g, "");
+
   return (
     <>
       <button
         type="button"
         aria-label="Cerrar detalle"
-        className="fixed inset-0 z-40 bg-black/30"
+        className="fixed inset-0 z-[55] bg-[rgba(16,33,49,.45)]"
         onClick={onClose}
       />
-      <aside className="fixed inset-y-0 right-0 z-50 flex w-full max-w-[400px] flex-col border-l border-[var(--pa-border)] bg-[var(--pa-surface)] shadow-2xl">
-        <header className="flex shrink-0 items-center justify-between border-b border-[var(--pa-border)] px-4 py-3">
-          <p className="text-[13px] font-bold text-[var(--pa-ink)]">Detalle del lead</p>
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-lg px-2 py-1 text-[18px] leading-none text-[var(--pa-muted)] hover:bg-[var(--pa-bg)]"
-          >
-            ×
-          </button>
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="lead-detail-titulo"
+        className="fixed left-1/2 top-1/2 z-[56] flex w-[920px] max-w-[94vw] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-2xl border border-[var(--pa-border)] bg-white shadow-[0_1px_2px_rgba(16,33,49,.06),0_24px_64px_rgba(16,33,49,.24)]"
+        style={{ maxHeight: "min(88vh, calc(100dvh - 24px))" }}
+      >
+        <header className="shrink-0 border-b border-[var(--pa-border)] px-6 py-5">
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <PortalLogo portal={lead.portal} size={20} showLabel />
+                <span className="text-[11px] font-semibold uppercase tracking-wide text-[var(--pa-faint)]">
+                  · #{lead.id}
+                </span>
+              </div>
+              <h3
+                id="lead-detail-titulo"
+                className="mt-1 text-[17px] font-extrabold text-[var(--pa-ink)]"
+              >
+                {lead.tipoInmueble ?? "Inmueble"}
+                {lead.municipio ? ` en ${lead.municipio}` : ""}
+              </h3>
+              <p className="mt-1 text-[14px] font-bold text-[var(--pa-navy)]">
+                {formatLeadPrice(lead)}
+              </p>
+              {capturedAtLabel(lead.fechaCaptura) ? (
+                <p className="mt-1 text-[12px] text-[var(--pa-muted)]">
+                  {capturedAtLabel(lead.fechaCaptura)}
+                </p>
+              ) : null}
+            </div>
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Cerrar"
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[9px] text-[#5B6B79] hover:bg-[#F6F7F9]"
+            >
+              <X size={16} />
+            </button>
+          </div>
         </header>
 
-        <div className="flex flex-1 flex-col overflow-y-auto p-4">
-          <div className="mb-4 border-b border-[var(--pa-border)] pb-4">
-            <div className="flex items-center gap-2">
-              <PortalLogo portal={lead.portal} size={20} showLabel />
-              <span className="text-[11px] font-semibold uppercase tracking-wide text-[var(--pa-faint)]">
-                · #{lead.id}
-              </span>
-            </div>
-            <h3 className="mt-1 text-[17px] font-extrabold text-[var(--pa-ink)]">
-              {lead.tipoInmueble ?? "Inmueble"}
-              {lead.municipio ? ` en ${lead.municipio}` : ""}
-            </h3>
-            <p className="mt-1 text-[14px] font-bold text-[var(--pa-navy)]">
-              {formatLeadPrice(lead)}
-            </p>
-            {capturedAtLabel(lead.fechaCaptura) ? (
-              <p className="mt-1 text-[12px] text-[var(--pa-muted)]">
-                {capturedAtLabel(lead.fechaCaptura)}
-              </p>
-            ) : null}
-            <dl className="mt-3 grid grid-cols-2 gap-x-3 gap-y-1 text-[12px]">
+        <div className="flex shrink-0 flex-wrap gap-2 border-b border-[var(--pa-border)] bg-[#FAFBFC] px-6 py-3">
+          {phoneDigits ? (
+            <a
+              href={`tel:+57${phoneDigits}`}
+              className="inline-flex h-9 items-center rounded-[9px] bg-[var(--pa-navy)] px-3.5 text-[12.5px] font-bold text-white"
+            >
+              Llamar
+            </a>
+          ) : null}
+          {phoneDigits ? (
+            <a
+              href={`https://wa.me/57${phoneDigits}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex h-9 items-center rounded-[9px] border border-[var(--pa-border)] bg-white px-3.5 text-[12.5px] font-bold text-[var(--pa-ink)]"
+            >
+              WhatsApp
+            </a>
+          ) : null}
+        </div>
+
+        <div className="flex flex-1 flex-wrap items-start gap-x-8 overflow-y-auto overflow-x-hidden px-6 pb-4 pt-1">
+          <div className="flex min-w-0 flex-[1_1_340px] flex-col gap-3 py-4">
+            <dl className="grid grid-cols-2 gap-x-3 gap-y-1 text-[12px]">
               {lead.areaM2 ? (
                 <>
                   <dt className="text-[var(--pa-muted)]">Área</dt>
@@ -135,29 +176,26 @@ export function CaptacionDetailDrawer({
                 </>
               ) : null}
             </dl>
-            {lead.linkPublicacion && !lead.linkPublicacion.startsWith("manual-") ? (
+            {lead.linkPublicacion &&
+            !lead.linkPublicacion.startsWith("manual-") ? (
               <a
                 href={lead.linkPublicacion}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="mt-3 inline-block text-[12px] font-semibold text-[var(--pa-navy)] underline"
+                className="text-[12px] font-semibold text-[var(--pa-navy)] underline"
               >
                 Ver publicación original
               </a>
             ) : null}
-          </div>
 
-          <div className="space-y-3">
             <label className="block">
-              <span className="mb-1 block text-[12px] font-semibold text-[var(--pa-muted)]">
-                Estado
-              </span>
+              <span className={label}>Estado</span>
               <select
                 value={draft.estado}
                 onChange={(e) =>
                   onEstadoChange(e.target.value as LeadEstado)
                 }
-                className="w-full rounded-[10px] border border-[var(--pa-border)] bg-[var(--pa-bg)] px-3 py-2 text-[13px]"
+                className={field}
               >
                 {ESTADO_OPTIONS.map((opt) => (
                   <option key={opt} value={opt}>
@@ -193,53 +231,59 @@ export function CaptacionDetailDrawer({
             ) : null}
 
             <label className="block">
-              <span className="mb-1 block text-[12px] font-semibold text-[var(--pa-muted)]">
-                Teléfono propietario
-              </span>
+              <span className={label}>Teléfono propietario</span>
               <input
                 type="tel"
                 value={draft.telefono}
                 onChange={(e) => onDraftChange({ telefono: e.target.value })}
-                className={`w-full rounded-[10px] border bg-[var(--pa-bg)] px-3 py-2 text-[13px] ${
+                className={`${field} ${
                   estadoBlockedMessage && !draft.telefono.trim()
                     ? "border-[var(--pa-danger)]"
-                    : "border-[var(--pa-border)]"
+                    : ""
                 }`}
                 placeholder="300 123 4567"
               />
             </label>
 
             <label className="block">
-              <span className="mb-1 block text-[12px] font-semibold text-[var(--pa-muted)]">
-                Barrio / zona / conjunto
-              </span>
+              <span className={label}>Barrio / zona / conjunto</span>
               <input
                 type="text"
                 value={draft.barrio}
                 onChange={(e) => onDraftChange({ barrio: e.target.value })}
-                className="w-full rounded-[10px] border border-[var(--pa-border)] bg-[var(--pa-bg)] px-3 py-2 text-[13px]"
+                className={field}
                 placeholder="Aves María"
               />
             </label>
 
             <label className="block">
-              <span className="mb-1 block text-[12px] font-semibold text-[var(--pa-muted)]">
-                Nombre propietario
-              </span>
+              <span className={label}>Nombre propietario</span>
               <input
                 type="text"
                 value={draft.nombrePublicador}
                 onChange={(e) =>
                   onDraftChange({ nombrePublicador: e.target.value })
                 }
-                className={`w-full rounded-[10px] border bg-[var(--pa-bg)] px-3 py-2 text-[13px] ${
+                className={`${field} ${
                   estadoBlockedMessage && !draft.nombrePublicador.trim()
                     ? "border-[var(--pa-danger)]"
-                    : "border-[var(--pa-border)]"
+                    : ""
                 }`}
               />
             </label>
 
+            <label className="block">
+              <span className={label}>Notas</span>
+              <textarea
+                value={draft.notas}
+                onChange={(e) => onDraftChange({ notas: e.target.value })}
+                rows={3}
+                className={`${field} resize-y`}
+              />
+            </label>
+          </div>
+
+          <div className="flex min-w-0 flex-[1_1_340px] flex-col border-[var(--pa-border)] py-4 md:border-l md:pl-8">
             <LeadActivitiesSection
               leadId={lead.id}
               token={token}
@@ -247,45 +291,22 @@ export function CaptacionDetailDrawer({
               highlightActivityId={highlightActivityId}
               onProximaChange={onProximaChange}
             />
-
-            <label className="block">
-              <span className="mb-1 block text-[12px] font-semibold text-[var(--pa-muted)]">
-                Notas
-              </span>
-              <textarea
-                value={draft.notas}
-                onChange={(e) => onDraftChange({ notas: e.target.value })}
-                rows={3}
-                className="w-full resize-y rounded-[10px] border border-[var(--pa-border)] bg-[var(--pa-bg)] px-3 py-2 text-[13px]"
-              />
-            </label>
           </div>
+        </div>
 
+        <footer className="flex shrink-0 flex-col gap-2 border-t border-[var(--pa-border)] bg-white px-6 py-3">
           {saveError ? (
-            <p className="mt-3 text-[12px] text-[var(--pa-danger)]">{saveError}</p>
+            <p className="text-[12px] text-[var(--pa-danger)]">{saveError}</p>
           ) : null}
-
-          <div className="mt-4 flex flex-col gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
               onClick={onSave}
               disabled={savePending}
-              className="rounded-[10px] border border-[var(--pa-navy)] bg-[var(--pa-surface)] px-4 py-2.5 text-[13px] font-bold text-[var(--pa-navy)] hover:bg-[var(--pa-bg)] disabled:opacity-60"
+              className="rounded-[9px] border border-[var(--pa-navy)] bg-white px-4 py-2 text-[13px] font-bold text-[var(--pa-navy)] hover:bg-[var(--pa-bg)] disabled:opacity-60"
             >
               {savePending ? "Guardando…" : "Guardar cambios"}
             </button>
-
-            {draft.telefono.trim() ? (
-              <a
-                href={`https://wa.me/57${draft.telefono.replace(/\D/g, "")}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="rounded-[10px] border border-[var(--pa-border)] px-4 py-2.5 text-center text-[13px] font-semibold text-[var(--pa-accent)] hover:bg-[var(--pa-bg)]"
-              >
-                WhatsApp
-              </a>
-            ) : null}
-
             <button
               type="button"
               onClick={onPublish}
@@ -295,21 +316,21 @@ export function CaptacionDetailDrawer({
                   ? "Disponible al pasar a Captado"
                   : undefined
               }
-              className="rounded-[10px] bg-[var(--pa-navy)] px-4 py-2.5 text-[13px] font-bold text-white hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+              className="rounded-[9px] bg-[var(--pa-navy)] px-4 py-2 text-[13px] font-bold text-white hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {publishPending ? "Creando ficha…" : "Publicar inmueble"}
             </button>
             {!canPublish && lead.estado !== "Captado" ? (
-              <p className="text-center text-[11px] text-[var(--pa-muted)]">
+              <p className="text-[11px] text-[var(--pa-muted)]">
                 Disponible al pasar a Captado (con nombre y teléfono).
               </p>
             ) : null}
-            {publishError ? (
-              <p className="text-[12px] text-[var(--pa-danger)]">{publishError}</p>
-            ) : null}
           </div>
-        </div>
-      </aside>
+          {publishError ? (
+            <p className="text-[12px] text-[var(--pa-danger)]">{publishError}</p>
+          ) : null}
+        </footer>
+      </div>
     </>
   );
 }

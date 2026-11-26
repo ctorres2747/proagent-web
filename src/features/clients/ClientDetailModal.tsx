@@ -463,7 +463,7 @@ export function ClientDetailModal({
       <button
         type="button"
         aria-label="Cerrar ficha"
-        className={`fixed inset-0 z-[29] bg-[rgba(16,33,49,.45)] ${transition} ${entered ? "opacity-100" : "opacity-0"}`}
+        className={`fixed inset-0 z-[55] bg-[rgba(16,33,49,.45)] ${transition} ${entered ? "opacity-100" : "opacity-0"}`}
         onClick={onClose}
       />
       <div
@@ -471,10 +471,10 @@ export function ClientDetailModal({
         role="dialog"
         aria-modal="true"
         aria-labelledby="client-detail-nombre"
-        className={`fixed left-1/2 top-1/2 z-30 flex w-[920px] max-w-[94vw] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-2xl bg-white shadow-[0_1px_2px_rgba(16,33,49,.06),0_24px_64px_rgba(16,33,49,.24)] ${transition} ${
+        className={`fixed left-1/2 top-1/2 z-[56] flex w-[920px] max-w-[94vw] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-2xl border border-[var(--pa-border)] bg-white shadow-[0_1px_2px_rgba(16,33,49,.06),0_24px_64px_rgba(16,33,49,.24)] ${transition} ${
           entered ? "scale-100 opacity-100" : "scale-[.98] opacity-0"
         }`}
-        style={{ maxHeight: "88vh" }}
+        style={{ maxHeight: "min(88vh, calc(100dvh - 24px))" }}
       >
         {/* Encabezado (fijo) */}
         <div className="shrink-0 border-b border-[var(--pa-border)] px-6 py-5">
