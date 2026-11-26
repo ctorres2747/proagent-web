@@ -685,9 +685,15 @@ export default function PublishWizardPage() {
   const wasiPublishReady = property
     ? isWasiPublishReady(property.missingFields)
     : true;
-  const drivePublishReady = property
-    ? isDrivePublishReady(property.completenessDrive?.missingFields ?? [])
-    : true;
+  // Sin Google Drive conectado para este asesor, los campos exclusivos de
+  // Drive no cuentan como un bloqueo real -- lo que de verdad decide si el
+  // canal se puede marcar es la conexión (más abajo, channelSelectable),
+  // no datos que no va a usar ningún canal (pedido de Cristhian 2026-11-25).
+  const driveChannelConnected = connectionById.get("entrega")?.status === "connected";
+  const drivePublishReady =
+    property && driveChannelConnected
+      ? isDrivePublishReady(property.completenessDrive?.missingFields ?? [])
+      : true;
 
   const channelSelectable = (id: ChannelId): boolean => {
     if (id === "wasi" && !wasiPublishReady) return false;
@@ -1187,6 +1193,14 @@ export default function PublishWizardPage() {
             (channelConnections ?? []).find((c) => c.channelId === "wasi")?.status ===
             "connected"
           }
+          // Pedido de Cristhian 2026-11-25: sin Google Drive conectado para
+          // este asesor, sus campos exclusivos (predial, afectaciones,
+          // parqueadero, puntos favorables, observaciones, precio mínimo)
+          // no deben pedirse como obligatorios para publicar.
+          driveConnected={
+            (channelConnections ?? []).find((c) => c.channelId === "entrega")?.status ===
+            "connected"
+          }
           busy={actionBusy}
           isDirty={isContentDirty}
           onSave={() => void saveContentChanges()}
@@ -1448,7 +1462,7 @@ function PrimaryBlock({
 }
 
 /** Subir un archivo suelto (contrato, cédula, certificado…) a la carpeta de
- * Drive de la propiedad — vive en el bloque "Google Drive (Entrega)" de
+ * Drive de la propiedad — vive en el bloque "Google Drive" de
  * Contenido, no en la pestaña Resultados (pedido de Cristhian: el paso a
  * Resultados no es obvio para una propiedad recién creada). Funciona incluso
  * si Drive nunca se publicó — el backend crea la carpeta en el momento. */
@@ -1539,6 +1553,7 @@ function ContentStep({
   onPatch,
   token,
   wasiConnected,
+  driveConnected,
   busy,
   isDirty,
   onSave,
@@ -1552,6 +1567,12 @@ function ContentStep({
    * Ciudad/Barrio caen a texto libre en vez de combobox validado contra un
    * catálogo que no existe para él. */
   wasiConnected: boolean;
+  /** false = este asesor tiene Google Drive desactivado/sin conectar --
+   * los campos exclusivos de Drive (predial, afectaciones, parqueadero,
+   * puntos favorables, observaciones, precio mínimo) dejan de marcarse
+   * como obligatorios: a nadie le sirve que la ficha "esté incompleta"
+   * por datos que no va a usar ningún canal. */
+  driveConnected: boolean;
   busy: boolean;
   isDirty: boolean;
   onSave: () => void;
@@ -1757,7 +1778,10 @@ function ContentStep({
       : DRIVE_PROPERTY_LIENS_OPTIONS;
   const tipoActual = form.tipo || property.tipo;
   const esResidencial = isResidentialTipo(tipoActual);
-  const driveMissing = property.completenessDrive?.missingFields ?? [];
+  // Sin Google Drive conectado para este asesor, los campos exclusivos de
+  // Drive dejan de ser "obligatorios" -- no tiene sentido pedirlos para un
+  // canal que no va a usar.
+  const driveMissing = driveConnected ? property.completenessDrive?.missingFields ?? [] : [];
   const driveMissingSummary = formatDriveMissingFields(driveMissing);
   const driveReady = isDrivePublishReady(driveMissing);
   const liveMissing = missingFieldsFromDraft({
@@ -1940,7 +1964,7 @@ function ContentStep({
                 thousands
               />
               <ControlledField
-                label="Precio mínimo para el cliente (COP) *"
+                label={`Precio mínimo para el cliente (COP)${driveConnected ? " *" : ""}`}
                 value={form.precioMinimoCliente}
                 onChange={(v) => onPatch({ precioMinimoCliente: v })}
                 missing={driveMissing.includes("minNetPrice")}
@@ -2181,16 +2205,16 @@ function ContentStep({
           </div>
         </Card>
 
-        <Card title="Google Drive (Entrega)">
+        <Card title="Google Drive">
           <div className="grid grid-cols-1 gap-2.5 @xl:grid-cols-3">
             <ControlledField
-              label="Predial *"
+              label={`Predial${driveConnected ? " *" : ""}`}
               value={form.predial}
               onChange={(v) => onPatch({ predial: v })}
               thousands
             />
             <div className="@xl:col-span-2">
-              <div className={label}>Afectaciones *</div>
+              <div className={label}>Afectaciones{driveConnected ? " *" : ""}</div>
               <select
                 className={input}
                 value={form.afectacionesInmueble}
@@ -2215,7 +2239,7 @@ function ContentStep({
             ) : null}
             {esResidencial ? (
               <div className="@xl:col-span-2">
-                <div className={label}>Parqueadero *</div>
+                <div className={label}>Parqueadero{driveConnected ? " *" : ""}</div>
                 <select
                   className={input}
                   value={form.detalleParqueadero}
@@ -2239,7 +2263,7 @@ function ContentStep({
               onChange={(v) => onPatch({ frenteFondoM: v })}
             />
             <div className="@xl:col-span-3">
-              <div className={label}>Puntos favorables externos *</div>
+              <div className={label}>Puntos favorables externos{driveConnected ? " *" : ""}</div>
               <textarea
                 className={`${input} min-h-[48px] resize-y`}
                 value={form.puntosFavorablesExternos}
@@ -2259,7 +2283,7 @@ function ContentStep({
               />
             </div>
             <div className="@xl:col-span-3">
-              <div className={label}>Observaciones inmueble *</div>
+              <div className={label}>Observaciones inmueble{driveConnected ? " *" : ""}</div>
               <textarea
                 className={`${input} min-h-[48px] resize-y`}
                 value={form.observacionesInmueble}
@@ -2371,9 +2395,13 @@ function ContentStep({
         </Card>
         <Card>
           <div className="mb-3 text-xs font-bold uppercase tracking-wide text-[var(--pa-muted)]">
-            Google Drive (Entrega)
+            Google Drive
           </div>
-          {driveReady ? (
+          {!driveConnected ? (
+            <p className="text-xs font-semibold text-[var(--pa-muted)]">
+              Google Drive no está conectado — estos campos son opcionales.
+            </p>
+          ) : driveReady ? (
             <p className="text-xs font-semibold text-[var(--pa-success)]">
               ✓ Listo para publicar en Drive
             </p>
@@ -2388,7 +2416,7 @@ function ContentStep({
             </>
           ) : (
             <p className="text-xs font-semibold text-[var(--pa-warning-ink)]">
-              Completa los campos de Entrega.
+              Completa los campos de Google Drive.
             </p>
           )}
         </Card>
