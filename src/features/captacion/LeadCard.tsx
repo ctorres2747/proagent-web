@@ -7,6 +7,7 @@ import {
   LeadFollowUpIndicator,
   shouldShowFollowUp,
 } from "@/features/captacion/LeadFollowUpIndicator";
+import { muestraMarcaEnRevision } from "@/lib/enRevision";
 import { formatLeadPrice } from "@/lib/format";
 import { capturedAtLabel } from "@/lib/formatCapturedAt";
 import type { Lead, LeadActivityCreate } from "@/services/interfaces/leads";
@@ -48,7 +49,7 @@ export function LeadCard({
     >
       <div className="relative">
         <LeadCoverImage url={lead.imagenUrl} variant="compact" />
-        {lead.estado === "Pendiente" && lead.enRevision ? (
+        {muestraMarcaEnRevision(lead.estado) && lead.enRevision ? (
           <span
             title="En revisión"
             className="absolute right-1 top-1 inline-flex rounded-md bg-[var(--pa-surface)]/95 p-1 text-[var(--pa-warning-ink)] shadow-sm"

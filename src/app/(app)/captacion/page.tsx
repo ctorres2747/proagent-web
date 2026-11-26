@@ -14,6 +14,7 @@ import { LeadCard } from "@/features/captacion/LeadCard";
 import { NewLeadModal } from "@/features/captacion/NewLeadModal";
 import { ScraperStatusBar } from "@/features/captacion/ScraperStatusBar";
 import { canAccessCaptacion } from "@/lib/agentDisplay";
+import { muestraMarcaEnRevision } from "@/lib/enRevision";
 import { captacionSubtitle } from "@/lib/captacionSubtitle";
 import { buildMunicipioOptions, leadMatchesMunicipio } from "@/lib/municipio";
 import { buildTipoFilterOptions, leadMatchesTipo } from "@/lib/tipoInmueble";
@@ -224,7 +225,7 @@ export default function CaptacionPage() {
       if (!matchesOwnerSearch(lead, ownerSearch)) return false;
       if (
         enRevisionFilter &&
-        !(lead.estado === "Pendiente" && lead.enRevision)
+        !(muestraMarcaEnRevision(lead.estado) && lead.enRevision)
       ) {
         return false;
       }
@@ -268,7 +269,7 @@ export default function CaptacionPage() {
       if (!matchesPriceRange(lead.precioNum, priceRange)) return false;
       if (!matchesDateRange(lead.fechaCaptura, dateRange)) return false;
       if (!matchesOwnerSearch(lead, ownerSearch)) return false;
-      return lead.estado === "Pendiente" && lead.enRevision;
+      return muestraMarcaEnRevision(lead.estado) && lead.enRevision;
     }).length;
   }, [
     leads,

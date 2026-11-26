@@ -222,10 +222,11 @@ export const leadsService: LeadsService = {
       ...current,
       ...data,
       estado: data.estado ?? current.estado,
-      enRevision:
-        (data.estado ?? current.estado) !== "Pendiente"
-          ? false
-          : data.enRevision ?? current.enRevision,
+      enRevision: ["Captado", "Descartado", "Archivado"].includes(
+        data.estado ?? current.estado,
+      )
+        ? false
+        : (data.enRevision ?? current.enRevision),
     });
     mockLeads[idx] = updated;
     return updated;

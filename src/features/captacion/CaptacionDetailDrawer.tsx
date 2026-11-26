@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { X } from "lucide-react";
 import { PortalLogo } from "@/components/PortalLogo";
 import { LeadActivitiesSection } from "@/features/captacion/LeadActivitiesSection";
+import { muestraMarcaEnRevision } from "@/lib/enRevision";
 import { formatLeadPrice } from "@/lib/format";
 import { capturedAtLabel } from "@/lib/formatCapturedAt";
 import type {
@@ -210,7 +211,7 @@ export function CaptacionDetailDrawer({
               ) : null}
             </label>
 
-            {lead.estado === "Pendiente" ? (
+            {muestraMarcaEnRevision(lead.estado) ? (
               <label className="flex cursor-pointer items-start gap-2.5 rounded-[10px] border border-[var(--pa-border)] bg-[var(--pa-bg)] px-3 py-2.5">
                 <input
                   type="checkbox"
@@ -224,7 +225,7 @@ export function CaptacionDetailDrawer({
                     En revisión
                   </span>
                   <span className="mt-0.5 block text-[11px] leading-snug text-[var(--pa-muted)]">
-                    Separa este lead del resto de Pendiente sin moverlo de columna.
+                    La marca (ojo) se ve en Pendiente y se conserva en En contacto.
                   </span>
                 </span>
               </label>
