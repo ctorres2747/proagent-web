@@ -15,6 +15,10 @@ import { NewLeadModal } from "@/features/captacion/NewLeadModal";
 import { ScraperStatusBar } from "@/features/captacion/ScraperStatusBar";
 import { canAccessCaptacion } from "@/lib/agentDisplay";
 import { muestraMarcaEnRevision } from "@/lib/enRevision";
+import {
+  matchesAgendaFilter,
+  type AgendaFilter,
+} from "@/lib/leadFollowUp";
 import { captacionSubtitle } from "@/lib/captacionSubtitle";
 import { buildMunicipioOptions, leadMatchesMunicipio } from "@/lib/municipio";
 import { buildTipoFilterOptions, leadMatchesTipo } from "@/lib/tipoInmueble";
@@ -47,7 +51,14 @@ const COLUMNS: LeadEstado[] = [
   "Descartado",
 ];
 
-type FilterKey = "municipio" | "tipo" | "portal" | "estado" | "precio" | "fecha";
+type FilterKey =
+  | "municipio"
+  | "tipo"
+  | "portal"
+  | "estado"
+  | "agenda"
+  | "precio"
+  | "fecha";
 
 function columnCount(leads: Lead[], estado: LeadEstado): number {
   return leads.filter((l) => l.estado === estado).length;
@@ -88,6 +99,7 @@ export default function CaptacionPage() {
   const [dateRange, setDateRange] = useState<DateRange>({ from: "", to: "" });
   const [ownerSearch, setOwnerSearch] = useState("");
   const [enRevisionFilter, setEnRevisionFilter] = useState(false);
+  const [agendaFilter, setAgendaFilter] = useState<AgendaFilter>("Todos");
   const [openFilter, setOpenFilter] = useState<FilterKey | null>(null);
   const [criteriosOpen, setCriteriosOpen] = useState(false);
   const [newLeadOpen, setNewLeadOpen] = useState(false);
@@ -229,6 +241,15 @@ export default function CaptacionPage() {
       ) {
         return false;
       }
+      if (
+        !matchesAgendaFilter(
+          lead.proximaActividad,
+          agendaFilter,
+          new Date(nowMs),
+        )
+      ) {
+        return false;
+      }
       return true;
     });
   }, [
@@ -242,6 +263,8 @@ export default function CaptacionPage() {
     dateRange,
     ownerSearch,
     enRevisionFilter,
+    agendaFilter,
+    nowMs,
   ]);
 
   const enRevisionMarkedCount = useMemo(() => {
@@ -269,6 +292,15 @@ export default function CaptacionPage() {
       if (!matchesPriceRange(lead.precioNum, priceRange)) return false;
       if (!matchesDateRange(lead.fechaCaptura, dateRange)) return false;
       if (!matchesOwnerSearch(lead, ownerSearch)) return false;
+      if (
+        !matchesAgendaFilter(
+          lead.proximaActividad,
+          agendaFilter,
+          new Date(nowMs),
+        )
+      ) {
+        return false;
+      }
       return muestraMarcaEnRevision(lead.estado) && lead.enRevision;
     }).length;
   }, [
@@ -281,6 +313,54 @@ export default function CaptacionPage() {
     priceRange,
     dateRange,
     ownerSearch,
+    agendaFilter,
+    nowMs,
+  ]);
+
+  const agendaCounts = useMemo(() => {
+    const now = new Date(nowMs);
+    let vigente = 0;
+    let vencida = 0;
+    for (const lead of leads ?? []) {
+      if (
+        !leadMatchesMunicipio(
+          lead.municipio ?? "",
+          municipioFilter === "Todos" ? null : municipioFilter,
+        )
+      ) {
+        continue;
+      }
+      if (tipoFilter !== "Todos" && !leadMatchesTipo(lead.tipoInmueble, tipoFilter)) {
+        continue;
+      }
+      if (portalFilter !== "Todos" && lead.portal !== portalFilter) continue;
+      if (estadoFilter !== "Todos" && lead.estado !== estadoFilter) continue;
+      if (viewAgenteId && lead.ownerAgenteId !== Number(viewAgenteId)) continue;
+      if (!matchesPriceRange(lead.precioNum, priceRange)) continue;
+      if (!matchesDateRange(lead.fechaCaptura, dateRange)) continue;
+      if (!matchesOwnerSearch(lead, ownerSearch)) continue;
+      if (
+        enRevisionFilter &&
+        !(muestraMarcaEnRevision(lead.estado) && lead.enRevision)
+      ) {
+        continue;
+      }
+      if (matchesAgendaFilter(lead.proximaActividad, "vigente", now)) vigente += 1;
+      if (matchesAgendaFilter(lead.proximaActividad, "vencida", now)) vencida += 1;
+    }
+    return { vigente, vencida };
+  }, [
+    leads,
+    municipioFilter,
+    tipoFilter,
+    portalFilter,
+    estadoFilter,
+    viewAgenteId,
+    priceRange,
+    dateRange,
+    ownerSearch,
+    enRevisionFilter,
+    nowMs,
   ]);
 
   const hasActiveFilters =
@@ -291,7 +371,8 @@ export default function CaptacionPage() {
     isPriceRangeActive(priceRange) ||
     isDateRangeActive(dateRange) ||
     ownerSearch.trim().length > 0 ||
-    enRevisionFilter;
+    enRevisionFilter ||
+    agendaFilter !== "Todos";
 
   const clearFilters = () => {
     setMunicipioFilter("Todos");
@@ -302,6 +383,7 @@ export default function CaptacionPage() {
     setDateRange({ from: "", to: "" });
     setOwnerSearch("");
     setEnRevisionFilter(false);
+    setAgendaFilter("Todos");
     setOpenFilter(null);
   };
 
@@ -591,6 +673,34 @@ export default function CaptacionPage() {
             <span className="text-[11px] opacity-90">({enRevisionMarkedCount})</span>
           ) : null}
         </button>
+        <FilterDropdown
+          label={`Agenda${
+            agendaFilter === "vigente"
+              ? ": Vigente"
+              : agendaFilter === "vencida"
+                ? ": Vencida"
+                : ""
+          }`}
+          active={agendaFilter !== "Todos"}
+          open={openFilter === "agenda"}
+          onToggle={() =>
+            setOpenFilter((k) => (k === "agenda" ? null : "agenda"))
+          }
+          onClose={() => setOpenFilter(null)}
+          options={[
+            { value: "Todos", label: "Todas" },
+            {
+              value: "vigente",
+              label: `Vigente (${agendaCounts.vigente})`,
+            },
+            {
+              value: "vencida",
+              label: `Vencida (${agendaCounts.vencida})`,
+            },
+          ]}
+          selected={agendaFilter}
+          onSelect={(value) => setAgendaFilter(value as AgendaFilter)}
+        />
         <PriceRangeFilter
           range={priceRange}
           onChange={setPriceRange}

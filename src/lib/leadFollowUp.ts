@@ -87,6 +87,20 @@ export function followUpTone(
   return "ok";
 }
 
+export type AgendaFilter = "Todos" | "vigente" | "vencida";
+
+/** Filtro del tablero: solo leads con próxima actividad vigente o vencida. */
+export function matchesAgendaFilter(
+  proxima: ProximaActividad | null | undefined,
+  filter: AgendaFilter,
+  now: Date,
+): boolean {
+  if (filter === "Todos") return true;
+  const tone = followUpTone(proxima, now);
+  if (filter === "vencida") return tone === "overdue";
+  return tone === "ok" || tone === "soon";
+}
+
 export function followUpRelativeLabel(
   proxima: ProximaActividad,
   now: Date,
