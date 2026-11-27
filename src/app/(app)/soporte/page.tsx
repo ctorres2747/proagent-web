@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 
 import { useAuth } from "@/features/auth/AuthProvider";
+import { BitacoraSoporte } from "@/features/soporte/BitacoraSoporte";
 import { CONSENTIMIENTO_QUERY_KEY } from "@/features/soporte/ConsentimientoSoporte";
 import {
   AprobacionesSoporte,
@@ -262,6 +263,7 @@ export default function SoportePage() {
       {esOwner ? (
         <>
           <AprobacionesSoporte token={tk} maquinas={maquinas} />
+          <BitacoraSoporte token={tk} maquinas={maquinas} />
           <PedirInvocacion token={tk} maquinas={maquinas} />
           <HistorialInvocaciones token={tk} maquinas={maquinas} />
           <TokensSoporte token={tk} />
