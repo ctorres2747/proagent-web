@@ -115,4 +115,13 @@ export const soporteService = {
   async rechazar(): Promise<never> {
     throw new Error("Modo demo: sin PCs reales.");
   },
+  async listNotas() {
+    return [];
+  },
+  async crearNota(): Promise<never> {
+    throw new Error("Modo demo: sin bitácora real.");
+  },
+  async cerrarNota(): Promise<never> {
+    throw new Error("Modo demo: sin bitácora real.");
+  },
 };

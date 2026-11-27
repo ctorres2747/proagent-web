@@ -220,6 +220,71 @@ export interface ErrorRuntime {
   mensaje: string;
 }
 
+/** Bitácora de soporte compartida entre los agentes (conector de claude.ai,
+ * Claude Code) y el Owner. Backend: agente-inmobiliario backend/db/soporte_notas.py. */
+export type TipoNota = "diagnostico" | "bug" | "leccion" | "aviso";
+export type EstadoNota = "abierta" | "cerrada";
+
+export interface NotaSoporte {
+  id: number;
+  tipo: TipoNota;
+  titulo: string;
+  texto: string;
+  workerId: string | null;
+  fichaId: number | null;
+  autor: string;
+  estado: EstadoNota;
+  creadoAt: string;
+  cierre: string | null;
+  cerradoPor: string | null;
+  cerradoAt: string | null;
+}
+
+interface RawNota {
+  id: number;
+  tipo: TipoNota;
+  titulo: string;
+  texto: string;
+  worker_id: string | null;
+  ficha_id: number | null;
+  autor: string;
+  estado: EstadoNota;
+  creado_at: string;
+  cierre: string | null;
+  cerrado_por: string | null;
+  cerrado_at: string | null;
+}
+
+function mapNota(raw: RawNota): NotaSoporte {
+  return {
+    id: raw.id,
+    tipo: raw.tipo,
+    titulo: raw.titulo,
+    texto: raw.texto,
+    workerId: raw.worker_id,
+    fichaId: raw.ficha_id,
+    autor: raw.autor,
+    estado: raw.estado,
+    creadoAt: raw.creado_at,
+    cierre: raw.cierre,
+    cerradoPor: raw.cerrado_por,
+    cerradoAt: raw.cerrado_at,
+  };
+}
+
+export interface FiltroNotas {
+  estado?: EstadoNota;
+  tipo?: TipoNota;
+  limit?: number;
+}
+
+export interface NuevaNota {
+  tipo: TipoNota;
+  titulo: string;
+  texto: string;
+  workerId?: string | null;
+}
+
 export const soporteService = {
   async getConsentimiento(token?: string): Promise<ConsentimientoSoporte> {
     return mapConsentimiento(
@@ -301,6 +366,28 @@ export const soporteService = {
   async rechazar(id: number, token?: string): Promise<InvocacionSoporte> {
     return mapInvocacion(
       await apiFetch<RawInvocacion>(`/api/web/soporte/invocaciones/${id}/rechazar`, { method: "POST", token }),
+    );
+  },
+  async listNotas(filtro: FiltroNotas, token?: string): Promise<NotaSoporte[]> {
+    const params = new URLSearchParams();
+    if (filtro.estado) params.set("estado", filtro.estado);
+    if (filtro.tipo) params.set("tipo", filtro.tipo);
+    params.set("limit", String(filtro.limit ?? 50));
+    const raw = await apiFetch<{ notas: RawNota[] }>(`/api/web/soporte/notas?${params.toString()}`, { token });
+    return raw.notas.map(mapNota);
+  },
+  async crearNota(nota: NuevaNota, token?: string): Promise<NotaSoporte> {
+    return mapNota(
+      await apiFetch<RawNota>("/api/web/soporte/notas", {
+        method: "POST",
+        token,
+        body: { tipo: nota.tipo, titulo: nota.titulo, texto: nota.texto, worker_id: nota.workerId || null },
+      }),
+    );
+  },
+  async cerrarNota(id: number, cierre: string, token?: string): Promise<NotaSoporte> {
+    return mapNota(
+      await apiFetch<RawNota>(`/api/web/soporte/notas/${id}/cerrar`, { method: "POST", token, body: { cierre } }),
     );
   },
 };
