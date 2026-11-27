@@ -676,7 +676,7 @@ function ChannelRow({
                   rel="noreferrer"
                   className="font-semibold text-[var(--pa-navy)] underline"
                 >
-                  Proinversores - Entregas
+                  Inventario de Propiedades
                 </a>{" "}
                 de tu Google Drive.
               </p>
