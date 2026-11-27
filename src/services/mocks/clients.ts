@@ -173,10 +173,15 @@ export const clientsService: ClientsService = {
     if (data.estado === "descartado" && !data.motivoDescarte && !MOCK_CLIENTS[idx].motivoDescarte) {
       throw new Error("motivo_descarte es obligatorio para descartar un cliente");
     }
+    const nextCanal = data.canal ?? MOCK_CLIENTS[idx].canal;
     const merged: Client = {
       ...MOCK_CLIENTS[idx],
       ...data,
-      canalOtro: data.canalOtro ?? MOCK_CLIENTS[idx].canalOtro,
+      canal: nextCanal,
+      canalOtro:
+        nextCanal !== "otro"
+          ? null
+          : (data.canalOtro ?? MOCK_CLIENTS[idx].canalOtro),
       motivoDescarte:
         data.estado === "descartado"
           ? data.motivoDescarte ?? MOCK_CLIENTS[idx].motivoDescarte
