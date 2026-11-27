@@ -9,6 +9,7 @@ import { clientsService } from "@/services";
 import type {
   Client,
   ClientActividadItem,
+  ClientChannel,
   ClientDiscardReason,
   ClientEvent,
   ClientPaymentMethod,
@@ -17,6 +18,10 @@ import type {
 } from "@/services/interfaces/clients";
 import type { Property } from "@/services/interfaces/properties";
 import { ChannelBadge } from "./ChannelBadge";
+import {
+  CLIENT_CHANNEL_META,
+  CLIENT_CHANNEL_ORDER,
+} from "@/design-system/clientChannels";
 import { formatThousandsInput } from "@/lib/format";
 import { TEMP_META, TempIcon } from "./TemperatureChip";
 
@@ -179,6 +184,8 @@ export function ClientDetailModal({
   const [pendingFechaCierre, setPendingFechaCierre] = useState("");
   const [nombre, setNombre] = useState(client.nombre);
   const [telefono, setTelefono] = useState(client.telefono);
+  const [canal, setCanal] = useState<ClientChannel>(client.canal);
+  const [canalOtro, setCanalOtro] = useState(client.canalOtro ?? "");
   const [presupuestoMin, setPresupuestoMin] = useState(presupuestoTexto(client.presupuestoMin));
   const [presupuestoMax, setPresupuestoMax] = useState(presupuestoTexto(client.presupuestoMax));
   const [notas, setNotas] = useState(client.notas ?? "");
@@ -216,6 +223,11 @@ export function ClientDetailModal({
     setDocUploadOk(null);
     if (docFileRef.current) docFileRef.current.value = "";
   }, [client.id, client.nombre, client.telefono, client.presupuestoMin, client.presupuestoMax, client.notas, client.proximaCita, client.fechaPrimerContacto, client.fechaCierre]);
+
+  useEffect(() => {
+    setCanal(client.canal);
+    setCanalOtro(client.canalOtro ?? "");
+  }, [client.id]);
 
   const { data: documents = [], isLoading: docsLoading } = useQuery({
     queryKey: ["client-documents", client.id],
@@ -329,6 +341,16 @@ export function ClientDetailModal({
         patch.fechaCierre = fechaCierre || null;
       }
     }
+    if (canal === "otro") {
+      const trimmed = canalOtro.trim();
+      if (
+        trimmed &&
+        (canal !== client.canal || trimmed !== (client.canalOtro ?? ""))
+      ) {
+        patch.canal = "otro";
+        patch.canalOtro = trimmed;
+      }
+    }
     if (Object.keys(patch).length === 0) return;
 
     const effectiveMin = patch.presupuestoMin !== undefined ? patch.presupuestoMin : client.presupuestoMin;
@@ -338,7 +360,7 @@ export function ClientDetailModal({
     const t = setTimeout(() => onPatch(patch), 500);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [nombre, telefono, presupuestoMin, presupuestoMax, notas, proximaCita, fechaPrimerContacto, fechaCierre]);
+  }, [nombre, telefono, canal, canalOtro, presupuestoMin, presupuestoMax, notas, proximaCita, fechaPrimerContacto, fechaCierre]);
 
   const presupuestoMinN = presupuestoNumero(presupuestoMin);
   const presupuestoMaxN = presupuestoNumero(presupuestoMax);
@@ -505,11 +527,42 @@ export function ClientDetailModal({
                     aria-label="Teléfono del cliente"
                   />
                   <span className="text-[var(--pa-faint)]">·</span>
-                  <div className="flex items-center gap-1.5">
-                    <ChannelBadge channel={client.canal} channelOther={client.canalOtro} />
-                    <span>
-                      {client.canal === "otro" && client.canalOtro ? client.canalOtro : undefined}
-                    </span>
+                  <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+                    <ChannelBadge channel={canal} channelOther={canalOtro || null} />
+                    <select
+                      aria-label="Canal de origen"
+                      className="max-w-[160px] rounded-[7px] border border-transparent bg-transparent px-1 py-0.5 text-[12.5px] font-semibold text-[var(--pa-text-secondary)] hover:bg-[var(--pa-bg)] focus:border-[var(--pa-border)] focus:bg-white focus:outline-none"
+                      value={canal}
+                      onChange={(e) => {
+                        const next = e.target.value as ClientChannel;
+                        setCanal(next);
+                        if (next === "otro") {
+                          setCanalOtro(
+                            client.canal === "otro" ? (client.canalOtro ?? "") : "",
+                          );
+                          return;
+                        }
+                        setCanalOtro("");
+                        if (next !== client.canal) {
+                          onPatch({ canal: next, canalOtro: null });
+                        }
+                      }}
+                    >
+                      {CLIENT_CHANNEL_ORDER.map((c) => (
+                        <option key={c} value={c}>
+                          {CLIENT_CHANNEL_META[c].label}
+                        </option>
+                      ))}
+                    </select>
+                    {canal === "otro" ? (
+                      <input
+                        className="w-[140px] rounded-[7px] border border-[var(--pa-border)] bg-white px-1.5 py-0.5 text-[12.5px] font-semibold text-[var(--pa-ink)] focus:outline-none"
+                        value={canalOtro}
+                        onChange={(e) => setCanalOtro(e.target.value)}
+                        placeholder="¿Cuál canal?"
+                        aria-label="Nombre del canal"
+                      />
+                    ) : null}
                   </div>
                 </div>
               </div>
